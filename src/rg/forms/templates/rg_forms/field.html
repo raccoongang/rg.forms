@@ -1,0 +1,52 @@
+{# Default reactive field template - Bulma CSS #}
+<div class="field"{% if visible_when %} data-show="{{ visible_when }}"{% endif %}>
+    <label class="label" for="id_{{ field_name }}">
+        {{ label }}
+        {% if required_when %}
+        <span class="has-text-danger" data-show="{{ required_when }}">*</span>
+        {% elif is_required %}
+        <span class="has-text-danger">*</span>
+        {% endif %}
+    </label>
+
+    <div class="control{% if widget_type == 'select' %} select is-fullwidth{% endif %}">
+        {% if widget_type == 'select' %}
+        <select name="{{ field_name }}" id="id_{{ field_name }}"
+                data-bind:{{ field_name }}
+                {% if computed %}data-computed="{{ computed }}" readonly{% endif %}>
+            {% for choice in field.field.choices %}
+            <option value="{{ choice.0 }}"{% if choice.0 == field.value %} selected{% endif %}>{{ choice.1 }}</option>
+            {% endfor %}
+        </select>
+        {% elif widget_type == 'checkboxinput' %}
+        <label class="checkbox">
+            <input type="checkbox" name="{{ field_name }}" id="id_{{ field_name }}"
+                   data-bind:{{ field_name }}
+                   {% if computed %}data-computed="{{ computed }}" readonly{% endif %}
+                   {% if field.value %}checked{% endif %}>
+            {{ label }}
+        </label>
+        {% elif widget_type == 'textarea' %}
+        <textarea class="textarea" name="{{ field_name }}" id="id_{{ field_name }}"
+                  data-bind:{{ field_name }}
+                  {% if computed %}data-computed="{{ computed }}" readonly{% endif %}>{{ field.value|default:"" }}</textarea>
+        {% elif computed %}
+        {# Computed field - use span with data-text for display #}
+        <span class="input" style="display: inline-block;"
+              data-text="{{ computed }}"></span>
+        {% else %}
+        {# Default: text/number/email/etc input #}
+        <input class="input{% if errors %} is-danger{% endif %}"
+               type="{% if widget_type == 'numberinput' %}number{% elif widget_type == 'emailinput' %}email{% elif widget_type == 'urlinput' %}url{% elif widget_type == 'dateinput' %}date{% elif widget_type == 'timeinput' %}time{% elif widget_type == 'datetimeinput' %}datetime-local{% else %}text{% endif %}"
+               name="{{ field_name }}" id="id_{{ field_name }}"
+               data-bind:{{ field_name }}
+               value="{{ field.value|default:"" }}">
+        {% endif %}
+    </div>
+
+    {% if errors %}
+    <p class="help is-danger">{{ errors.0 }}</p>
+    {% elif help_text %}
+    <p class="help">{{ help_text }}</p>
+    {% endif %}
+</div>

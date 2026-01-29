@@ -1,0 +1,248 @@
+#+TITLE: rg.forms - Reactive Django Forms
+#+AUTHOR: Oleksii Koval
+#+OPTIONS: toc:3 num:t
+
+* Problem Statement
+
+Django forms lack built-in support for common reactive behaviors:
+
+1. *Conditional field visibility* - show/hide fields based on other field values
+2. *Dynamic requirements* - make fields required based on conditions
+3. *Computed fields* - calculate values from other fields
+4. *Cascading choices* - filter dropdown options based on other selections
+5. *Cross-field validation* - validate fields in relation to each other
+
+Currently, developers must:
+- Write JavaScript for frontend reactivity
+- Duplicate logic in Python for backend validation
+- Keep both in sync manually
+
+** Our Approach
+
+*Backend is the single source of truth.* All reactive rules are defined in Python on the form class. The frontend (Datastar) reflects these rules - it makes the backend rules visible to the user in real-time.
+
+*JavaScript is always enabled.* We don't maintain fallback code for disabled JavaScript.
+
+*Simplicity over flexibility.* Datastar is our frontend framework. We can add adapters for HTMX+Alpine later if needed, but we don't over-engineer now.
+
+* Architecture
+
+#+begin_src plantuml :file architecture.png
+@startuml
+skinparam componentStyle rectangle
+
+package "rg.forms" {
+  [ReactiveForm] --> [ReactiveFields]
+  [ReactiveFields] --> [Validation]
+  [ReactiveForm] --> [TemplateRenderer]
+  [TemplateRenderer] --> [DatastarAttrs]
+}
+
+package "Django" {
+  [Form] <|-- [ReactiveForm]
+  [Field] <|-- [ReactiveFields]
+}
+
+package "Frontend" {
+  [DatastarAttrs] --> [Datastar]
+  [Datastar] --> [Browser]
+}
+
+note right of ReactiveForm
+  Single source of truth
+  All rules defined here
+end note
+
+note right of DatastarAttrs
+  Auto-generated from
+  Python field attributes
+end note
+@enduml
+#+end_src
+
+* API Design
+
+** ReactiveForm
+
+Extends =django.forms.Form=. All reactive behavior is defined via field attributes.
+
+#+begin_src python
+from rg.forms import ReactiveForm, ReactiveCharField, ReactiveChoiceField
+
+class OrderForm(ReactiveForm):
+    order_type = ReactiveChoiceField(
+        choices=[('standard', 'Standard'), ('urgent', 'Urgent')],
+    )
+
+    # visible_when: Datastar expression, also evaluated on backend
+    priority = ReactiveChoiceField(
+        choices=[('normal', 'Normal'), ('high', 'High')],
+        visible_when="$order_type == 'urgent'",
+        required=False,
+    )
+
+    # required_when: Field becomes required when condition is true
+    notes = ReactiveCharField(
+        required_when="$order_type == 'urgent'",
+    )
+
+    # computed: Value calculated from other fields
+    total = ReactiveDecimalField(
+        computed="$quantity * $unit_price",
+    )
+#+end_src
+
+** Field Attributes
+
+| Attribute      | Type   | Description                                      |
+|----------------|--------|--------------------------------------------------|
+| visible_when   | str    | Datastar expression. Field hidden when false.    |
+| required_when  | str    | Datastar expression. Field required when true.   |
+| computed       | str    | Datastar expression. Field value is calculated.  |
+| choices_url    | str    | URL to fetch choices from (for cascading).       |
+| depends_on     | list   | Field names that trigger choices refresh.        |
+
+** Expressions
+
+Expressions use Datastar syntax with =$fieldname= for signal references:
+
+#+begin_src python
+visible_when="$order_type == 'urgent'"
+visible_when="$order_type == 'urgent' || $order_type == 'express'"
+visible_when="$quantity > 10"
+computed="$quantity * $unit_price"
+#+end_src
+
+The same expressions are:
+1. Rendered as Datastar attributes (=data-show=, =data-bind=)
+2. Evaluated on backend during validation (converted to Python)
+
+** Backend Validation
+
+ReactiveForm automatically:
+
+1. *Skips hidden fields* - if =visible_when= evaluates to false, field is not validated
+2. *Enforces dynamic requirements* - if =required_when= evaluates to true, field must have value
+3. *Recomputes computed fields* - ignores submitted value, recalculates from source fields
+
+#+begin_src python
+def view(request):
+    form = OrderForm(request.POST)
+    if form.is_valid():
+        # Hidden fields excluded from cleaned_data
+        # Computed fields have server-calculated values
+        # Dynamic requirements enforced
+        process(form.cleaned_data)
+#+end_src
+
+** Template Tags
+
+#+begin_src django
+{% load reactive_forms %}
+
+{# Use single quotes - JSON uses double quotes internally #}
+<form data-signals='{% reactive_signals form %}'>
+  <div {% reactive_wrapper_attrs form.priority %}>
+    <input {% reactive_input_attrs form.priority %}>
+  </div>
+  {% required_indicator form.notes %}
+</form>
+#+end_src
+
+** View Integration
+
+Works with both FBV and CBV. No special view classes needed.
+
+#+begin_src python
+def order_view(request):
+    if request.method == 'POST':
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            save_order(form.cleaned_data)
+            return redirect('success')
+    else:
+        form = OrderForm()
+    return render(request, 'order.html', {'form': form})
+#+end_src
+
+* Implementation Plan
+
+** Phase 1: Core Foundation [DONE]
+
+- [X] Package structure (PEP 420 namespace)
+- [X] ReactiveForm base class
+- [X] Reactive field classes
+- [X] Field attributes (visible_when, required_when, computed, depends_on)
+- [X] Signal generation (get_signals_json)
+- [X] Template tags
+- [X] Testsite with examples
+
+** Phase 2: Expression Evaluation
+
+Backend evaluation of expressions.
+
+- [ ] Expression parser (safe subset)
+- [ ] Python evaluator
+- [ ] Skip validation for hidden fields (visible_when=false)
+- [ ] Enforce required_when
+- [ ] Recompute computed fields
+- [ ] Tests
+
+** Phase 3: Cascading Choices
+
+- [ ] choices_url attribute
+- [ ] depends_on for dependency declaration
+- [ ] Datastar fetch integration
+- [ ] Backend endpoint helper
+- [ ] Choice validation
+
+** Phase 4: Form Rendering
+
+- [ ] {% render_reactive_form %} tag
+- [ ] Bulma skin (default)
+- [ ] Bootstrap 5 skin
+- [ ] Error display
+
+** Phase 5: Documentation
+
+- [ ] README with examples
+- [ ] API documentation
+
+* Design Decisions
+
+** 1. Datastar-first
+
+We use Datastar. If other frameworks needed later, we can add adapters.
+
+** 2. Backend is Source of Truth
+
+All rules defined in Python. Frontend reflects rules, doesn't define them.
+
+** 3. No Progressive Enhancement
+
+JavaScript required. No fallback for disabled JS.
+
+** 4. Expression Safety
+
+Safe subset only: field references, literals, basic operators. No function calls.
+
+** 5. View-agnostic
+
+Works with FBV and CBV. No special mixins required.
+
+* File Structure
+
+#+begin_src
+src/rg/forms/
+├── __init__.py
+├── apps.py
+├── forms.py             # ReactiveForm
+├── fields.py            # Reactive field classes
+├── expressions.py       # Expression parser & evaluator [Phase 2]
+├── templatetags/
+│   └── reactive_forms.py
+└── templates/
+    └── rg_forms/
+        ├── field.html
+        └── form.html
+#+end_src

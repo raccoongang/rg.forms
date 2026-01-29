@@ -1,0 +1,74 @@
+[project]
+name = "rg-forms"
+version = "0.1.0"
+description = "Reactive Django forms with Datastar integration - declarative field visibility, dependencies, computed fields"
+readme = "README.md"
+authors = [
+    { name = "Oleksii Koval", email = "alex@koval.kharkov.ua" }
+]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
+keywords = ["django", "forms", "reactive", "datastar", "htmx"]
+dependencies = [
+    "django>=5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "pytest-cov>=4.1",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "django-stubs>=5.0",
+    "pre-commit>=3.7",
+]
+all = [
+    "rg-forms[dev]",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "DJ"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+strict = true
+
+[project.urls]
+Homepage = "https://github.com/avkoval/rg.forms"
+Documentation = "https://github.com/avkoval/rg.forms#readme"
+Repository = "https://github.com/avkoval/rg.forms"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rg"]
+
+[tool.django-stubs]
+django_settings_module = "tests.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["test_*.py"]
+pythonpath = ["."]
+addopts = "-v --tb=short"
