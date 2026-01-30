@@ -90,6 +90,20 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
         {% render_reactive_field form.my_field label="Custom Label" %}
     """
     field = get_reactive_field(bound_field)
+    widget = field.widget
+
+    # Collect HTML5 validation attributes
+    html5_attrs = {}
+    if field.required:
+        html5_attrs["required"] = True
+    if hasattr(field, "min_value") and field.min_value is not None:
+        html5_attrs["min"] = field.min_value
+    if hasattr(field, "max_value") and field.max_value is not None:
+        html5_attrs["max"] = field.max_value
+    if hasattr(field, "max_length") and field.max_length is not None:
+        html5_attrs["maxlength"] = field.max_length
+    if hasattr(field, "min_length") and field.min_length is not None:
+        html5_attrs["minlength"] = field.min_length
 
     return {
         "field": bound_field,
@@ -98,10 +112,53 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
         "visible_when": getattr(field, "visible_when", None),
         "required_when": getattr(field, "required_when", None),
         "computed": getattr(field, "computed", None),
-        "is_required": bound_field.field.required,
+        "disabled_when": getattr(field, "disabled_when", None),
+        "read_only_when": getattr(field, "read_only_when", None),
+        "help_text_when": getattr(field, "help_text_when", None),
+        "placeholder_when": getattr(field, "placeholder_when", None),
+        "min_when": getattr(field, "min_when", None),
+        "max_when": getattr(field, "max_when", None),
+        "is_required": field.required,
         "field_name": bound_field.name,
-        "widget_type": bound_field.field.widget.__class__.__name__.lower(),
+        "widget_type": widget.__class__.__name__.lower(),
         "errors": bound_field.errors,
+        "html5_attrs": html5_attrs,
+        "choices": getattr(field, "choices", None),
+    }
+
+
+@register.inclusion_tag("rg_forms/form.html")
+def render_reactive_form(form, submit_label="Submit"):
+    """Render a complete reactive form with all fields.
+
+    Usage:
+        {% render_reactive_form form %}
+        {% render_reactive_form form submit_label="Save" %}
+    """
+    return {
+        "form": form,
+        "submit_label": submit_label,
+    }
+
+
+@register.inclusion_tag("rg_forms/field_group.html")
+def render_field_group(form, group_name: str):
+    """Render a field group with its fields.
+
+    Usage:
+        {% render_field_group form "personal_info" %}
+    """
+    group = form.get_group(group_name)
+    if not group:
+        return {"group": None, "fields": []}
+
+    fields = form.get_fields_in_group(group_name)
+
+    return {
+        "form": form,
+        "group": group,
+        "group_name": group_name,
+        "fields": fields,
     }
 
 

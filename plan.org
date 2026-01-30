@@ -177,36 +177,66 @@ def order_view(request):
 - [X] Template tags
 - [X] Testsite with examples
 
-** Phase 2: Expression Evaluation
+** Phase 2: Expression Evaluation [DONE]
 
 Backend evaluation of expressions.
 
-- [ ] Expression parser (safe subset)
-- [ ] Python evaluator
-- [ ] Skip validation for hidden fields (visible_when=false)
-- [ ] Enforce required_when
-- [ ] Recompute computed fields
-- [ ] Tests
+- [X] Expression parser (safe subset)
+- [X] Python evaluator
+- [X] Skip validation for hidden fields (visible_when=false)
+- [X] Enforce required_when
+- [X] Recompute computed fields
+- [X] Tests
 
-** Phase 3: Cascading Choices
+** Phase 2.5: Conditional Attributes [DONE]
 
-- [ ] choices_url attribute
-- [ ] depends_on for dependency declaration
-- [ ] Datastar fetch integration
-- [ ] Backend endpoint helper
-- [ ] Choice validation
+Additional reactive field attributes.
 
-** Phase 4: Form Rendering
+- [X] disabled_when - conditionally disable fields
+- [X] read_only_when - conditionally make fields read-only
+- [X] help_text_when - dynamic help text based on conditions
+- [X] placeholder_when - dynamic placeholder text
+- [X] min_when, max_when - dynamic min/max bounds
+- [X] Template updates for data-attr:disabled, data-attr:readonly
+- [X] Example in testsite
 
-- [ ] {% render_reactive_form %} tag
-- [ ] Bulma skin (default)
+** Phase 3: Cascading Choices [DONE]
+
+Server-side form re-rendering for dependent fields (declarative approach).
+
+- [X] choices_from - callable or queryset for dynamic choices
+- [X] depends_on - field names that trigger re-population
+- [X] value_field, label_field, label_template - choice rendering options
+- [X] empty_choice, empty_choice_no_parent - placeholder options
+- [X] Datastar data-on:change to POST form for re-rendering (partial update)
+- [X] View pattern: detect "repopulate" vs "submit" requests
+- [X] Validate that selected value is valid for current parent
+- [X] Example: category -> products cascading form
+
+** Phase 4: Field Groups [DONE]
+
+Organize fields into logical sections.
+
+- [X] FieldGroup class with label, description, css_class
+- [X] visible_when on entire groups
+- [X] Meta.field_groups configuration
+- [X] render_field_group template tag
+- [X] Example in testsite
+
+** Phase 5: Form Rendering [DONE]
+
+- [X] {% render_reactive_form %} tag
+- [X] {% render_reactive_field %} tag
+- [X] {% render_field_group %} tag
+- [X] Bulma skin (default)
 - [ ] Bootstrap 5 skin
-- [ ] Error display
+- [X] Error display
 
-** Phase 5: Documentation
+** Phase 6: Documentation
 
 - [ ] README with examples
 - [ ] API documentation
+- [ ] Comparison with SPA approaches
 
 * Design Decisions
 
@@ -246,3 +276,148 @@ src/rg/forms/
         ├── field.html
         └── form.html
 #+end_src
+
+* Risks and Mitigation
+
+** High Risk
+
+*** Datastar Dependency
+
+Datastar is v1.0-RC (not stable 1.0 yet) with a small community compared to HTMX (~25K stars) or Alpine (~29K stars). If Datastar API changes significantly or project becomes unmaintained, rg.forms is tightly coupled.
+
+*Mitigation:*
+- Abstract expression syntax where possible
+- Document migration path to HTMX + Alpine if needed
+- Monitor Datastar project health and community growth
+- Expression evaluator is already backend-only (not Datastar-dependent)
+
+*** API Stability / Missing Flows
+
+Field attributes have grown significantly: =visible_when=, =required_when=, =computed=, =disabled_when=, =read_only_when=, =help_text_when=, =placeholder_when=, =min_when=, =max_when=, =depends_on=, =choices_from=...
+
+More will likely be needed as real-world usage reveals gaps:
+- =error_message_when= - dynamic error messages
+- =css_class_when= - conditional styling
+- =choices_when= - conditional choice filtering
+- FieldGroup: nested groups, collapsible sections, ordering
+
+*Mitigation:*
+- Semantic versioning with clear deprecation policy
+- Deprecation warnings before breaking changes
+- Collect real-world usage feedback before stabilizing API
+- Consider =attrs_when= dict pattern instead of individual =*_when= attributes
+
+*** Expression Language Limitations
+
+Current parser supports only basic operations. Users will hit limits:
+
+| Missing Feature | Example |
+|-----------------|---------|
+| Functions | =len($items)=, =$date.year=, =contains($text, 'x')= |
+| Ternary | =$a ? $b : $c= |
+| Array access | =$items[0]=, =$items.length= |
+| String ops | =startsWith=, =endsWith=, =includes= |
+| Nested fields | =$address.city= |
+
+*Mitigation:*
+- Document supported expression subset clearly
+- Provide escape hatch: custom =clean_*= methods for complex logic
+- Prioritize most-requested features for expression parser
+- Consider allowing Python lambdas for complex computed fields
+
+** Medium Risk
+
+*** Missing Django Integrations
+
+Common Django patterns not yet supported:
+- =ReactiveModelForm= - most common use case in real apps
+- Formsets / InlineFormsets - editing multiple related objects
+- FileField with upload progress and preview
+- Integration with crispy-forms, django-widget-tweaks
+
+*Mitigation:*
+- Prioritize =ReactiveModelForm= for next phase
+- Document workarounds for formsets
+- Provide custom widget documentation
+
+*** No Client-side Validation Messages
+
+All validation is server-side. Users expect instant feedback without round-trip for simple rules like "required", "min length", "email format".
+
+*Mitigation:*
+- HTML5 validation attributes are already rendered (required, min, max, minlength, maxlength)
+- Document that HTML5 provides instant feedback for common cases
+- Consider optional client-side validation layer for complex rules
+
+*** Expression Errors are Silent
+
+Typos in expressions (=$ordertpye= instead of =$order_type=) fail silently, defaulting to =True=/visible. This makes debugging difficult.
+
+#+begin_src python
+def _evaluate_expression(self, expression: str) -> bool | None:
+    try:
+        return evaluate_expression(expression, self._get_form_data())
+    except ExpressionError:
+        return None  # Silently defaults to True/visible
+#+end_src
+
+*Mitigation:*
+- Add =DEBUG= mode that raises on expression errors
+- Add form validation at definition time (check field names exist)
+- Log expression errors with field context
+- Consider =check_expressions()= method for testing
+
+*** No IDE Support for Expressions
+
+Expression strings like ="$order_type == 'urgent'"= have no autocomplete, type checking, or refactoring support. Easy to make typos.
+
+*Mitigation:*
+- Document expression syntax clearly with examples
+- Consider future TypedDict or dataclass approach
+- Provide =check_expressions()= for CI/testing
+- IDE plugin is out of scope but could be community contribution
+
+** Lower Risk
+
+*** Single CSS Framework
+
+Only Bulma templates implemented. Bootstrap 5 and other frameworks not yet supported.
+
+*Mitigation:*
+- Bootstrap 5 skin planned for Phase 5
+- Template override mechanism already works
+- Document custom template creation
+
+*** Performance at Scale
+
+- Server round-trip for every cascading dropdown change
+- No built-in debouncing for rapid input
+- Large forms with many expressions have parsing overhead
+
+*Mitigation:*
+- Datastar handles debouncing via =data-on:change__debounce_500ms=
+- Expression parsing is fast (simple tokenizer + recursive descent)
+- Document performance best practices
+- Consider caching parsed ASTs if profiling shows need
+
+*** No Async Validation
+
+Cannot do "check username availability" or similar async checks without custom code.
+
+*Mitigation:*
+- Document pattern for async validation with Datastar
+- Out of scope for core library - keep it simple
+- Custom =clean_*= methods can call external services
+
+* Future Considerations
+
+** Potential Phase 7: Advanced Features
+
+Based on risk analysis, these features may be needed:
+
+- [ ] =ReactiveModelForm= - model-backed reactive forms
+- [ ] Expression expansion: ternary, string functions, nested fields
+- [ ] =check_expressions()= method for testing/CI
+- [ ] DEBUG mode for expression errors
+- [ ] Async validation pattern documentation
+- [ ] HTMX adapter (if Datastar risk materializes)

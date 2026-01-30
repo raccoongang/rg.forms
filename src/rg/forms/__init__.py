@@ -2,8 +2,8 @@
 
 __version__ = "0.1.0"
 
-# Core form class
-from rg.forms.forms import ReactiveForm
+# Core form class and utilities
+from rg.forms.forms import FieldGroup, ReactiveForm
 
 # Reactive fields
 from rg.forms.fields import (
@@ -26,6 +26,7 @@ __all__ = [
     "__version__",
     # Form
     "ReactiveForm",
+    "FieldGroup",
     # Fields
     "ReactiveBooleanField",
     "ReactiveCharField",

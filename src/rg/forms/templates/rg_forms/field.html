@@ -1,4 +1,7 @@
-{# Default reactive field template - Bulma CSS #}
+{# Reactive field template - Bulma CSS #}
+{% if field.is_hidden %}
+{{ field }}
+{% else %}
 <div class="field"{% if visible_when %} data-show="{{ visible_when }}"{% endif %}>
     <label class="label" for="id_{{ field_name }}">
         {{ label }}
@@ -9,30 +12,37 @@
         {% endif %}
     </label>
 
-    <div class="control{% if widget_type == 'select' %} select is-fullwidth{% endif %}">
+    <div class="control{% if widget_type == 'select' %} is-expanded{% endif %}">
         {% if widget_type == 'select' %}
-        <select name="{{ field_name }}" id="id_{{ field_name }}"
-                data-bind:{{ field_name }}
-                {% if computed %}data-computed="{{ computed }}" readonly{% endif %}>
-            {% for choice in field.field.choices %}
-            <option value="{{ choice.0 }}"{% if choice.0 == field.value %} selected{% endif %}>{{ choice.1 }}</option>
-            {% endfor %}
-        </select>
+        <div class="select is-fullwidth{% if errors %} is-danger{% endif %}">
+            <select name="{{ field_name }}" id="id_{{ field_name }}"
+                    data-bind:{{ field_name }}
+                    {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
+                    {% if is_required %}required{% endif %}>
+                {% for choice in choices %}
+                <option value="{{ choice.0 }}"{% if choice.0 == field.value %} selected{% endif %}>{{ choice.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
         {% elif widget_type == 'checkboxinput' %}
         <label class="checkbox">
             <input type="checkbox" name="{{ field_name }}" id="id_{{ field_name }}"
                    data-bind:{{ field_name }}
-                   {% if computed %}data-computed="{{ computed }}" readonly{% endif %}
+                   {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                    {% if field.value %}checked{% endif %}>
             {{ label }}
         </label>
         {% elif widget_type == 'textarea' %}
-        <textarea class="textarea" name="{{ field_name }}" id="id_{{ field_name }}"
+        <textarea class="textarea{% if errors %} is-danger{% endif %}"
+                  name="{{ field_name }}" id="id_{{ field_name }}"
                   data-bind:{{ field_name }}
-                  {% if computed %}data-computed="{{ computed }}" readonly{% endif %}>{{ field.value|default:"" }}</textarea>
+                  {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
+                  {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
+                  {% if is_required %}required{% endif %}
+                  {% if html5_attrs.maxlength %}maxlength="{{ html5_attrs.maxlength }}"{% endif %}>{{ field.value|default:"" }}</textarea>
         {% elif computed %}
-        {# Computed field - use span with data-text for display #}
-        <span class="input" style="display: inline-block;"
+        {# Computed field - display only, no input #}
+        <span class="input" style="display: inline-block; background-color: #f5f5f5;"
               data-text="{{ computed }}"></span>
         {% else %}
         {# Default: text/number/email/etc input #}
@@ -40,13 +50,26 @@
                type="{% if widget_type == 'numberinput' %}number{% elif widget_type == 'emailinput' %}email{% elif widget_type == 'urlinput' %}url{% elif widget_type == 'dateinput' %}date{% elif widget_type == 'timeinput' %}time{% elif widget_type == 'datetimeinput' %}datetime-local{% else %}text{% endif %}"
                name="{{ field_name }}" id="id_{{ field_name }}"
                data-bind:{{ field_name }}
+               {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
+               {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
+               {% if is_required %}required{% endif %}
+               {% if html5_attrs.min is not None %}min="{{ html5_attrs.min }}"{% endif %}
+               {% if html5_attrs.max is not None %}max="{{ html5_attrs.max }}"{% endif %}
+               {% if html5_attrs.maxlength %}maxlength="{{ html5_attrs.maxlength }}"{% endif %}
+               {% if html5_attrs.minlength %}minlength="{{ html5_attrs.minlength }}"{% endif %}
                value="{{ field.value|default:"" }}">
         {% endif %}
     </div>
 
     {% if errors %}
     <p class="help is-danger">{{ errors.0 }}</p>
+    {% elif help_text_when %}
+    {# Dynamic help text based on conditions #}
+    {% for expr, text in help_text_when.items %}
+    <p class="help" data-show="{{ expr }}">{{ text }}</p>
+    {% endfor %}
     {% elif help_text %}
     <p class="help">{{ help_text }}</p>
     {% endif %}
 </div>
+{% endif %}

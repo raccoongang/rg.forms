@@ -153,6 +153,21 @@ INSTALLED_APPS = [
 - Example: `<div data-computed:total="$quantity * $price"></div>`
 - Then use: `<span data-text="$total"></span>`
 
+### data-on (Event handlers)
+- Attaches event listeners to elements
+- Syntax: `data-on:eventname="expression"`
+- Use `@action()` syntax to call backend actions
+- Example: `<select data-on:change="@post('/update/')">`
+- Example: `<button data-on:click="@get('/refresh/')">`
+- Modifiers: `__debounce.500ms`, `__throttle.1s`, `__once`, `__prevent`, `__stop`
+- Example with debounce: `<input data-on:input__debounce.300ms="@post('/search/')">`
+
+### @post / @get actions
+- By default sends JSON body
+- **For Django forms with CSRF**: use `contentType: 'form'` to send as form data
+- Example: `@post('/update/', {contentType: 'form'})`
+- This includes the CSRF token from the form's `{% csrf_token %}`
+
 ### Common Mistakes to Avoid
 ```html
 <!-- WRONG: $ in data-bind -->
@@ -164,6 +179,12 @@ INSTALLED_APPS = [
 
 <!-- CORRECT: $ in expressions -->
 <div data-show="$order_type == 'urgent'">
+
+<!-- WRONG: @change shorthand doesn't exist -->
+<select @change="@post('/update/')">
+
+<!-- CORRECT: use data-on:change -->
+<select data-on:change="@post('/update/')">
 ```
 
 Reference: https://data-star.dev/reference/attributes

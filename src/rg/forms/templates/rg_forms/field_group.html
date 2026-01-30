@@ -1,0 +1,17 @@
+{# Field group template - Bulma CSS #}
+{% load reactive_forms %}
+{% if group %}
+<fieldset class="box{% if group.css_class %} {{ group.css_class }}{% endif %}"{% if group.visible_when %} data-show="{{ group.visible_when }}"{% endif %}>
+    {% if group.label %}
+    <legend class="label is-medium">{{ group.label }}</legend>
+    {% endif %}
+
+    {% if group.description %}
+    <p class="help mb-4">{{ group.description }}</p>
+    {% endif %}
+
+    {% for field_name, bound_field in fields %}
+    {% render_reactive_field bound_field %}
+    {% endfor %}
+</fieldset>
+{% endif %}

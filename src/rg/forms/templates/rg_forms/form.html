@@ -1,13 +1,26 @@
-{# Complete reactive form template - Bulma CSS #}
+{# Reactive form template - Bulma CSS #}
 {% load reactive_forms %}
 
-<form method="post" data-signals='{{ form.get_signals_json }}' {% if form_attrs %}{{ form_attrs }}{% endif %}>
+<form method="post" data-signals='{{ form.get_signals_json }}'>
     {% csrf_token %}
 
+    {# Non-field errors (form-level errors) #}
+    {% if form.non_field_errors %}
+    <div class="notification is-danger">
+        <ul class="mt-0 mb-0">
+        {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {# Render all fields #}
     {% for field in form %}
         {% render_reactive_field field %}
     {% endfor %}
 
+    {# Submit button #}
     {% if submit_label %}
     <div class="field">
         <div class="control">

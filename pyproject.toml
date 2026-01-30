@@ -23,6 +23,7 @@ classifiers = [
 ]
 keywords = ["django", "forms", "reactive", "datastar", "htmx"]
 dependencies = [
+    "datastar-py>=0.8.0",
     "django>=5.0",
 ]
 
