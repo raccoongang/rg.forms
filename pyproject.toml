@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Reactive Django forms with Datastar integration - declarative field visibility, dependencies, computed fields"
 readme = "README.md"
 authors = [
-    { name = "Oleksii Koval", email = "alex@koval.kharkov.ua" }
+    { name = "Oleksii Koval", email = "alex@koval.kharkov.ua" },
+]
+maintainers = [
+    { name = "Raccoon Gang", email = "contact@raccoongang.com" },
 ]
 requires-python = ">=3.12"
 classifiers = [
@@ -37,8 +40,13 @@ dev = [
     "django-stubs>=5.0",
     "pre-commit>=3.7",
 ]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocs>=1.6",
+]
 all = [
     "rg-forms[dev]",
+    "rg-forms[docs]",
 ]
 
 [tool.ruff]
@@ -56,16 +64,16 @@ strict = true
 exclude = ["examples/"]
 
 [project.urls]
-Homepage = "https://github.com/avkoval/rg.forms"
-Documentation = "https://github.com/avkoval/rg.forms#readme"
-Repository = "https://github.com/avkoval/rg.forms"
+Homepage = "https://github.com/raccoongang/rg.forms"
+Documentation = "https://raccoongang.github.io/rg.forms"
+Repository = "https://github.com/raccoongang/rg.forms"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]
-exclude = ["examples/"]
+exclude = ["examples/", "docs/"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rg"]
