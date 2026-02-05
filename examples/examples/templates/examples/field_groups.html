@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Field Groups - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Field Groups</h1>
+<p class="subtitle">Phase 3: Organize fields into logical sections</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> Select "Business" account type to reveal additional field groups:
+    </p>
+    <ul>
+        <li><strong>Account Type</strong> - Always visible</li>
+        <li><strong>Personal Information</strong> - Always visible</li>
+        <li><strong>Business Information</strong> - Only for business accounts (visible_when)</li>
+        <li><strong>Billing Address</strong> - Only for business accounts (visible_when)</li>
+    </ul>
+</div>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <form method="post" data-signals='{% reactive_signals form %}'>
+            {% csrf_token %}
+            {% render_field_group form "account" %}
+            {% render_field_group form "personal" %}
+            {% render_field_group form "business" %}
+            {% render_field_group form "billing" %}
+            <button type="submit" class="button is-primary">Submit</button>
+        </form>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h3 class="title is-5">Current Signal Values</h3>
+            <div data-signals='{% reactive_signals form %}'>
+                <pre data-text="JSON.stringify({
+                    account_type: $account_type,
+                    first_name: $first_name,
+                    last_name: $last_name,
+                    email: $email,
+                    company_name: $company_name,
+                    company_size: $company_size,
+                    tax_id: $tax_id
+                }, null, 2)"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">How Field Groups Work</h3>
+
+    <h4 class="title is-6 mt-4">Form Definition</h4>
+    <pre><code>class FieldGroupsForm(ReactiveForm):
+    account_type = ReactiveChoiceField(...)
+    first_name = ReactiveCharField(label="First Name")
+    last_name = ReactiveCharField(label="Last Name")
+    company_name = ReactiveCharField(label="Company Name")
+    # ... more fields
+
+    class Meta:
+        field_groups = {
+            "personal": FieldGroup(
+                fields=["first_name", "last_name", "email"],
+                label="Personal Information",
+            ),
+            "business": FieldGroup(
+                fields=["company_name", "company_size", "tax_id"],
+                label="Business Information",
+                description="Required for business accounts.",
+                visible_when="$account_type == 'business'",
+            ),
+        }</code></pre>
+
+    <h4 class="title is-6 mt-4">Template Usage</h4>
+    <pre><code>&lt;form data-signals='&#123;% reactive_signals form %&#125;'&gt;
+    &#123;% render_field_group form "account" %&#125;
+    &#123;% render_field_group form "personal" %&#125;
+    &#123;% render_field_group form "business" %&#125;
+    &#123;% render_field_group form "billing" %&#125;
+&lt;/form&gt;</code></pre>
+
+    <h4 class="title is-6 mt-4">Rendered HTML</h4>
+    <pre><code>&lt;fieldset class="box" data-show="$account_type == 'business'"&gt;
+    &lt;legend class="label is-medium"&gt;Business Information&lt;/legend&gt;
+    &lt;p class="help mb-4"&gt;Required for business accounts.&lt;/p&gt;
+    &lt;!-- fields rendered here --&gt;
+&lt;/fieldset&gt;</code></pre>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Cascading Form - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Cascading Form</h1>
+<p class="subtitle">Dependent dropdowns with server-side repopulation</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> Select a category to see the products list update.
+        <br>
+        When category changes, Datastar POSTs the form and patches the response via SSE.
+        The server re-renders the form fragment with updated product choices.
+    </p>
+</div>
+
+<div class="box">
+    {% include "examples/_cascading_form_fragment.html" %}
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">Current Signal Values</h3>
+    <div data-signals='{% reactive_signals form %}'>
+        <pre data-text="JSON.stringify({category: $category, product: $product, quantity: $quantity, unit_price: $unit_price, total: $unit_price * $quantity}, null, 2)"></pre>
+    </div>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">How it works</h3>
+
+    <h4 class="title is-6 mt-4">1. Declarative Form Definition (no __init__ needed!)</h4>
+    <pre><code>class CascadingForm(ReactiveForm):
+    category = ReactiveChoiceField(
+        choices_from=get_categories,
+        value_field="id",
+        label_field="name",
+        empty_choice="-- Select Category --",
+    )
+    product = ReactiveChoiceField(
+        choices_from=get_products_for_category,
+        depends_on=["category"],
+        value_field="id",
+        label_template="{name} (${price})",
+        empty_choice="-- Select Product --",
+        empty_choice_no_parent="-- Select Category First --",
+    )</code></pre>
+
+    <h4 class="title is-6 mt-4">2. Template with Datastar POST</h4>
+    <pre><code>data-on:change="@post('...', {contentType: 'form'})"</code></pre>
+    <p class="mt-2"><small><code>contentType: 'form'</code> sends form data with CSRF token.</small></p>
+
+    <h4 class="title is-6 mt-4">3. View returns SSE fragment</h4>
+    <pre><code>if request.headers.get("Datastar-Request") == "true":
+    form = CascadingForm(initial={...})  # unbound for repopulate
+    form_html = render_to_string("_fragment.html", {"form": form})
+    return DatastarResponse(patch_elements(form_html))</code></pre>
+</div>
+{% endblock %}

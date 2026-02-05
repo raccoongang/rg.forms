@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Conditional Attributes - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Conditional Attributes</h1>
+<p class="subtitle">Phase 2.5: Dynamic field states</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> Select different subscription types to see:
+    </p>
+    <ul>
+        <li><strong>disabled_when</strong> - Max Users is disabled for Free tier</li>
+        <li><strong>read_only_when</strong> - API Key is read-only for non-Premium</li>
+        <li><strong>help_text_when</strong> - Help text changes based on selection</li>
+        <li><strong>visible_when + required_when</strong> - Billing Email appears for paid tiers</li>
+    </ul>
+</div>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            {% render_reactive_form form "Save Settings" %}
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h3 class="title is-5">Current Signal Values</h3>
+            <div data-signals='{% reactive_signals form %}'>
+                <pre data-text="JSON.stringify({
+                    subscription_type: $subscription_type,
+                    max_users: $max_users,
+                    api_key: $api_key,
+                    billing_email: $billing_email
+                }, null, 2)"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">How Conditional Attributes Work</h3>
+
+    <h4 class="title is-6 mt-4">disabled_when</h4>
+    <pre><code>max_users = ReactiveIntegerField(
+    disabled_when="$subscription_type == 'free'",
+)
+# Renders: data-attr:disabled="$subscription_type == 'free'"</code></pre>
+
+    <h4 class="title is-6 mt-4">read_only_when</h4>
+    <pre><code>api_key = ReactiveCharField(
+    read_only_when="$subscription_type != 'premium'",
+)
+# Renders: data-attr:readonly="$subscription_type != 'premium'"</code></pre>
+
+    <h4 class="title is-6 mt-4">help_text_when</h4>
+    <pre><code>max_users = ReactiveIntegerField(
+    help_text_when={
+        "$subscription_type == 'free'": "Upgrade to customize",
+        "$subscription_type == 'basic'": "Up to 10 users",
+        "$subscription_type == 'premium'": "Unlimited users",
+    },
+)
+# Renders multiple help texts with data-show for each condition</code></pre>
+</div>
+{% endblock %}

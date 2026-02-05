@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Risks and Considerations - rg.forms{% endblock %}
+
+{% block content %}
+<h1 class="title">Risks and Considerations</h1>
+<p class="subtitle">Understanding trade-offs before adopting rg.forms</p>
+
+<div class="content">
+    <p>
+        rg.forms offers significant productivity gains, but like any technology choice, comes with trade-offs.
+        This page documents known risks and our mitigation strategies.
+    </p>
+</div>
+
+<div class="box">
+    <h2 class="title is-4 has-text-danger">High Risk</h2>
+
+    <article class="message is-danger">
+        <div class="message-header">
+            <p>Datastar Dependency</p>
+        </div>
+        <div class="message-body">
+            <p><strong>Risk:</strong> Datastar is v1.0-RC (not stable 1.0 yet) with a smaller community compared to HTMX (~25K stars) or Alpine (~29K stars). If Datastar API changes significantly or project becomes unmaintained, rg.forms is tightly coupled.</p>
+            <p class="mt-3"><strong>Mitigation:</strong></p>
+            <ul>
+                <li>Expression evaluator is backend-only (Python) - not Datastar-dependent</li>
+                <li>Frontend attributes (data-show, data-bind) could be adapted to HTMX + Alpine</li>
+                <li>Monitor Datastar project health and community growth</li>
+                <li>Core value (single source of truth) is framework-agnostic</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="message is-danger">
+        <div class="message-header">
+            <p>API Stability</p>
+        </div>
+        <div class="message-body">
+            <p><strong>Risk:</strong> Field attributes have grown significantly and more will likely be needed as real-world usage reveals gaps:</p>
+            <ul>
+                <li>Current: <code>visible_when</code>, <code>required_when</code>, <code>computed</code>, <code>disabled_when</code>, <code>read_only_when</code>, <code>help_text_when</code>, <code>depends_on</code>, <code>choices_from</code>...</li>
+                <li>Potential: <code>error_message_when</code>, <code>css_class_when</code>, <code>choices_when</code></li>
+            </ul>
+            <p class="mt-3"><strong>Mitigation:</strong></p>
+            <ul>
+                <li>Semantic versioning with clear deprecation policy</li>
+                <li>Collect real-world usage feedback before stabilizing API</li>
+                <li>Breaking changes only in major versions with migration guides</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="message is-danger">
+        <div class="message-header">
+            <p>Expression Language Limitations</p>
+        </div>
+        <div class="message-body">
+            <p><strong>Risk:</strong> Current expression parser supports only basic operations. Users may hit limits:</p>
+            <table class="table is-narrow mt-3">
+                <thead>
+                    <tr><th>Missing</th><th>Example</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Functions</td><td><code>len($items)</code>, <code>$date.year</code></td></tr>
+                    <tr><td>Ternary</td><td><code>$a ? $b : $c</code></td></tr>
+                    <tr><td>Array access</td><td><code>$items[0]</code>, <code>$items.length</code></td></tr>
+                    <tr><td>String ops</td><td><code>startsWith</code>, <code>contains</code></td></tr>
+                    <tr><td>Nested fields</td><td><code>$address.city</code></td></tr>
+                </tbody>
+            </table>
+            <p class="mt-3"><strong>Mitigation:</strong></p>
+            <ul>
+                <li>Document supported expression subset clearly</li>
+                <li>Escape hatch: custom <code>clean_*</code> methods for complex logic</li>
+                <li>Expand parser based on most-requested features</li>
+            </ul>
+        </div>
+    </article>
+</div>
+
+<div class="box">
+    <h2 class="title is-4 has-text-warning">Medium Risk</h2>
+
+    <article class="message is-warning">
+        <div class="message-header">
+            <p>Missing Django Integrations</p>
+        </div>
+        <div class="message-body">
+            <p><strong>Risk:</strong> Common Django patterns not yet supported:</p>
+            <ul>
+                <li><code>ReactiveModelForm</code> - most common use case</li>
+                <li>Formsets / InlineFormsets</li>
+                <li>FileField with upload progress</li>
+                <li>crispy-forms integration</li>
+            </ul>
+            <p class="mt-3"><strong>Mitigation:</strong> Prioritize <code>ReactiveModelForm</code> for next phase. Document workarounds.</p>
+        </div>
+    </article>
+
+    <article class="message is-warning">
+        <div class="message-header">
+            <p>Expression Errors are Silent</p>
+        </div>
+        <div class="message-body">
+            <p><strong>Risk:</strong> Typos in expressions (<code>$ordertpye</code> instead of <code>$order_type</code>) fail silently, defaulting to visible. Debugging is difficult.</p>
+            <p class="mt-3"><strong>Mitigation:</strong></p>
+            <ul>
+                <li>Add DEBUG mode that raises on expression errors</li>
+                <li>Add form validation at definition time</li>
+                <li>Provide <code>check_expressions()</code> method for testing</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="message is-warning">
+        <div class="message-header">
+            <p>No IDE Support for Expressions</p>
+        </div>
+        <div class="message-body">
+            <p><strong>Risk:</strong> Expression strings like <code>"$order_type == 'urgent'"</code> have no autocomplete, type checking, or refactoring support.</p>
+            <p class="mt-3"><strong>Mitigation:</strong> Document syntax clearly. Consider future TypedDict approach. Provide testing utilities.</p>
+        </div>
+    </article>
+</div>
+
+<div class="box">
+    <h2 class="title is-4 has-text-info">Lower Risk</h2>
+
+    <div class="columns">
+        <div class="column">
+            <article class="message is-info">
+                <div class="message-header">
+                    <p>Single CSS Framework</p>
+                </div>
+                <div class="message-body">
+                    <p>Only Bulma templates. Bootstrap 5 planned. Template override mechanism available.</p>
+                </div>
+            </article>
+        </div>
+        <div class="column">
+            <article class="message is-info">
+                <div class="message-header">
+                    <p>Performance at Scale</p>
+                </div>
+                <div class="message-body">
+                    <p>Server round-trip for cascading. Mitigated by Datastar's debouncing and fast expression parsing.</p>
+                </div>
+            </article>
+        </div>
+        <div class="column">
+            <article class="message is-info">
+                <div class="message-header">
+                    <p>No Async Validation</p>
+                </div>
+                <div class="message-body">
+                    <p>No built-in "check availability" pattern. Custom <code>clean_*</code> methods can call external services.</p>
+                </div>
+            </article>
+        </div>
+    </div>
+</div>
+
+<div class="box">
+    <h2 class="title is-4">When NOT to Use rg.forms</h2>
+    <div class="content">
+        <p>Consider alternatives if you need:</p>
+        <ul>
+            <li><strong>Offline-first</strong> - Forms must work without network connectivity</li>
+            <li><strong>Complex client-side state</strong> - Multi-step wizards with heavy local manipulation</li>
+            <li><strong>React Native code sharing</strong> - Same form logic on web and mobile apps</li>
+            <li><strong>Existing SPA investment</strong> - Team already proficient in React/Vue ecosystem</li>
+        </ul>
+    </div>
+</div>
+
+<div class="has-text-centered mt-5">
+    <a href="{% url 'examples:index' %}" class="button is-primary">Back to Examples</a>
+</div>
+{% endblock %}

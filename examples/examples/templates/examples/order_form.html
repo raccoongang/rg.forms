@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Order Form - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Order Form</h1>
+<p class="subtitle">Auto-generated form with <code>visible_when</code> rules</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> Select different order types to see fields appear/disappear.
+        <br>
+        <em>Urgent orders</em> show a priority field.
+        <em>Bulk orders</em> show quantity and discount code fields.
+    </p>
+</div>
+
+<div class="box">
+    {# Auto-generated form - single template tag renders everything #}
+    {% render_reactive_form form "Submit Order" %}
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">Current Signal Values</h3>
+    <div data-signals='{% reactive_signals form %}'>
+        <pre data-text="JSON.stringify({order_type: $order_type, priority: $priority, quantity: $quantity, discount_code: $discount_code}, null, 2)"></pre>
+    </div>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">How it works</h3>
+    <p>This form is <strong>auto-generated</strong> using a single template tag:</p>
+    <pre><code>{% verbatim %}{% render_reactive_form form "Submit Order" %}{% endverbatim %}</code></pre>
+    <p class="mt-3">The reactive rules are defined in the form class:</p>
+    <pre><code>priority = ReactiveChoiceField(
+    visible_when="$order_type == 'urgent'",
+    ...
+)</code></pre>
+</div>
+{% endblock %}

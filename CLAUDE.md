@@ -189,7 +189,18 @@ INSTALLED_APPS = [
 
 Reference: https://data-star.dev/reference/attributes
 
+## Example Project
+
+The `examples/` directory contains a Django testsite demonstrating all features:
+
+```bash
+cd examples
+python manage.py runserver
+```
+
+The example project adds `../../src` to `sys.path` so it uses the local `rg.forms` source.
+It is excluded from both sdist and wheel builds (not shipped to PyPI).
+
 ## Related Projects
 
 - `rg.table4`: Reactive tables with django-tables2 and Datastar
-- `rg.forms-testsite`: Django project with usage examples

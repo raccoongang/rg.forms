@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}rg.forms Examples{% endblock %}</title>
+    <!-- Bulma CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+    <!-- Datastar -->
+    <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"></script>
+    <style>
+     .container { max-width: 800px; margin-top: 2rem; }
+     .field-hidden { display: none; }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-primary">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="{% url 'examples:index' %}">
+                <strong>rg.forms</strong>
+            </a>
+        </div>
+        <div class="navbar-menu">
+            <div class="navbar-start">
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link">Examples</a>
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item" href="{% url 'examples:order_form' %}">Order Form</a>
+                        <a class="navbar-item" href="{% url 'examples:contact_form' %}">Contact Form</a>
+                        <a class="navbar-item" href="{% url 'examples:price_calculator' %}">Price Calculator</a>
+                        <hr class="navbar-divider">
+                        <a class="navbar-item" href="{% url 'examples:cascading_form' %}">Cascading Form</a>
+                        <a class="navbar-item" href="{% url 'examples:backend_validation' %}">Backend Validation</a>
+                        <a class="navbar-item" href="{% url 'examples:conditional_attributes' %}">Conditional Attributes</a>
+                        <a class="navbar-item" href="{% url 'examples:field_groups' %}">Field Groups</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p><strong>rg.forms</strong> - Reactive Django Forms with Datastar integration</p>
+        </div>
+    </footer>
+</body>
+</html>

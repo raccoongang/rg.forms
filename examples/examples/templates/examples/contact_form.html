@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Contact Form - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Contact Form</h1>
+<p class="subtitle">Auto-generated form with <code>required_when</code> and validation</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> Select different contact methods to see dynamic requirements.
+        Submit empty form to see validation errors.
+        <br>
+        <em>Email</em> requires email field. <em>Phone</em> requires phone field. <em>Both</em> requires both.
+    </p>
+</div>
+
+<div class="box">
+    {# Auto-generated form - single template tag renders everything #}
+    {% render_reactive_form form "Send Message" %}
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">Current Signal Values</h3>
+    <div data-signals='{% reactive_signals form %}'>
+        <pre data-text="JSON.stringify({contact_method: $contact_method, email: $email, phone: $phone}, null, 2)"></pre>
+    </div>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">Validation Strategy</h3>
+    <ul>
+        <li><strong>HTML5 validation</strong>: <code>required</code>, <code>type="email"</code> handled by browser</li>
+        <li><strong>Backend validation</strong>: <code>required_when</code> rules enforced on form submit</li>
+        <li><strong>Error display</strong>: Field errors shown below each field, form errors at top</li>
+    </ul>
+</div>
+{% endblock %}

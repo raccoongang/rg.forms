@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">rg.forms Examples</h1>
+<p class="subtitle">Reactive Django Forms with Datastar integration</p>
+
+<div class="columns">
+    <div class="column">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">Order Form</p>
+                <p class="subtitle is-6">Visibility Rules</p>
+                <div class="content">
+                    <p>Demonstrates <code>visible_when</code> with auto-generated form rendering.</p>
+                    <ul>
+                        <li>Single template tag renders entire form</li>
+                        <li>Priority field visible for urgent orders</li>
+                        <li>Quantity/discount visible for bulk orders</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:order_form' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">Contact Form</p>
+                <p class="subtitle is-6">Dynamic Requirements</p>
+                <div class="content">
+                    <p>Demonstrates <code>required_when</code> with backend validation.</p>
+                    <ul>
+                        <li>Dynamic required fields based on selection</li>
+                        <li>HTML5 validation for simple rules</li>
+                        <li>Backend validation with error display</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:contact_form' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">Price Calculator</p>
+                <p class="subtitle is-6">Computed Fields</p>
+                <div class="content">
+                    <p>Demonstrates <code>computed</code> for automatic calculations.</p>
+                    <ul>
+                        <li>Multi-column layout</li>
+                        <li>Computed field with <code>data-text</code></li>
+                        <li>Custom field arrangement</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:price_calculator' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <div class="column">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">Cascading Form</p>
+                <p class="subtitle is-6">Dependent Dropdowns</p>
+                <div class="content">
+                    <p>Demonstrates server-side repopulation for dependent fields.</p>
+                    <ul>
+                        <li>Category/product cascading dropdowns</li>
+                        <li>Datastar POSTs form on change</li>
+                        <li>Server re-renders with updated choices</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:cascading_form' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">Backend Validation</p>
+                <p class="subtitle is-6">Server-side Expressions</p>
+                <div class="content">
+                    <p>Demonstrates backend expression evaluation:</p>
+                    <ul>
+                        <li><code>visible_when</code> - hidden fields skipped</li>
+                        <li><code>required_when</code> - enforced on server</li>
+                        <li><code>computed</code> - recalculated on server</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:backend_validation' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">Conditional Attributes</p>
+                <p class="subtitle is-6">Dynamic Field States</p>
+                <div class="content">
+                    <p>Demonstrates conditional field attributes:</p>
+                    <ul>
+                        <li><code>disabled_when</code> - disable fields</li>
+                        <li><code>read_only_when</code> - make read-only</li>
+                        <li><code>help_text_when</code> - dynamic help</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:conditional_attributes' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <div class="column is-one-third">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">Field Groups</p>
+                <p class="subtitle is-6">Organize into Sections</p>
+                <div class="content">
+                    <p>Demonstrates field groups for logical organization:</p>
+                    <ul>
+                        <li>Group fields with labels and descriptions</li>
+                        <li><code>visible_when</code> on entire groups</li>
+                        <li>Custom CSS classes for styling</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:field_groups' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">Usage Pattern</h3>
+    <div class="columns">
+        <div class="column">
+            <h4 class="title is-6">Auto-generated</h4>
+            <pre><code>&#123;% render_reactive_form form %&#125;</code></pre>
+            <p class="mt-2">Use for standard vertical forms where field order matches form definition.</p>
+        </div>
+        <div class="column">
+            <h4 class="title is-6">Manual layout</h4>
+            <pre><code>&lt;form data&#45;signals='&#123;% reactive_signals form %&#125;'&gt;
+  &#123;% render_reactive_field form.field1 %&#125;
+  ...
+&lt;/form&gt;</code></pre>
+            <p class="mt-2">Use for custom layouts, multi-column, or special UI requirements.</p>
+        </div>
+    </div>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">Why rg.forms? Development Effort Comparison</h3>
+    <p class="mb-4">Building reactive forms with traditional SPA stack vs. rg.forms:</p>
+
+    <table class="table is-fullwidth is-striped">
+        <thead>
+            <tr>
+                <th>Aspect</th>
+                <th>React + Formik + DRF</th>
+                <th>rg.forms + Datastar</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Codebase size</strong></td>
+                <td>~3x more code (frontend + backend + API)</td>
+                <td>Single Python form class</td>
+            </tr>
+            <tr>
+                <td><strong>Validation logic</strong></td>
+                <td>Duplicated: Yup/Zod (JS) + serializers (Python)</td>
+                <td>Single source of truth in Python</td>
+            </tr>
+            <tr>
+                <td><strong>Build pipeline</strong></td>
+                <td>Node.js, npm, webpack/vite, ~40s builds</td>
+                <td>None needed</td>
+            </tr>
+            <tr>
+                <td><strong>Dependencies</strong></td>
+                <td>200+ npm packages typical</td>
+                <td>Django + Datastar (14KB)</td>
+            </tr>
+            <tr>
+                <td><strong>Security surface</strong></td>
+                <td>200+ packages = 200+ potential vulnerabilities</td>
+                <td>Minimal attack surface</td>
+            </tr>
+            <tr>
+                <td><strong>DevOps / CI</strong></td>
+                <td>npm install, webpack build, separate Docker layers</td>
+                <td>Standard Django deployment</td>
+            </tr>
+            <tr>
+                <td><strong>API layer</strong></td>
+                <td>REST endpoints, serializers, CORS, auth tokens</td>
+                <td>Standard Django form POST</td>
+            </tr>
+            <tr>
+                <td><strong>Data transfer</strong></td>
+                <td>JSON API often larger (includes unused fields)</td>
+                <td>HTML contains only what's displayed</td>
+            </tr>
+            <tr>
+                <td><strong>First page load</strong></td>
+                <td>Blank → JS download → parse → hydrate → render</td>
+                <td>HTML renders immediately</td>
+            </tr>
+            <tr>
+                <td><strong>Client CPU/memory</strong></td>
+                <td>Virtual DOM diffing, state management overhead</td>
+                <td>10-100x less CPU (native DOM, no framework)</td>
+            </tr>
+            <tr>
+                <td><strong>Team structure</strong></td>
+                <td>Separate FE/BE developers required</td>
+                <td>Full-stack Django developers</td>
+            </tr>
+            <tr>
+                <td><strong>FE/BE coordination</strong></td>
+                <td>API contracts, schema sync, meetings</td>
+                <td>Not needed - single codebase</td>
+            </tr>
+            <tr>
+                <td><strong>Onboarding</strong></td>
+                <td>Weeks (JSX, hooks, state, Virtual DOM)</td>
+                <td>Days (Django forms + HTML attributes)</td>
+            </tr>
+            <tr>
+                <td><strong>Debugging</strong></td>
+                <td>Browser DevTools + network + React DevTools</td>
+                <td>Django debug toolbar + view source</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="notification is-info is-light mt-4">
+        <p><strong>Real-world case study:</strong> A company replaced 2 years of React work with HTMX/templates in 2 months, achieving 67% code reduction (21K → 7K LOC) and 96% fewer JS dependencies.</p>
+        <p class="mt-2 is-size-7">
+            Source: <a href="https://htmx.org/essays/a-real-world-react-to-htmx-port/" target="_blank">htmx.org - A Real World React to htmx Port</a>
+        </p>
+    </div>
+
+    <h4 class="title is-6 mt-5">Estimated Development Time</h4>
+    <p>For a typical form with conditional visibility, dynamic requirements, computed fields, and cascading dropdowns:</p>
+
+    <div class="columns mt-3">
+        <div class="column">
+            <div class="notification is-warning is-light">
+                <p class="title is-6">React + Formik + DRF</p>
+                <ul>
+                    <li>API design & documentation: 2-4h</li>
+                    <li>Backend serializers & views: 4-8h</li>
+                    <li>Frontend form components: 8-16h</li>
+                    <li>Validation sync (FE ↔ BE): 2-4h</li>
+                    <li>FE/BE developer coordination: 2-4h</li>
+                    <li>Testing both sides: 4-8h</li>
+                    <li><strong>Total: 22-44 hours</strong></li>
+                </ul>
+            </div>
+        </div>
+        <div class="column">
+            <div class="notification is-success is-light">
+                <p class="title is-6">rg.forms + Datastar</p>
+                <ul>
+                    <li>Form class definition: 1-2h</li>
+                    <li>View (standard Django): 0.5-1h</li>
+                    <li>Template: 0.5-1h</li>
+                    <li>Testing: 1-2h</li>
+                    <li><strong>Total: 3-6 hours</strong></li>
+                </ul>
+                <p class="mt-3 has-text-weight-bold">~5-7x faster development</p>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="title is-6 mt-4">When to use SPA instead?</h4>
+    <p>rg.forms is ideal for 90% of business forms. Consider React/Vue when you need:</p>
+    <ul>
+        <li>Offline-first with local state persistence</li>
+        <li>Heavy client-side data visualization (D3.js, Three.js)</li>
+        <li>Mobile app with React Native code sharing</li>
+    </ul>
+    <p class="mt-2 is-size-7">
+        <em>Note: Real-time collaboration works great with Datastar + SSE.
+        <a href="https://andersmurphy.com/2025/04/07/clojure-realtime-collaborative-web-apps-without-clojurescript.html" target="_blank">See example</a>.</em>
+    </p>
+
+    <div class="has-text-centered mt-5">
+        <a href="{% url 'examples:risks' %}" class="button is-warning is-outlined">
+            View Risks and Considerations
+        </a>
+    </div>
+</div>
+{% endblock %}

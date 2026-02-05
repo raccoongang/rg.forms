@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Backend Validation - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Backend Validation</h1>
+<p class="subtitle">Server-side expression evaluation</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> This form demonstrates backend validation features:
+    </p>
+    <ul>
+        <li><strong>visible_when</strong> - Hidden fields are SKIPPED (Priority for urgent orders)</li>
+        <li><strong>required_when</strong> - Dynamic requirements are ENFORCED (Discount code for bulk)</li>
+        <li><strong>computed</strong> - Values are RECALCULATED on server (Total ignores submitted value)</li>
+    </ul>
+</div>
+
+{% if success_message %}
+<div class="notification is-success">
+    <button class="delete" onclick="this.parentElement.remove()"></button>
+    <h4 class="title is-5">Form Submitted Successfully!</h4>
+    <p><strong>Server-side cleaned_data:</strong></p>
+    <pre>{{ success_message }}</pre>
+    <p class="mt-2"><em>Note: Total was computed on the server as quantity * unit_price</em></p>
+</div>
+{% endif %}
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            {% render_reactive_form form "Submit Order" %}
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h3 class="title is-5">Current Signal Values</h3>
+            <div data-signals='{% reactive_signals form %}'>
+                <pre data-text="JSON.stringify({
+                    order_type: $order_type,
+                    priority: $priority,
+                    bulk_discount_code: $bulk_discount_code,
+                    quantity: $quantity,
+                    unit_price: $unit_price,
+                    total: $quantity * $unit_price
+                }, null, 2)"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">How Backend Validation Works</h3>
+
+    <h4 class="title is-6 mt-4">1. visible_when - Skipping Hidden Fields</h4>
+    <pre><code>priority = ReactiveChoiceField(
+    visible_when="$order_type == 'urgent'",
+    required=True,  # Required, but only validated when visible!
+)
+
+# In ReactiveForm._clean_fields():
+if not self.is_field_visible(name):
+    self.cleaned_data[name] = None  # Skip validation
+    continue</code></pre>
+
+    <h4 class="title is-6 mt-4">2. required_when - Enforcing Dynamic Requirements</h4>
+    <pre><code>bulk_discount_code = ReactiveCharField(
+    required=False,
+    required_when="$order_type == 'bulk'",
+)
+
+# Backend evaluates expression and raises ValidationError if empty</code></pre>
+
+    <h4 class="title is-6 mt-4">3. computed - Server-side Recalculation</h4>
+    <pre><code>total = ReactiveDecimalField(
+    computed="$quantity * $unit_price",
+)
+
+# Backend ignores submitted value, recalculates:
+computed_value = self.get_computed_value(name)
+if computed_value is not None:
+    value = computed_value  # Override submitted value</code></pre>
+</div>
+{% endblock %}
