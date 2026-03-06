@@ -97,3 +97,28 @@ class OrderForm(ReactiveForm):
     4. Check `required_when` — raise if required and empty
     5. Call `clean_<fieldname>()` if it exists
 2. Call `clean()` for cross-field validation
+
+## SSE validation (no page reload)
+
+By default, validation errors cause a full page reload. For a smoother experience, you can use `reactive_form_response()` to patch only the form via Datastar SSE:
+
+```python
+from rg.forms import reactive_form_response
+
+def my_view(request):
+    if request.method == "POST":
+        form = MyForm(request.POST)
+        response = reactive_form_response(
+            request, form, "_form_fragment.html",
+            success_url="/done/",
+        )
+        if response:
+            return response
+    else:
+        form = MyForm()
+    return render(request, "form.html", {"form": form})
+```
+
+This is especially useful for backend-heavy validations (database lookups, external API calls, cross-field business rules) where the user might submit multiple times before getting it right.
+
+See the [SSE Validation guide](sse-validation.md) for full details.

@@ -314,9 +314,13 @@ class ReactiveForm(forms.Form):
         ]
 
     def _get_form_data(self) -> dict:
-        """Get current form data for expression evaluation."""
+        """Get current form data for expression evaluation.
+
+        Uses .get() to extract scalar values from QueryDict (which
+        stores values as lists internally).
+        """
         if self.is_bound:
-            return dict(self.data)
+            return {key: self.data.get(key) for key in self.data}
         return dict(self.initial)
 
     def _evaluate_expression(self, expression: str) -> bool | None:

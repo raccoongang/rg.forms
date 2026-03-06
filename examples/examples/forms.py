@@ -1,9 +1,14 @@
 """Example reactive forms demonstrating rg.forms features."""
 
+import re
+import time
+
 from django import forms
+from django.core.exceptions import ValidationError
 
 from rg.forms import (
     FieldGroup,
+    ReactiveBooleanField,
     ReactiveCharField,
     ReactiveChoiceField,
     ReactiveDecimalField,
@@ -365,6 +370,149 @@ def get_product_by_id(product_id):
         if p["id"] == product_id:
             return p
     return None
+
+
+# =============================================================================
+# SSE Validation example - backend-heavy validation with partial re-render
+# =============================================================================
+
+# Simulated "database" for username uniqueness check
+TAKEN_USERNAMES = {"admin", "root", "test", "user", "demo", "webmaster", "support"}
+
+# Simulated coupon code database
+VALID_COUPONS = {
+    "WELCOME10": {"discount": 10, "description": "10% off for new users"},
+    "SAVE20": {"discount": 20, "description": "20% off seasonal sale"},
+    "LAUNCH50": {"discount": 50, "description": "50% off launch special"},
+}
+
+# Free email domains (business accounts can't use these)
+FREE_EMAIL_DOMAINS = {"gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "mail.com"}
+
+
+class SSEValidationForm(ReactiveForm):
+    """Registration form demonstrating backend-heavy validation via SSE.
+
+    All validations here require server-side logic that cannot be
+    replicated on the frontend:
+    - Username uniqueness (database lookup)
+    - VAT number format validation (complex regex + country rules)
+    - Coupon code verification (server-side lookup)
+    - Business email policy (cross-field rule)
+
+    Uses reactive_form_response() to return validation errors as SSE
+    patches instead of full page reloads.
+    """
+
+    username = ReactiveCharField(
+        label="Username",
+        max_length=30,
+        min_length=3,
+        help_text="Letters, numbers, and underscores only. Try 'admin' or 'test' to see uniqueness check.",
+    )
+
+    email = ReactiveEmailField(
+        label="Email",
+        help_text="Business accounts require a company email (not Gmail, Yahoo, etc.)",
+    )
+
+    account_type = ReactiveChoiceField(
+        label="Account Type",
+        choices=[
+            ("personal", "Personal"),
+            ("business", "Business"),
+        ],
+    )
+
+    company_name = ReactiveCharField(
+        label="Company Name",
+        required=False,
+        visible_when="$account_type == 'business'",
+        required_when="$account_type == 'business'",
+    )
+
+    vat_number = ReactiveCharField(
+        label="VAT Number",
+        required=False,
+        visible_when="$account_type == 'business'",
+        required_when="$account_type == 'business'",
+        help_text="EU VAT number, e.g. DE123456789",
+    )
+
+    coupon_code = ReactiveCharField(
+        label="Coupon Code",
+        required=False,
+        help_text="Try WELCOME10, SAVE20, or LAUNCH50",
+    )
+
+    agree_terms = ReactiveBooleanField(
+        label="I agree to the Terms of Service",
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username", "")
+
+        # Rule 1: character validation
+        if not re.match(r"^[a-zA-Z0-9_]+$", username):
+            raise ValidationError(
+                "Username may only contain letters, numbers, and underscores."
+            )
+
+        # Rule 2: uniqueness check (simulated DB query)
+        # In a real app: User.objects.filter(username=username).exists()
+        time.sleep(0.1)  # Simulate DB latency
+        if username.lower() in TAKEN_USERNAMES:
+            raise ValidationError(
+                f'The username "{username}" is already taken. Try another one.'
+            )
+
+        return username
+
+    def clean_vat_number(self):
+        vat = self.cleaned_data.get("vat_number", "")
+        if not vat:
+            return vat
+
+        # EU VAT format: 2-letter country code + 6-12 digits
+        # Real apps would call VIES API: https://ec.europa.eu/taxation_customs/vies/
+        if not re.match(r"^[A-Z]{2}\d{6,12}$", vat):
+            raise ValidationError(
+                "Invalid VAT number format. Expected: 2-letter country code "
+                "followed by 6-12 digits (e.g. DE123456789)."
+            )
+
+        return vat
+
+    def clean_coupon_code(self):
+        code = self.cleaned_data.get("coupon_code", "")
+        if not code:
+            return code
+
+        # Server-side coupon lookup
+        code_upper = code.upper()
+        if code_upper not in VALID_COUPONS:
+            raise ValidationError(
+                f'Coupon code "{code}" is not valid or has expired.'
+            )
+
+        return code_upper
+
+    def clean(self):
+        cleaned = super().clean()
+        account_type = cleaned.get("account_type")
+        email = cleaned.get("email", "")
+
+        # Cross-field rule: business accounts need company email
+        if account_type == "business" and email:
+            domain = email.rsplit("@", 1)[-1].lower() if "@" in email else ""
+            if domain in FREE_EMAIL_DOMAINS:
+                self.add_error(
+                    "email",
+                    "Business accounts require a company email address, "
+                    "not a free email provider like Gmail or Yahoo.",
+                )
+
+        return cleaned
 
 
 class CascadingForm(ReactiveForm):

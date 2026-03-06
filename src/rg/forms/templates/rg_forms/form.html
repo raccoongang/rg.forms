@@ -1,7 +1,8 @@
 {# Reactive form template - Bulma CSS #}
 {% load reactive_forms %}
 
-<form method="post" data-signals='{{ form.get_signals_json }}'>
+<div id="reactive-form-container">
+<form method="post" data-signals='{{ form.get_signals_json }}'{% if action %} data-on:submit__prevent="@post('{{ action }}', {contentType: 'form'})"{% endif %}>
     {% csrf_token %}
 
     {# Non-field errors (form-level errors) #}
@@ -29,3 +30,4 @@
     </div>
     {% endif %}
 </form>
+</div>

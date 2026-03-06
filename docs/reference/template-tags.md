@@ -31,6 +31,20 @@ Renders a complete form with all fields, signals, and a submit button:
 
 Uses the `rg_forms/form.html` template.
 
+### `action` parameter
+
+When `action` is provided, the form submits via Datastar `@post` instead of a native HTML form submit. This enables [SSE validation](../guide/sse-validation.md) — only the form re-renders on validation errors, not the entire page.
+
+```html
+{% render_reactive_form form "Save" action="/my-url/" %}
+{% render_reactive_form form "Register" action=action_url %}
+```
+
+What changes when `action` is set:
+
+- The form is wrapped in `<div id="reactive-form-container">` (SSE patch target)
+- The form gets `data-on:submit__prevent="@post('...', {contentType: 'form'})"` — Datastar intercepts submit (both button click and Enter key) and sends via SSE instead of a native page-reloading POST
+
 ## `{% render_reactive_field bound_field %}`
 
 Renders a single field with its label, input, errors, and reactive attributes:

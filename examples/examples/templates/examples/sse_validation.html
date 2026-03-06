@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}SSE Validation - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">SSE Form Validation</h1>
+<p class="subtitle">Backend validation without full page reloads</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> Submit the form with invalid data. Validation errors appear
+        instantly &mdash; only the form is re-rendered via SSE, not the entire page.
+    </p>
+    <ul>
+        <li><strong>Username</strong> &mdash; try "admin" or "test" (uniqueness check against DB)</li>
+        <li><strong>Account Type</strong> &mdash; switch to Business, then use a Gmail address (cross-field rule)</li>
+        <li><strong>VAT Number</strong> &mdash; try "INVALID" (format validation)</li>
+        <li><strong>Coupon Code</strong> &mdash; try "FOOBAR" (server-side lookup)</li>
+    </ul>
+</div>
+
+{% if success %}
+<div class="notification is-success">
+    <button class="delete" onclick="this.parentElement.remove()"></button>
+    <strong>Registration successful!</strong> The form was validated server-side and the redirect happened via SSE.
+</div>
+{% endif %}
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            {% include "examples/_sse_validation_fragment.html" %}
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h3 class="title is-5">How it works</h3>
+            <div class="content is-small">
+                <p>Instead of a full page reload on validation errors, the form submits
+                via Datastar <code>@post</code> and the server responds with an SSE
+                event that patches just the form HTML.</p>
+
+                <h4>1. Template</h4>
+                <pre><code>&#123;% render_reactive_form form
+    "Register"
+    action=action_url %&#125;</code></pre>
+                <p>The <code>action</code> parameter switches the form from native
+                submit to Datastar <code>@post</code>.</p>
+
+                <h4>2. View</h4>
+                <pre><code>form = MyForm(request.POST)
+response = reactive_form_response(
+    request, form,
+    "_fragment.html",
+    success_url="/done/",
+)
+if response:
+    return response</code></pre>
+                <p>One function handles SSE patch (errors) and SSE redirect (success).</p>
+
+                <h4>3. What the server returns</h4>
+                <p><strong>On validation error:</strong></p>
+                <pre><code>event: patch-elements
+data: &lt;div id="reactive-form-container"&gt;
+data:   &lt;form ...&gt;...errors...&lt;/form&gt;
+data: &lt;/div&gt;</code></pre>
+                <p><strong>On success:</strong></p>
+                <pre><code>event: redirect
+data: /success/</code></pre>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3 class="title is-5">Backend validations used</h3>
+            <div class="content is-small">
+                <table class="table is-fullwidth is-narrow">
+                    <tr>
+                        <td><strong>Username</strong></td>
+                        <td>Uniqueness check (simulated DB query with 100ms latency)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Email</strong></td>
+                        <td>Cross-field: business accounts can't use free email providers</td>
+                    </tr>
+                    <tr>
+                        <td><strong>VAT Number</strong></td>
+                        <td>EU VAT format validation (would call VIES API in production)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Coupon Code</strong></td>
+                        <td>Server-side lookup against coupon database</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

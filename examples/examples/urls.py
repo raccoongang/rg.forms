@@ -16,4 +16,5 @@ urlpatterns = [
     path("backend-validation/", views.backend_validation, name="backend_validation"),
     path("conditional-attributes/", views.conditional_attributes, name="conditional_attributes"),
     path("field-groups/", views.field_groups, name="field_groups"),
+    path("sse-validation/", views.sse_validation, name="sse_validation"),
 ]

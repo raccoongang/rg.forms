@@ -45,6 +45,16 @@ Dependent dropdowns with server-side re-rendering via Datastar SSE. Category sel
 ### Field Groups
 Fields organized into sections with shared `visible_when` rules. Business fields appear only for business accounts.
 
+### SSE Validation
+Backend-heavy validation without full page reloads. Demonstrates `reactive_form_response()` with:
+
+- Username uniqueness check (simulated database lookup)
+- Coupon code verification (server-side lookup)
+- VAT number format validation (would call external API in production)
+- Cross-field business rules (business accounts require company email)
+
+On validation errors, only the form HTML is patched via SSE — the rest of the page stays untouched.
+
 ## Source code
 
 - **Forms**: `examples/examples/forms.py`

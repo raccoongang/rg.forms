@@ -12,6 +12,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
 
+from rg.forms import reactive_form_response
+
 from .forms import (
     BackendValidationForm,
     CascadingForm,
@@ -20,6 +22,7 @@ from .forms import (
     FieldGroupsForm,
     OrderForm,
     PriceCalculatorForm,
+    SSEValidationForm,
     get_product_by_id,
 )
 
@@ -201,3 +204,41 @@ def cascading_form(request: HttpRequest) -> HttpResponse | DatastarResponse:
         form = CascadingForm()
 
     return render(request, "examples/cascading_form.html", {"form": form})
+
+
+def sse_validation(request: HttpRequest) -> HttpResponse | DatastarResponse:
+    """Example: SSE-based form validation (no full page reload).
+
+    Demonstrates reactive_form_response() utility:
+    - On invalid form + Datastar request: patches form fragment via SSE
+    - On valid form + Datastar request: redirects via SSE
+    - Falls back to full page render for non-Datastar requests
+
+    The form itself demonstrates backend-heavy validations:
+    - Username uniqueness (simulated DB lookup)
+    - VAT number format validation
+    - Coupon code verification (server-side lookup)
+    - Cross-field rules (business accounts need company email)
+    """
+    action_url = request.build_absolute_uri()
+
+    if request.method == "POST":
+        form = SSEValidationForm(request.POST)
+        response = reactive_form_response(
+            request,
+            form,
+            "examples/_sse_validation_fragment.html",
+            success_url=request.path + "?success=1",
+            context={"action_url": action_url},
+        )
+        if response:
+            return response
+    else:
+        form = SSEValidationForm()
+
+    success = request.GET.get("success")
+    return render(
+        request,
+        "examples/sse_validation.html",
+        {"form": form, "action_url": action_url, "success": success},
+    )

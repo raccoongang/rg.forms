@@ -57,19 +57,41 @@ Use `data-on` for Datastar event handlers. Common pattern for cascading updates:
 
 ## SSE responses
 
-For server-side updates (cascading dropdowns, partial re-rendering), use `datastar-py`:
+For server-side updates (cascading dropdowns, partial re-rendering), Datastar uses Server-Sent Events. rg.forms provides `reactive_form_response()` which handles the common pattern of patching form errors or redirecting on success:
 
 ```python
-from datastar_py.django import DatastarResponse
+from rg.forms import reactive_form_response
+
+def my_view(request):
+    if request.method == "POST":
+        form = MyForm(request.POST)
+        response = reactive_form_response(
+            request, form, "_form_fragment.html",
+            success_url="/done/",
+        )
+        if response:
+            return response
+    else:
+        form = MyForm()
+    return render(request, "form.html", {"form": form})
+```
+
+For lower-level control, use `datastar-py` directly:
+
+```python
+from datastar_py.django import DatastarResponse, ServerSentEventGenerator
 
 def update_view(request):
-    form = MyForm(request.POST)
-    response = DatastarResponse()
-    response.merge_fragments(
-        render_to_string('_form_fragment.html', {'form': form}, request)
-    )
-    return response
+    form = MyForm(initial=request.POST)
+    html = render_to_string('_form_fragment.html', {'form': form}, request)
+
+    def events():
+        yield ServerSentEventGenerator.patch_elements(html)
+
+    return DatastarResponse(events())
 ```
+
+See [SSE Validation](sse-validation.md) for the full guide on form validation via SSE.
 
 ## Useful Datastar attributes
 

@@ -55,6 +55,7 @@ nav:
       - Cascading Dropdowns: guide/cascading.md
       - Field Groups: guide/field-groups.md
       - Validation: guide/validation.md
+      - SSE Validation: guide/sse-validation.md
       - Datastar Integration: guide/datastar.md
   - Reference:
       - Fields: reference/fields.md

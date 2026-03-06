@@ -150,6 +150,27 @@
             </footer>
         </div>
     </div>
+
+    <div class="column is-one-third">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">SSE Validation</p>
+                <p class="subtitle is-6">No Full Page Reload</p>
+                <div class="content">
+                    <p>Backend-heavy validation with SSE partial updates:</p>
+                    <ul>
+                        <li>Username uniqueness (DB lookup)</li>
+                        <li>Coupon code verification</li>
+                        <li>Cross-field business rules</li>
+                        <li><code>reactive_form_response()</code> utility</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:sse_validation' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
 </div>
 
 <div class="box mt-5">

@@ -13,6 +13,7 @@ rg.forms lets you build dynamic Django forms where fields react to each other �
 - **`choices_from` + `depends_on`** — declarative cascading dropdowns
 - **Field groups** — organize fields into sections with shared visibility
 - **Backend validation** — hidden fields are skipped, dynamic requirements enforced
+- **SSE validation** — re-render only the form on errors, no full page reload
 - **Datastar-powered** — reactive UI with minimal JavaScript
 
 ## How it works

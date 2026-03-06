@@ -10,6 +10,39 @@ from rg.forms import ReactiveForm
 
 Inherits all standard Django form behavior — `is_valid()`, `cleaned_data`, `errors`, custom `clean()` methods, widgets, etc.
 
+## View Utilities
+
+### `reactive_form_response(request, form, fragment_template, *, success_url=None, on_success=None, context=None)`
+
+Handles form POST with SSE support. Returns an SSE patch on validation errors (Datastar request) or a redirect on success.
+
+```python
+from rg.forms import reactive_form_response
+
+def my_view(request):
+    if request.method == "POST":
+        form = MyForm(request.POST)
+        response = reactive_form_response(
+            request, form, "_fragment.html",
+            success_url="/done/",
+            context={"action_url": request.build_absolute_uri()},
+        )
+        if response:
+            return response
+    else:
+        form = MyForm()
+    return render(request, "page.html", {"form": form})
+```
+
+**Returns**: `HttpResponseRedirect | DatastarResponse | None`
+
+| Scenario | Datastar request | Regular request |
+|----------|-----------------|-----------------|
+| Valid form | SSE redirect to `success_url` | `HttpResponseRedirect` |
+| Invalid form | SSE patch with re-rendered fragment | `None` (view renders full page) |
+
+See the [SSE Validation guide](../guide/sse-validation.md) for full details.
+
 ## Methods
 
 ### `get_signals() -> dict`

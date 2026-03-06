@@ -128,16 +128,25 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
 
 
 @register.inclusion_tag("rg_forms/form.html")
-def render_reactive_form(form, submit_label="Submit"):
+def render_reactive_form(form, submit_label="Submit", action=""):
     """Render a complete reactive form with all fields.
 
+    When ``action`` is provided, the form submits via Datastar ``@post``
+    instead of native form submit. Validation errors are patched in via
+    SSE without a full page reload.
+
     Usage:
+        {# Standard form submission (full page reload) #}
         {% render_reactive_form form %}
-        {% render_reactive_form form submit_label="Save" %}
+
+        {# SSE submission (partial update via Datastar) #}
+        {% render_reactive_form form action="/my-url/" %}
+        {% render_reactive_form form submit_label="Register" action=action_url %}
     """
     return {
         "form": form,
         "submit_label": submit_label,
+        "action": action,
     }
 
 

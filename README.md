@@ -17,6 +17,12 @@ INSTALLED_APPS = [
 ]
 ```
 
+## Running examples site
+
+```
+uv run examples/manage.py runserver
+```
+
 ## Quick example
 
 ```python
