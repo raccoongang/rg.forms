@@ -278,8 +278,24 @@ class ReactiveForm(forms.Form):
     def get_signals_json(self) -> str:
         """Return signals as JSON string for data-signals attribute."""
         import json
+        from datetime import date, datetime, time
+        from decimal import Decimal
+        from uuid import UUID
 
-        return json.dumps(self.get_signals())
+        def default(obj):
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            if isinstance(obj, date):
+                return obj.isoformat()
+            if isinstance(obj, time):
+                return obj.isoformat()
+            if isinstance(obj, Decimal):
+                return str(obj)
+            if isinstance(obj, UUID):
+                return str(obj)
+            raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+        return json.dumps(self.get_signals(), default=default)
 
     def get_field_reactive_attrs(self, field_name: str) -> dict:
         """Get reactive attributes for a specific field.

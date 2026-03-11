@@ -1,8 +1,21 @@
 """Tests for ReactiveForm."""
 
+import json
+from datetime import date, datetime, time
+from decimal import Decimal
+from uuid import UUID
+
 import pytest
 
-from rg.forms import ReactiveForm, ReactiveCharField, ReactiveChoiceField
+from rg.forms import (
+    ReactiveForm,
+    ReactiveCharField,
+    ReactiveChoiceField,
+    ReactiveDateField,
+    ReactiveDateTimeField,
+    ReactiveDecimalField,
+    ReactiveTimeField,
+)
 
 
 class TestReactiveForm:
@@ -46,6 +59,74 @@ class TestReactiveForm:
         form = SimpleForm(initial={"name": "test"})
         json_str = form.get_signals_json()
         assert '"name": "test"' in json_str
+
+
+class TestSignalsJsonSerialization:
+    """Tests for JSON serialization of non-string initial values (edit mode bug)."""
+
+    def test_date_field_in_initial(self):
+        """Date object from model instance should serialize to ISO string."""
+
+        class EventForm(ReactiveForm):
+            name = ReactiveCharField()
+            event_date = ReactiveDateField()
+
+        form = EventForm(initial={"name": "Conference", "event_date": date(2025, 6, 15)})
+        json_str = form.get_signals_json()
+        data = json.loads(json_str)
+        assert data["event_date"] == "2025-06-15"
+        assert data["name"] == "Conference"
+
+    def test_datetime_field_in_initial(self):
+        """Datetime object should serialize to ISO string."""
+
+        class LogForm(ReactiveForm):
+            created_at = ReactiveDateTimeField()
+
+        form = LogForm(initial={"created_at": datetime(2025, 3, 11, 14, 30, 0)})
+        data = json.loads(form.get_signals_json())
+        assert data["created_at"] == "2025-03-11T14:30:00"
+
+    def test_time_field_in_initial(self):
+        """Time object should serialize to ISO string."""
+
+        class ScheduleForm(ReactiveForm):
+            start_time = ReactiveTimeField()
+
+        form = ScheduleForm(initial={"start_time": time(9, 30)})
+        data = json.loads(form.get_signals_json())
+        assert data["start_time"] == "09:30:00"
+
+    def test_decimal_field_in_initial(self):
+        """Decimal from model instance should serialize to string."""
+
+        class PriceForm(ReactiveForm):
+            price = ReactiveDecimalField(decimal_places=2)
+
+        form = PriceForm(initial={"price": Decimal("19.99")})
+        data = json.loads(form.get_signals_json())
+        assert data["price"] == "19.99"
+
+    def test_mixed_types_in_initial(self):
+        """Form with multiple non-string types should all serialize correctly."""
+
+        class FullForm(ReactiveForm):
+            name = ReactiveCharField()
+            birth_date = ReactiveDateField()
+            created_at = ReactiveDateTimeField(required=False)
+            price = ReactiveDecimalField(decimal_places=2, required=False)
+
+        form = FullForm(initial={
+            "name": "Alice",
+            "birth_date": date(1990, 1, 15),
+            "created_at": datetime(2025, 3, 11, 10, 0),
+            "price": Decimal("42.50"),
+        })
+        data = json.loads(form.get_signals_json())
+        assert data["name"] == "Alice"
+        assert data["birth_date"] == "1990-01-15"
+        assert data["created_at"] == "2025-03-11T10:00:00"
+        assert data["price"] == "42.50"
 
 
 class TestReactiveFields:
