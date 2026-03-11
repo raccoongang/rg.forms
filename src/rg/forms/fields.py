@@ -181,9 +181,23 @@ class ReactiveDateField(ReactiveFieldMixin, forms.DateField):
 
 
 class ReactiveDateTimeField(ReactiveFieldMixin, forms.DateTimeField):
-    """Reactive version of DateTimeField."""
+    """Reactive version of DateTimeField.
 
-    pass
+    Ensures compatibility with HTML5 datetime-local input:
+    - Adds ISO formats with 'T' separator for parsing browser submissions.
+    - Sets widget output format to match what datetime-local expects.
+    """
+
+    # ISO format that datetime-local inputs expect.
+    _HTML5_FORMAT = "%Y-%m-%dT%H:%M"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        html5_formats = [self._HTML5_FORMAT, "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"]
+        self.input_formats = html5_formats + list(self.input_formats or [])
+        # Ensure the widget renders values in the format the browser expects.
+        if not getattr(self.widget, "format", None):
+            self.widget.format = self._HTML5_FORMAT
 
 
 class ReactiveTimeField(ReactiveFieldMixin, forms.TimeField):

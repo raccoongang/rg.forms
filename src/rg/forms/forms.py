@@ -284,11 +284,15 @@ class ReactiveForm(forms.Form):
 
         def default(obj):
             if isinstance(obj, datetime):
-                return obj.isoformat()
+                from django.utils.timezone import is_aware, localtime
+                if is_aware(obj):
+                    obj = localtime(obj)
+                # datetime-local inputs require YYYY-MM-DDTHH:MM (no tz offset).
+                return obj.strftime("%Y-%m-%dT%H:%M")
             if isinstance(obj, date):
                 return obj.isoformat()
             if isinstance(obj, time):
-                return obj.isoformat()
+                return obj.strftime("%H:%M")
             if isinstance(obj, Decimal):
                 return str(obj)
             if isinstance(obj, UUID):

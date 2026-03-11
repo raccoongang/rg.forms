@@ -105,8 +105,14 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
     if hasattr(field, "min_length") and field.min_length is not None:
         html5_attrs["minlength"] = field.min_length
 
+    # Use widget.format_value() so HTML5 inputs (date, datetime-local, time)
+    # get values in the format the browser expects (e.g. YYYY-MM-DDTHH:MM).
+    raw_value = bound_field.value()
+    formatted_value = widget.format_value(raw_value)
+
     return {
         "field": bound_field,
+        "formatted_value": formatted_value,
         "label": kwargs.get("label", bound_field.label),
         "help_text": kwargs.get("help_text", bound_field.help_text),
         "visible_when": getattr(field, "visible_when", None),
