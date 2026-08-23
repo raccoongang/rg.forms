@@ -7,6 +7,20 @@ from django.utils.safestring import mark_safe
 
 register = template.Library()
 
+# Widget class names (lowercased) the shipped reference template renders as a
+# single HTML ``<input>``. Anything not here — and not select/checkbox/textarea
+# — falls back to Django's native widget rendering rather than a wrong input.
+_SIMPLE_INPUT_WIDGETS = frozenset({
+    "textinput",
+    "numberinput",
+    "emailinput",
+    "urlinput",
+    "dateinput",
+    "timeinput",
+    "datetimeinput",
+    "passwordinput",
+})
+
 # Maps a Django widget class name (lowercased) to the HTML ``<input type>``
 # attribute an override template should render. ``widget_type`` remains
 # available for branching; ``input_type`` is the value to put on the element.
@@ -33,6 +47,58 @@ _WIDGET_ATTRS_EXCLUDE = frozenset({
     "min",
     "max",
 })
+
+
+def _required_expr(visible_when: str | None, required_when: str | None, is_required: bool) -> str | None:
+    """Build a Datastar expression for the reactive ``required`` attribute.
+
+    Returns ``None`` when the field is unconditionally required (the caller
+    renders a static ``required``) or never required. Otherwise returns a JS
+    expression suitable for ``data-attr:required``. A field hidden by
+    ``visible_when`` is never required, so an invisible empty input cannot
+    block native form submission — matching the server, which skips hidden
+    fields during validation.
+    """
+    if visible_when and required_when:
+        return f"({visible_when}) && ({required_when})"
+    if required_when:
+        return required_when
+    if visible_when and is_required:
+        # Statically required but hideable: required only while visible.
+        return visible_when
+    return None
+
+
+def _js_string(value) -> str:
+    """Render ``value`` as a single-quoted JS string literal for an expression."""
+    escaped = str(value).replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{escaped}'"
+
+
+def _string_when_expr(when: dict | None) -> str | None:
+    """Build a first-match ternary yielding a string, e.g. for placeholder_when.
+
+    ``{"$a": "x", "$b": "y"}`` -> ``($a) ? 'x' : (($b) ? 'y' : '')``.
+    """
+    if not when:
+        return None
+    expr = "''"
+    for cond, val in reversed(list(when.items())):
+        expr = f"({cond}) ? {_js_string(val)} : {expr}"
+    return expr
+
+
+def _number_when_expr(when: dict | None) -> str | None:
+    """Build a first-match ternary yielding a number, e.g. for min_when/max_when.
+
+    ``{"$a": 1, "$b": 2}`` -> ``($a) ? 1 : (($b) ? 2 : null)``.
+    """
+    if not when:
+        return None
+    expr = "null"
+    for cond, val in reversed(list(when.items())):
+        expr = f"({cond}) ? {val} : {expr}"
+    return expr
 
 
 def get_reactive_field(bound_field: BoundField):
@@ -149,25 +215,38 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
         if key not in _WIDGET_ATTRS_EXCLUDE
     }
 
+    visible_when = getattr(field, "visible_when", None)
+    required_when = getattr(field, "required_when", None)
+    placeholder_when = getattr(field, "placeholder_when", None)
+    min_when = getattr(field, "min_when", None)
+    max_when = getattr(field, "max_when", None)
+
     return {
         "field": bound_field,
         "formatted_value": formatted_value,
         "label": kwargs.get("label", bound_field.label),
         "help_text": kwargs.get("help_text", bound_field.help_text),
-        "visible_when": getattr(field, "visible_when", None),
-        "required_when": getattr(field, "required_when", None),
+        "visible_when": visible_when,
+        "required_when": required_when,
         "computed": getattr(field, "computed", None),
         "disabled_when": getattr(field, "disabled_when", None),
         "read_only_when": getattr(field, "read_only_when", None),
         "help_text_when": getattr(field, "help_text_when", None),
-        "placeholder_when": getattr(field, "placeholder_when", None),
-        "min_when": getattr(field, "min_when", None),
-        "max_when": getattr(field, "max_when", None),
+        "placeholder_when": placeholder_when,
+        "min_when": min_when,
+        "max_when": max_when,
         "is_required": field.required,
         "field_name": bound_field.name,
         "widget_type": widget_type,
         "input_type": _INPUT_TYPE_MAP.get(widget_type, "text"),
+        "is_simple_input": widget_type in _SIMPLE_INPUT_WIDGETS,
         "widget_attrs": widget_attrs,
+        # Reactive-attribute expressions derived from the *_when metadata,
+        # ready to drop into data-attr:* bindings. None when not applicable.
+        "required_expr": _required_expr(visible_when, required_when, field.required),
+        "placeholder_expr": _string_when_expr(placeholder_when),
+        "min_expr": _number_when_expr(min_when),
+        "max_expr": _number_when_expr(max_when),
         "errors": bound_field.errors,
         "html5_attrs": html5_attrs,
         "choices": getattr(field, "choices", None),

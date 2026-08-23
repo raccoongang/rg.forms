@@ -76,8 +76,8 @@ A host input component then reads the contract keys directly:
            {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
            {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
            {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
-           {% if is_required %}required{% endif %}
-           value="{{ field.value|default:'' }}">
+           {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
+           value="{{ formatted_value|default:'' }}">
     {% if errors %}<p class="my-field__error">{{ errors.0 }}</p>{% endif %}
 </div>
 ```
@@ -88,11 +88,47 @@ Key points that keep the override correct and portable:
   maps `datetimeinput → "datetime-local"`, `emailinput → "email"`, etc. Deriving
   it yourself from `widget_type` is fragile (`datetimeinput` naively becomes
   `"datetime"`).
+- **`formatted_value`, not `field.value`, for the rendered value.** It is the
+  widget-formatted string the input expects (e.g. `YYYY-MM-DDTHH:MM` for
+  `datetime-local`, localized numbers). `field.value` is the raw Python value and
+  will mis-render dates/times and localized values.
 - **`field.html_name` / `field.id_for_label` for `name` / `id`.** These are
   formset-safe. `field_name` is the *unprefixed* name — use it only for the
   Datastar signal (`data-bind:{{ field_name }}`).
 - **Spread `widget_attrs`** to forward placeholder/autocomplete/`data-*` declared
   in Python.
+- **Prefer the reactive `*_expr` bindings over static attributes.** Use
+  `data-attr:required="{{ required_expr }}"` (falling back to a static `required`
+  only when `required_expr` is empty), and likewise `placeholder_expr`,
+  `min_expr`, `max_expr` for `data-attr:placeholder` / `min` / `max`. This keeps
+  the browser's native validation in step with the field's visibility and
+  conditions — a field hidden by `visible_when` will not block submission.
+
+## Feature parity: where each rule is enforced
+
+rg.forms is backend-authoritative, but not every rule is enforced in all three
+layers. The table states, per feature, whether it acts in the **browser**
+(native HTML), via **Datastar** (client reactivity), and in **server**
+validation. Use it to avoid assuming a client-only rule is also enforced on
+submit.
+
+| Feature | Browser (native) | Datastar (client) | Server validation |
+|---|:---:|:---:|:---:|
+| `visible_when` | — | `data-show` | yes — hidden fields skipped in `clean` |
+| static `required` | yes (reactive w/ visibility) | via `required_expr` when hideable | yes |
+| `required_when` | — | `data-attr:required` | yes — enforced in `clean` |
+| `computed` | — | `data-text` / `data-computed` | yes — recomputed in `clean` |
+| `disabled_when` | — | `data-attr:disabled` | **no** dynamic parity |
+| `read_only_when` | — | `data-attr:readonly` | **no** dynamic parity |
+| `placeholder_when` | — | `data-attr:placeholder` | n/a (presentational) |
+| static `min` / `max` | yes | — | yes (Django field validators) |
+| `min_when` / `max_when` | — | `data-attr:min` / `max` | **no** — Django validates static bounds only |
+
+The gaps (`disabled_when`, `read_only_when`, `min_when`, `max_when` server-side)
+are deliberate for now: a disabled/read-only control still round-trips its value,
+and dynamic bounds are not yet evaluated during `clean`. Do not rely on them as a
+security boundary — enforce anything authoritative with a `clean_<field>` /
+`clean()` method or a static validator.
 
 ## Formsets
 

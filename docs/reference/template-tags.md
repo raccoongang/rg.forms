@@ -73,8 +73,8 @@ removed, or change meaning/type without a major version.
 
 | Key | Type | Meaning |
 |---|---|---|
-| `field` | `BoundField` | The bound field. Use `field.html_name`, `field.id_for_label`, `field.value` — these are formset-safe. |
-| `formatted_value` | `str` | Widget-formatted value (HTML5-friendly for date/time inputs). |
+| `field` | `BoundField` | The bound field. Use `field.html_name`, `field.id_for_label` — these are formset-safe. |
+| `formatted_value` | `str` | Widget-formatted value (HTML5-friendly for date/time inputs). **Render this, not `field.value`**, as the input's `value` / textarea content. |
 | `label` | `str` | Field label (overridable via the `label=` tag kwarg). |
 | `help_text` | `str` | Static help text. |
 | `visible_when` | `str \| None` | Datastar expression for `data-show`. |
@@ -90,7 +90,11 @@ removed, or change meaning/type without a major version.
 | `field_name` | `str` | Unprefixed field name — use for Datastar **signal** names (`data-bind:{{ field_name }}`), **not** for the submitted `name`. |
 | `widget_type` | `str` | Lowercased widget class name (e.g. `"emailinput"`, `"select"`) — use for branching. |
 | `input_type` | `str` | HTML `<input type>` value (`"email"`, `"datetime-local"`, `"number"`, …; defaults to `"text"`). Put this on the element. |
+| `is_simple_input` | `bool` | True when the widget is a text-family input the reference template renders as a single `<input>` (text/number/email/url/date/time/datetime-local/password). False for select/checkbox/textarea and for widgets that should fall back to Django's native rendering (radio, multi-checkbox, file, multi-widget, custom). |
 | `widget_attrs` | `dict` | Presentational widget attrs (`placeholder`, `autocomplete`, `autofocus`, `inputmode`, custom `data-*`). Managed attrs (`id`, `name`, `required`, `disabled`, `readonly`, `min`, `max`, `maxlength`, `minlength`) are excluded so you can spread it without double-rendering. |
+| `required_expr` | `str \| None` | Datastar expression for `data-attr:required`, combining `visible_when` and `required_when`. `None` when the field is unconditionally required (render static `required`) or never required. Keeps native validation in step with visibility. |
+| `placeholder_expr` | `str \| None` | Datastar expression for `data-attr:placeholder`, built from `placeholder_when`. `None` when unset. |
+| `min_expr` / `max_expr` | `str \| None` | Datastar expressions for `data-attr:min` / `data-attr:max`, built from `min_when` / `max_when`. `None` when unset; fall back to static `html5_attrs.min` / `max`. |
 | `errors` | `ErrorList` | Field errors. |
 | `html5_attrs` | `dict` | HTML5 validation attrs derived from the field (`required`, `min`, `max`, `maxlength`, `minlength`). |
 | `choices` | `list \| None` | Choices for `select`/choice widgets. |

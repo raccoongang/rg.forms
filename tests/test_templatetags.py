@@ -8,10 +8,12 @@ from django.template import Context, Template
 from rg.forms import (
     ReactiveCharField,
     ReactiveChoiceField,
+    ReactiveDateField,
     ReactiveDateTimeField,
     ReactiveEmailField,
     ReactiveForm,
     ReactiveIntegerField,
+    ReactiveMultipleChoiceField,
     ReactiveURLField,
 )
 from rg.forms.templatetags.reactive_forms import render_reactive_field
@@ -308,6 +310,176 @@ class TestFormsetNaming:
         assert formset.is_valid(), formset.errors
         assert formset.forms[0].cleaned_data["role"] == "admin"
         assert formset.forms[1].cleaned_data["role"] == "editor"
+
+
+class RequiredMatrixForm(ReactiveForm):
+    """Covers the required_expr matrix (static/conditional x hideable)."""
+
+    trigger = ReactiveChoiceField(
+        choices=[("a", "A"), ("b", "B")], required=False
+    )
+    static_req = ReactiveCharField()  # unconditionally required
+    static_req_hideable = ReactiveCharField(visible_when="$trigger == 'a'")
+    cond_req = ReactiveCharField(required=False, required_when="$trigger == 'b'")
+    cond_req_hideable = ReactiveCharField(
+        required=False,
+        visible_when="$trigger == 'a'",
+        required_when="$trigger == 'b'",
+    )
+    optional = ReactiveCharField(required=False)
+
+
+class TestRequiredExpr:
+    """Tests for reactive required (P4 of the review / dynamic required)."""
+
+    def test_static_required_no_expr(self):
+        ctx = render_reactive_field(RequiredMatrixForm()["static_req"])
+        assert ctx["required_expr"] is None  # -> template renders static `required`
+        assert ctx["is_required"] is True
+
+    def test_optional_no_expr(self):
+        ctx = render_reactive_field(RequiredMatrixForm()["optional"])
+        assert ctx["required_expr"] is None
+        assert ctx["is_required"] is False
+
+    def test_static_required_hideable_uses_visibility(self):
+        ctx = render_reactive_field(RequiredMatrixForm()["static_req_hideable"])
+        assert ctx["required_expr"] == "$trigger == 'a'"
+
+    def test_required_when_only(self):
+        ctx = render_reactive_field(RequiredMatrixForm()["cond_req"])
+        assert ctx["required_expr"] == "$trigger == 'b'"
+
+    def test_required_when_and_visible_when_combined(self):
+        ctx = render_reactive_field(RequiredMatrixForm()["cond_req_hideable"])
+        assert ctx["required_expr"] == "($trigger == 'a') && ($trigger == 'b')"
+
+    def test_hidden_field_renders_data_attr_not_static_required(self):
+        """A hideable required field must not emit a bare `required` that would
+        block native submission while hidden."""
+        form = RequiredMatrixForm()
+        template = Template(
+            "{% load reactive_forms %}{% render_reactive_field form.static_req_hideable %}"
+        )
+        result = template.render(Context({"form": form}))
+        assert "data-attr:required=" in result
+        # "required" appears exactly once (in data-attr:required) — no extra
+        # standalone boolean `required` attribute that would block submission.
+        assert result.count("required") == 1
+
+
+class DynamicAttrsForm(ReactiveForm):
+    """Covers placeholder_when / min_when / max_when wiring."""
+
+    mode = ReactiveChoiceField(choices=[("x", "X"), ("y", "Y")], required=False)
+    note = ReactiveCharField(
+        required=False,
+        placeholder_when={"$mode == 'x'": "Enter X", "$mode == 'y'": "Enter Y"},
+    )
+    qty = ReactiveIntegerField(
+        required=False,
+        min_when={"$mode == 'x'": 1},
+        max_when={"$mode == 'x'": 10},
+    )
+
+
+class TestDynamicWhenExprs:
+    """Tests for placeholder_when / min_when / max_when (review finding 5)."""
+
+    def test_placeholder_expr_is_first_match_ternary(self):
+        ctx = render_reactive_field(DynamicAttrsForm()["note"])
+        # Right-associative ternary (first match wins); no redundant parens.
+        assert ctx["placeholder_expr"] == (
+            "($mode == 'x') ? 'Enter X' : ($mode == 'y') ? 'Enter Y' : ''"
+        )
+
+    def test_min_max_exprs(self):
+        ctx = render_reactive_field(DynamicAttrsForm()["qty"])
+        assert ctx["min_expr"] == "($mode == 'x') ? 1 : null"
+        assert ctx["max_expr"] == "($mode == 'x') ? 10 : null"
+
+    def test_none_when_unset(self):
+        ctx = render_reactive_field(RequiredMatrixForm()["optional"])
+        assert ctx["placeholder_expr"] is None
+        assert ctx["min_expr"] is None
+        assert ctx["max_expr"] is None
+
+    def test_placeholder_expr_renders_as_data_attr(self):
+        form = DynamicAttrsForm()
+        template = Template(
+            "{% load reactive_forms %}{% render_reactive_field form.note %}"
+        )
+        result = template.render(Context({"form": form}))
+        assert "data-attr:placeholder=" in result
+
+
+class MultiChoiceForm(ReactiveForm):
+    tags = ReactiveMultipleChoiceField(
+        choices=[("a", "A"), ("b", "B"), ("c", "C")], required=False
+    )
+
+
+class RadioForm(ReactiveForm):
+    color = ReactiveChoiceField(
+        choices=[("r", "Red"), ("g", "Green")],
+        widget=forms.RadioSelect,
+        required=False,
+    )
+
+
+class DateForm(ReactiveForm):
+    d = ReactiveDateField(required=False)
+
+
+class TestWidgetCoverage:
+    """Tests for selectmultiple + native fallback (review finding 2)."""
+
+    def test_selectmultiple_renders_multiple_select(self):
+        form = MultiChoiceForm()
+        template = Template(
+            "{% load reactive_forms %}{% render_reactive_field form.tags %}"
+        )
+        result = template.render(Context({"form": form}))
+        assert "<select multiple" in result
+        assert "data-bind:tags" in result
+        assert '<option value="a"' in result
+
+    def test_selectmultiple_not_simple_input(self):
+        ctx = render_reactive_field(MultiChoiceForm()["tags"])
+        assert ctx["is_simple_input"] is False
+        assert ctx["widget_type"] == "selectmultiple"
+
+    def test_unhandled_widget_falls_back_to_native(self):
+        form = RadioForm()
+        ctx = render_reactive_field(form["color"])
+        assert ctx["is_simple_input"] is False
+
+        template = Template(
+            "{% load reactive_forms %}{% render_reactive_field form.color %}"
+        )
+        result = template.render(Context({"form": form}))
+        # Django's native radio rendering, not our generic text input.
+        assert 'type="radio"' in result
+        assert 'type="text"' not in result
+        # Native fallback does not apply reactive data-bind.
+        assert "data-bind:color" not in result
+
+
+class TestFormattedValue:
+    """formatted_value (not field.value) must be rendered (review finding 1)."""
+
+    def test_date_input_renders_formatted_value(self):
+        from datetime import date
+
+        form = DateForm(initial={"d": date(2025, 6, 15)})
+        ctx = render_reactive_field(form["d"])
+        assert ctx["formatted_value"] == "2025-06-15"
+
+        template = Template(
+            "{% load reactive_forms %}{% render_reactive_field form.d %}"
+        )
+        result = template.render(Context({"form": form}))
+        assert 'value="2025-06-15"' in result
 
 
 class TestFormMethods:

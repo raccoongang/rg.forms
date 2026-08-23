@@ -3,7 +3,11 @@
    host app's design system. It renders against the documented context contract
    (see docs/reference/template-tags.md). To bring your own design system,
    override rg_forms/field.html with a thin dispatcher — see
-   docs/guide/custom-rendering.md. #}
+   docs/guide/custom-rendering.md.
+
+   Widget coverage here is intentionally a controlled subset (text-family
+   inputs, select, multi-select, checkbox, textarea). Any other widget falls
+   back to Django's native rendering rather than a wrong <input>. #}
 {% if field.is_hidden %}
 {{ field }}
 {% else %}
@@ -17,16 +21,28 @@
         {% endif %}
     </label>
 
-    <div class="control{% if widget_type == 'select' %} is-expanded{% endif %}">
+    <div class="control{% if widget_type == 'select' or widget_type == 'selectmultiple' %} is-expanded{% endif %}">
         {% if widget_type == 'select' %}
         <div class="select is-fullwidth{% if errors %} is-danger{% endif %}">
             <select name="{{ field.html_name }}" id="{{ field.id_for_label }}"
                     data-bind:{{ field_name }}
                     {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                     {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
-                    {% if is_required %}required{% endif %}>
+                    {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}>
                 {% for choice in choices %}
                 <option value="{{ choice.0 }}"{% if choice.0 == field.value %} selected{% endif %}>{{ choice.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% elif widget_type == 'selectmultiple' %}
+        <div class="select is-multiple is-fullwidth{% if errors %} is-danger{% endif %}">
+            <select multiple name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+                    data-bind:{{ field_name }}
+                    {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
+                    {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
+                    {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}>
+                {% for choice in choices %}
+                <option value="{{ choice.0 }}"{% if field.value and choice.0 in field.value %} selected{% endif %}>{{ choice.1 }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -36,6 +52,7 @@
                    data-bind:{{ field_name }}
                    {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                    {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
+                   {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
                    {% if field.value %}checked{% endif %}>
             {{ label }}
         </label>
@@ -46,14 +63,15 @@
                   {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                   {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
                   {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
-                  {% if is_required %}required{% endif %}
-                  {% if html5_attrs.maxlength %}maxlength="{{ html5_attrs.maxlength }}"{% endif %}>{{ field.value|default:"" }}</textarea>
+                  {% if placeholder_expr %}data-attr:placeholder="{{ placeholder_expr }}"{% endif %}
+                  {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
+                  {% if html5_attrs.maxlength %}maxlength="{{ html5_attrs.maxlength }}"{% endif %}>{{ formatted_value|default:"" }}</textarea>
         {% elif computed %}
         {# Computed field - display only, no input #}
         <span class="input" style="display: inline-block; background-color: #f5f5f5;"
               data-text="{{ computed }}"></span>
-        {% else %}
-        {# Default: text/number/email/etc input #}
+        {% elif is_simple_input %}
+        {# Text-family input: text/number/email/url/date/time/datetime-local/password #}
         <input class="input{% if errors %} is-danger{% endif %}"
                type="{{ input_type }}"
                name="{{ field.html_name }}" id="{{ field.id_for_label }}"
@@ -61,12 +79,19 @@
                {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
                {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
-               {% if is_required %}required{% endif %}
-               {% if html5_attrs.min is not None %}min="{{ html5_attrs.min }}"{% endif %}
-               {% if html5_attrs.max is not None %}max="{{ html5_attrs.max }}"{% endif %}
+               {% if placeholder_expr %}data-attr:placeholder="{{ placeholder_expr }}"{% endif %}
+               {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
+               {% if min_expr %}data-attr:min="{{ min_expr }}"{% elif html5_attrs.min is not None %}min="{{ html5_attrs.min }}"{% endif %}
+               {% if max_expr %}data-attr:max="{{ max_expr }}"{% elif html5_attrs.max is not None %}max="{{ html5_attrs.max }}"{% endif %}
                {% if html5_attrs.maxlength %}maxlength="{{ html5_attrs.maxlength }}"{% endif %}
                {% if html5_attrs.minlength %}minlength="{{ html5_attrs.minlength }}"{% endif %}
-               value="{{ field.value|default:"" }}">
+               value="{{ formatted_value|default:"" }}">
+        {% else %}
+        {# Unhandled widget (radio, checkbox-multiple, file, multi-widget, custom):
+           fall back to Django's native rendering so it is at least correct.
+           Reactive attrs are not applied here — override this template to add
+           first-class support for your design system's version of the widget. #}
+        {{ field }}
         {% endif %}
     </div>
 

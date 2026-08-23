@@ -84,5 +84,9 @@ django_settings_module = "tests.settings"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py"]
-pythonpath = ["."]
+# src/ first so the local package under src/rg/forms shadows any installed
+# copy of rg.forms; "." keeps the top-level tests package importable
+# (tests.settings). Without src/ here, bare `pytest` imports an installed
+# rg.forms instead of the working tree.
+pythonpath = ["src", "."]
 addopts = "-v --tb=short"

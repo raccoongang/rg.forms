@@ -85,7 +85,9 @@ class TestSignalsJsonSerialization:
 
         form = LogForm(initial={"created_at": datetime(2025, 3, 11, 14, 30, 0)})
         data = json.loads(form.get_signals_json())
-        assert data["created_at"] == "2025-03-11T14:30:00"
+        # Minute precision: matches the HTML5 datetime-local input this signal
+        # feeds (default step is 60s, so seconds are not represented).
+        assert data["created_at"] == "2025-03-11T14:30"
 
     def test_time_field_in_initial(self):
         """Time object should serialize to ISO string."""
@@ -95,7 +97,8 @@ class TestSignalsJsonSerialization:
 
         form = ScheduleForm(initial={"start_time": time(9, 30)})
         data = json.loads(form.get_signals_json())
-        assert data["start_time"] == "09:30:00"
+        # Minute precision: matches the HTML5 time input this signal feeds.
+        assert data["start_time"] == "09:30"
 
     def test_decimal_field_in_initial(self):
         """Decimal from model instance should serialize to string."""
@@ -125,7 +128,7 @@ class TestSignalsJsonSerialization:
         data = json.loads(form.get_signals_json())
         assert data["name"] == "Alice"
         assert data["birth_date"] == "1990-01-15"
-        assert data["created_at"] == "2025-03-11T10:00:00"
+        assert data["created_at"] == "2025-03-11T10:00"
         assert data["price"] == "42.50"
 
 
