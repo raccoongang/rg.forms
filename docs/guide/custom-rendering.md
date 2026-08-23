@@ -125,10 +125,15 @@ submit.
 | `min_when` / `max_when` | — | `data-attr:min` / `max` | **no** — Django validates static bounds only |
 
 The gaps (`disabled_when`, `read_only_when`, `min_when`, `max_when` server-side)
-are deliberate for now: a disabled/read-only control still round-trips its value,
-and dynamic bounds are not yet evaluated during `clean`. Do not rely on them as a
-security boundary — enforce anything authoritative with a `clean_<field>` /
-`clean()` method or a static validator.
+are deliberate for now, and their submission behavior differs. A **read-only**
+control submits its value; a **disabled** control normally does **not**
+participate in native form submission, so a dynamically disabled field can drop
+out of the POST entirely. Because `disabled_when` is not evaluated on the
+server, use it for interaction behavior only, and express authoritative
+acceptance rules through visibility (`visible_when`), requiredness
+(`required_when`), or a `clean_<field>` / `clean()` method. Likewise `min_when`
+/ `max_when` are client-only today — do not rely on them as a validation
+boundary; enforce authoritative bounds with a validator or `clean()`.
 
 ## Formsets
 
