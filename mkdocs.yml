@@ -48,6 +48,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Quick Start: quickstart.md
+  - Coming from Formik / RHF: comparison.md
   - Guide:
       - Visibility Rules: guide/visibility.md
       - Computed Fields: guide/computed.md
