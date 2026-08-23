@@ -24,6 +24,14 @@ class ReactiveFieldMixin:
         placeholder_when: Dict of {expression: placeholder} for dynamic placeholder
         min_when: Dict of {expression: min_value} for dynamic minimum
         max_when: Dict of {expression: max_value} for dynamic maximum
+
+    Presentational kwargs (merged into the widget's ``attrs`` so a developer
+    never has to hand-build ``widget=forms.TextInput(attrs=…)`` just to set
+    them). Explicit kwargs take precedence over any matching key already present
+    on the widget's ``attrs``:
+        placeholder: Static placeholder text.
+        autocomplete: HTML ``autocomplete`` token (e.g. "email", "off").
+        autofocus: When True, adds the boolean ``autofocus`` attribute.
     """
 
     visible_when: str | None = None
@@ -50,6 +58,9 @@ class ReactiveFieldMixin:
         placeholder_when: dict[str, str] | None = None,
         min_when: dict[str, int | float] | None = None,
         max_when: dict[str, int | float] | None = None,
+        placeholder: str | None = None,
+        autocomplete: str | None = None,
+        autofocus: bool = False,
         **kwargs,
     ):
         self.visible_when = visible_when
@@ -63,6 +74,16 @@ class ReactiveFieldMixin:
         self.min_when = min_when
         self.max_when = max_when
         super().__init__(*args, **kwargs)
+
+        # Merge first-class presentational kwargs into the widget's attrs.
+        # These override any matching key already set via ``widget=…`` so the
+        # explicit field kwarg is the source of truth (documented precedence).
+        if placeholder is not None:
+            self.widget.attrs["placeholder"] = placeholder
+        if autocomplete is not None:
+            self.widget.attrs["autocomplete"] = autocomplete
+        if autofocus:
+            self.widget.attrs["autofocus"] = True
 
     def is_visible(self, form_data: dict) -> bool:
         """Evaluate visibility on server side.

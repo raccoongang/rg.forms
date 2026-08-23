@@ -571,3 +571,40 @@ class CascadingForm(ReactiveForm):
                 self.add_error("product", "This product does not belong to the selected category.")
 
         return cleaned_data
+
+
+class TeamMemberForm(ReactiveForm):
+    """A single team-member row, used inside a Django formset.
+
+    Demonstrates ADR-0001:
+    - First-class presentational kwargs (``placeholder``, ``autocomplete``,
+      ``autofocus``) declared in Python — no hand-built ``widget=…`` needed.
+    - Formset-safe rendering via ``render_reactive_field``: each row emits
+      prefixed ``name``/``id`` (``form-0-full_name``, …) that round-trip a POST.
+    - Reactive metadata still works per row (``required_when`` on ``email``).
+    """
+
+    full_name = ReactiveCharField(
+        label="Full name",
+        placeholder="Jane Doe",
+        autocomplete="name",
+        autofocus=True,
+    )
+    role = ReactiveChoiceField(
+        label="Role",
+        choices=[
+            ("", "-- Select --"),
+            ("owner", "Owner"),
+            ("admin", "Admin"),
+            ("editor", "Editor"),
+            ("viewer", "Viewer"),
+        ],
+    )
+    email = ReactiveEmailField(
+        label="Email",
+        required=False,
+        placeholder="jane@example.com",
+        autocomplete="email",
+        # Owners/admins must provide an email; viewers may leave it blank.
+        required_when="$role == 'owner' || $role == 'admin'",
+    )

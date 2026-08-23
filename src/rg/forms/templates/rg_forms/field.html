@@ -1,9 +1,14 @@
-{# Reactive field template - Bulma CSS #}
+{# Reactive field template — REFERENCE EXAMPLE (Bulma CSS).
+   This template is meant to be OVERRIDDEN per project so rg.forms adopts the
+   host app's design system. It renders against the documented context contract
+   (see docs/reference/template-tags.md). To bring your own design system,
+   override rg_forms/field.html with a thin dispatcher — see
+   docs/guide/custom-rendering.md. #}
 {% if field.is_hidden %}
 {{ field }}
 {% else %}
 <div class="field"{% if visible_when %} data-show="{{ visible_when }}"{% endif %}>
-    <label class="label" for="id_{{ field_name }}">
+    <label class="label" for="{{ field.id_for_label }}">
         {{ label }}
         {% if required_when %}
         <span class="has-text-danger" data-show="{{ required_when }}">*</span>
@@ -15,9 +20,10 @@
     <div class="control{% if widget_type == 'select' %} is-expanded{% endif %}">
         {% if widget_type == 'select' %}
         <div class="select is-fullwidth{% if errors %} is-danger{% endif %}">
-            <select name="{{ field_name }}" id="id_{{ field_name }}"
+            <select name="{{ field.html_name }}" id="{{ field.id_for_label }}"
                     data-bind:{{ field_name }}
                     {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
+                    {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
                     {% if is_required %}required{% endif %}>
                 {% for choice in choices %}
                 <option value="{{ choice.0 }}"{% if choice.0 == field.value %} selected{% endif %}>{{ choice.1 }}</option>
@@ -26,18 +32,20 @@
         </div>
         {% elif widget_type == 'checkboxinput' %}
         <label class="checkbox">
-            <input type="checkbox" name="{{ field_name }}" id="id_{{ field_name }}"
+            <input type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
                    data-bind:{{ field_name }}
                    {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
+                   {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
                    {% if field.value %}checked{% endif %}>
             {{ label }}
         </label>
         {% elif widget_type == 'textarea' %}
         <textarea class="textarea{% if errors %} is-danger{% endif %}"
-                  name="{{ field_name }}" id="id_{{ field_name }}"
+                  name="{{ field.html_name }}" id="{{ field.id_for_label }}"
                   data-bind:{{ field_name }}
                   {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                   {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
+                  {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
                   {% if is_required %}required{% endif %}
                   {% if html5_attrs.maxlength %}maxlength="{{ html5_attrs.maxlength }}"{% endif %}>{{ field.value|default:"" }}</textarea>
         {% elif computed %}
@@ -47,11 +55,12 @@
         {% else %}
         {# Default: text/number/email/etc input #}
         <input class="input{% if errors %} is-danger{% endif %}"
-               type="{% if widget_type == 'numberinput' %}number{% elif widget_type == 'emailinput' %}email{% elif widget_type == 'urlinput' %}url{% elif widget_type == 'dateinput' %}date{% elif widget_type == 'timeinput' %}time{% elif widget_type == 'datetimeinput' %}datetime-local{% else %}text{% endif %}"
-               name="{{ field_name }}" id="id_{{ field_name }}"
+               type="{{ input_type }}"
+               name="{{ field.html_name }}" id="{{ field.id_for_label }}"
                data-bind:{{ field_name }}
                {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
+               {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
                {% if is_required %}required{% endif %}
                {% if html5_attrs.min is not None %}min="{{ html5_attrs.min }}"{% endif %}
                {% if html5_attrs.max is not None %}max="{{ html5_attrs.max }}"{% endif %}

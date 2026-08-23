@@ -17,4 +17,5 @@ urlpatterns = [
     path("conditional-attributes/", views.conditional_attributes, name="conditional_attributes"),
     path("field-groups/", views.field_groups, name="field_groups"),
     path("sse-validation/", views.sse_validation, name="sse_validation"),
+    path("custom-rendering/", views.custom_rendering, name="custom_rendering"),
 ]

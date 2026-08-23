@@ -171,6 +171,26 @@
             </footer>
         </div>
     </div>
+
+    <div class="column is-one-third">
+        <div class="card">
+            <div class="card-content">
+                <p class="title is-4">Custom Rendering &amp; Formsets</p>
+                <p class="subtitle is-6">Bring Your Own Design System</p>
+                <div class="content">
+                    <p>Design-system-agnostic field rendering (ADR-0001):</p>
+                    <ul>
+                        <li>Python <code>placeholder</code>/<code>autocomplete</code> kwargs</li>
+                        <li><code>input_type</code> &amp; <code>widget_attrs</code> context</li>
+                        <li>Formset-safe prefixed <code>name</code>/<code>id</code></li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:custom_rendering' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
 </div>
 
 <div class="box mt-5">

@@ -7,6 +7,33 @@ from django.utils.safestring import mark_safe
 
 register = template.Library()
 
+# Maps a Django widget class name (lowercased) to the HTML ``<input type>``
+# attribute an override template should render. ``widget_type`` remains
+# available for branching; ``input_type`` is the value to put on the element.
+_INPUT_TYPE_MAP = {
+    "numberinput": "number",
+    "emailinput": "email",
+    "urlinput": "url",
+    "dateinput": "date",
+    "timeinput": "time",
+    "datetimeinput": "datetime-local",
+    "passwordinput": "password",
+}
+
+# Widget attrs managed elsewhere in the render context; excluded from
+# ``widget_attrs`` so a consumer that spreads it cannot double-render them.
+_WIDGET_ATTRS_EXCLUDE = frozenset({
+    "id",
+    "name",
+    "required",
+    "disabled",
+    "readonly",
+    "maxlength",
+    "minlength",
+    "min",
+    "max",
+})
+
 
 def get_reactive_field(bound_field: BoundField):
     """Get the underlying reactive field from a BoundField."""
@@ -110,6 +137,18 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
     raw_value = bound_field.value()
     formatted_value = widget.format_value(raw_value)
 
+    widget_type = widget.__class__.__name__.lower()
+
+    # Sanitized copy of presentational widget attrs (placeholder, autocomplete,
+    # autofocus, inputmode, custom data-* …). First-class field kwargs have
+    # already been merged into widget.attrs by ReactiveFieldMixin, so they are
+    # carried here too. Keys managed elsewhere in this context are dropped.
+    widget_attrs = {
+        key: value
+        for key, value in widget.attrs.items()
+        if key not in _WIDGET_ATTRS_EXCLUDE
+    }
+
     return {
         "field": bound_field,
         "formatted_value": formatted_value,
@@ -126,7 +165,9 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
         "max_when": getattr(field, "max_when", None),
         "is_required": field.required,
         "field_name": bound_field.name,
-        "widget_type": widget.__class__.__name__.lower(),
+        "widget_type": widget_type,
+        "input_type": _INPUT_TYPE_MAP.get(widget_type, "text"),
+        "widget_attrs": widget_attrs,
         "errors": bound_field.errors,
         "html5_attrs": html5_attrs,
         "choices": getattr(field, "choices", None),

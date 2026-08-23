@@ -62,6 +62,45 @@ Uses the `rg_forms/field.html` template. Generates:
 - Error messages
 - Help text (static and dynamic `help_text_when`)
 
+### Context contract (stable, overridable API) {#context-contract}
+
+`rg_forms/field.html` is a **reference example** meant to be overridden so
+rg.forms adopts your design system (see the
+[Bring your own design system](../guide/custom-rendering.md) guide). The
+context passed to that template is a **supported, semver-relevant surface**:
+new keys may be added in minor releases, but existing keys will not be renamed,
+removed, or change meaning/type without a major version.
+
+| Key | Type | Meaning |
+|---|---|---|
+| `field` | `BoundField` | The bound field. Use `field.html_name`, `field.id_for_label`, `field.value` — these are formset-safe. |
+| `formatted_value` | `str` | Widget-formatted value (HTML5-friendly for date/time inputs). |
+| `label` | `str` | Field label (overridable via the `label=` tag kwarg). |
+| `help_text` | `str` | Static help text. |
+| `visible_when` | `str \| None` | Datastar expression for `data-show`. |
+| `required_when` | `str \| None` | Datastar expression for the dynamic required indicator. |
+| `computed` | `str \| None` | Datastar expression for a read-only computed value. |
+| `disabled_when` | `str \| None` | Datastar expression for `data-attr:disabled`. |
+| `read_only_when` | `str \| None` | Datastar expression for `data-attr:readonly`. |
+| `help_text_when` | `dict \| None` | `{expression: help_text}` for dynamic help text. |
+| `placeholder_when` | `dict \| None` | `{expression: placeholder}` for dynamic placeholder. |
+| `min_when` | `dict \| None` | `{expression: min_value}` for dynamic minimum. |
+| `max_when` | `dict \| None` | `{expression: max_value}` for dynamic maximum. |
+| `is_required` | `bool` | Static required flag. |
+| `field_name` | `str` | Unprefixed field name — use for Datastar **signal** names (`data-bind:{{ field_name }}`), **not** for the submitted `name`. |
+| `widget_type` | `str` | Lowercased widget class name (e.g. `"emailinput"`, `"select"`) — use for branching. |
+| `input_type` | `str` | HTML `<input type>` value (`"email"`, `"datetime-local"`, `"number"`, …; defaults to `"text"`). Put this on the element. |
+| `widget_attrs` | `dict` | Presentational widget attrs (`placeholder`, `autocomplete`, `autofocus`, `inputmode`, custom `data-*`). Managed attrs (`id`, `name`, `required`, `disabled`, `readonly`, `min`, `max`, `maxlength`, `minlength`) are excluded so you can spread it without double-rendering. |
+| `errors` | `ErrorList` | Field errors. |
+| `html5_attrs` | `dict` | HTML5 validation attrs derived from the field (`required`, `min`, `max`, `maxlength`, `minlength`). |
+| `choices` | `list \| None` | Choices for `select`/choice widgets. |
+
+!!! warning "Use `field.html_name` / `field.id_for_label`, never `field_name` for `name`/`id`"
+    Inside a Django formset the submitted name is prefixed (`form-0-role`).
+    Rendering `name="{{ field_name }}"` produces colliding, unsubmittable
+    fields. Always render `name="{{ field.html_name }}"` and
+    `id="{{ field.id_for_label }}"`.
+
 ## `{% render_field_group form group_name %}`
 
 Renders a field group with its header, description, and all fields:

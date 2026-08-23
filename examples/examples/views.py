@@ -8,6 +8,7 @@ from collections.abc import Generator
 
 from datastar_py.django import DatastarResponse, ServerSentEventGenerator
 from datastar_py.sse import DatastarEvent
+from django.forms import formset_factory
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
@@ -23,6 +24,7 @@ from .forms import (
     OrderForm,
     PriceCalculatorForm,
     SSEValidationForm,
+    TeamMemberForm,
     get_product_by_id,
 )
 
@@ -204,6 +206,45 @@ def cascading_form(request: HttpRequest) -> HttpResponse | DatastarResponse:
         form = CascadingForm()
 
     return render(request, "examples/cascading_form.html", {"form": form})
+
+
+def custom_rendering(request: HttpRequest) -> HttpResponse:
+    """Example: Custom rendering + formsets (ADR-0001).
+
+    Demonstrates:
+    - First-class presentational kwargs (placeholder/autocomplete/autofocus)
+      declared in Python and surfaced through ``widget_attrs``.
+    - ``render_reactive_field`` inside a Django formset: each row renders
+      prefixed, non-colliding ``name``/``id`` that round-trip a POST.
+
+    This is the scenario that previously forced a consumer off the tag: before
+    the formset-safe naming fix, rows collided on ``name="role"`` and the POST
+    did not bind back to the right form.
+    """
+    TeamFormSet = formset_factory(TeamMemberForm, extra=3)
+    saved = None
+
+    if request.method == "POST":
+        formset = TeamFormSet(request.POST)
+        if formset.is_valid():
+            # Each row bound back to the right prefixed fields.
+            saved = [
+                {
+                    "full_name": f.cleaned_data["full_name"],
+                    "role": f.cleaned_data["role"],
+                    "email": f.cleaned_data.get("email") or "—",
+                }
+                for f in formset.forms
+                if f.cleaned_data.get("full_name")
+            ]
+    else:
+        formset = TeamFormSet()
+
+    return render(
+        request,
+        "examples/custom_rendering.html",
+        {"formset": formset, "saved": saved},
+    )
 
 
 def sse_validation(request: HttpRequest) -> HttpResponse | DatastarResponse:

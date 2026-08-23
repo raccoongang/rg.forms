@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Custom Rendering & Formsets - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Custom Rendering &amp; Formsets</h1>
+<p class="subtitle">Presentational metadata in Python + formset-safe field rendering (ADR-0001)</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> fill in one or more team members and submit. Each row is an
+        independent form in a Django <code>formset</code>, rendered with the same
+        <code>{% templatetag openblock %} render_reactive_field {% templatetag closeblock %}</code>
+        tag used everywhere else.
+    </p>
+    <ul>
+        <li>The <em>Full name</em> / <em>Email</em> placeholders and <code>autocomplete</code> hints
+            are declared in Python (<code>placeholder=</code>, <code>autocomplete=</code>) — no
+            hand-built <code>widget=</code>.</li>
+        <li>Each rendered field carries a <strong>prefixed</strong> <code>name</code>/<code>id</code>
+            (<code>form-0-full_name</code>, <code>form-1-role</code>, …) so the POST binds back to the
+            correct row. View source to confirm.</li>
+    </ul>
+</div>
+
+{% if saved is not None %}
+<div class="notification is-success is-light">
+    <p class="title is-6">Submitted &amp; bound back to the right rows</p>
+    {% if saved %}
+    <table class="table is-fullwidth is-striped">
+        <thead>
+            <tr><th>Full name</th><th>Role</th><th>Email</th></tr>
+        </thead>
+        <tbody>
+            {% for row in saved %}
+            <tr><td>{{ row.full_name }}</td><td>{{ row.role }}</td><td>{{ row.email }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No rows were filled in.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="box">
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {% for f in formset.forms %}
+        <fieldset class="box">
+            <legend class="label">Team member #{{ forloop.counter }}</legend>
+            <div class="columns">
+                <div class="column">{% render_reactive_field f.full_name %}</div>
+                <div class="column">{% render_reactive_field f.role %}</div>
+                <div class="column">{% render_reactive_field f.email %}</div>
+            </div>
+        </fieldset>
+        {% endfor %}
+        <button type="submit" class="button is-primary">Save team</button>
+    </form>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">The form (Python)</h3>
+    <pre><code>class TeamMemberForm(ReactiveForm):
+    full_name = ReactiveCharField(
+        label="Full name",
+        placeholder="Jane Doe",
+        autocomplete="name",
+        autofocus=True,
+    )
+    role = ReactiveChoiceField(label="Role", choices=[...])
+    email = ReactiveEmailField(
+        label="Email",
+        required=False,
+        placeholder="jane@example.com",
+        autocomplete="email",
+        required_when="$role == 'owner' || $role == 'admin'",
+    )
+
+# In the view:
+TeamFormSet = formset_factory(TeamMemberForm, extra=3)</code></pre>
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">Bring your own design system</h3>
+    <p>
+        The shipped <code>rg_forms/field.html</code> is a Bulma <em>reference example</em>. To adopt
+        a host design system, override that one template with a thin dispatcher on
+        <code>widget_type</code> that forwards the documented context
+        (<code>input_type</code>, <code>widget_attrs</code>, <code>field.html_name</code>,
+        <code>field.id_for_label</code>, and the reactive-attr set) to your own components. See the
+        <em>Custom Rendering</em> guide in the docs.
+    </p>
+    <p class="mt-2 is-size-7">
+        <em>Note:</em> the per-row <code>required_when</code> indicator binds to a single
+        <code>$role</code> signal shared across rows — the reactive signal layer is not yet
+        formset-aware. Server-side submission (the focus of this example) round-trips correctly
+        regardless.
+    </p>
+</div>
+{% endblock %}

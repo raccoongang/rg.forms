@@ -132,6 +132,36 @@ These are the additional keyword arguments available on all reactive fields:
 
     Dict mapping expressions to maximum values.
 
+## Presentational attributes
+
+Convenience kwargs for common presentational widget attributes, so you do not
+have to build a `widget=…` just to set them. They are merged into the widget's
+`attrs` (an explicit kwarg overrides the same key set via `widget=`) and
+surfaced to templates as `widget_attrs` (see the
+[template-tags context contract](template-tags.md#context-contract)).
+
+### `placeholder`
+
+:   **Type**: `str | None`
+
+    Static placeholder text.
+
+    ```python
+    email = ReactiveEmailField(placeholder="jane@example.com")
+    ```
+
+### `autocomplete`
+
+:   **Type**: `str | None`
+
+    HTML `autocomplete` token (e.g. `"email"`, `"name"`, `"off"`).
+
+### `autofocus`
+
+:   **Type**: `bool`
+
+    When `True`, adds the boolean `autofocus` attribute.
+
 ## ReactiveChoiceField extras
 
 `ReactiveChoiceField` has additional attributes for declarative cascading:
