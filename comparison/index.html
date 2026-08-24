@@ -1,0 +1,1898 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Reactive Django Forms with Datastar integration">
+      
+      
+      
+        <link rel="canonical" href="https://raccoongang.github.io/rg.forms/comparison/">
+      
+      
+        <link rel="prev" href="../quickstart/">
+      
+      
+        <link rel="next" href="../comparisons/methodology/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Coming from Formik / RHF - rg.forms</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#coming-from-formik-react-hook-form-tanstack-form" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="rg.forms" class="md-header__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            rg.forms
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Coming from Formik / RHF
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="rg.forms" class="md-nav__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    rg.forms
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from Formik / RHF
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from Formik / RHF
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-backend-first-in-one-minute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Backend-first in one minute
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-is-being-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What is being compared
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-results-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Results overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-scenario-comparisons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Scenario comparisons
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-capability-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Capability map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-honest-differences-and-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Honest differences and limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-choosing-between-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Choosing between them
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Choosing between them">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#further-reading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Further reading
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Comparisons
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparisons/methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparisons/registration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparisons/order-configurator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Order configurator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparisons/team-roster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team roster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparisons/design-system-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design-system rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparisons/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visibility Rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/computed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Computed Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/conditional-attrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conditional Attributes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading Dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/field-groups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Groups
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Formsets & Scoped Signals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/sse-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSE Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/incremental-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Incremental Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/custom-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/datastar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datastar Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/fields/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/forms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ReactiveForm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/template-tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template Tags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-design-system-agnostic-field-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001 Design-system-agnostic rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-canonical-expression-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002 Canonical expression semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0003-scoped-signals-and-reactive-formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003 Scoped signals & reactive formsets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0004-declarative-incremental-server-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004 Declarative incremental validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-backend-first-in-one-minute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Backend-first in one minute
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-is-being-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What is being compared
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-results-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Results overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-scenario-comparisons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Scenario comparisons
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-capability-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Capability map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-honest-differences-and-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Honest differences and limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-choosing-between-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Choosing between them
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Choosing between them">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#further-reading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Further reading
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="coming-from-formik-react-hook-form-tanstack-form">Coming from Formik / React Hook Form / TanStack Form<a class="headerlink" href="#coming-from-formik-react-hook-form-tanstack-form" title="Permanent link">&para;</a></h1>
+<p>If you build forms with <a href="https://formik.org/">Formik</a>,
+<a href="https://react-hook-form.com/">React Hook Form</a> (RHF), or
+<a href="https://tanstack.com/form/latest">TanStack Form</a>, this page shows how the
+backend-first approach differs, and measures — with a reproducible script — how
+much project-specific code each approach takes for the same feature.</p>
+<h2 id="1-backend-first-in-one-minute">1. Backend-first in one minute<a class="headerlink" href="#1-backend-first-in-one-minute" title="Permanent link">&para;</a></h2>
+<p>React form libraries are <strong>client-side state engines</strong>: the browser owns the
+values, per-field touched/dirty state, validation lifecycle, and submission
+state, and your server re-validates afterwards. rg.forms inverts that. The
+<strong>Python <code>ReactiveForm</code> is the single source of truth</strong> — fields, rules,
+validation, and initial state live on the server; <a href="https://data-star.dev">Datastar</a>
+provides the client reactivity; and your project owns <strong>one rendering adapter</strong>
+for its design system instead of hand-written JSX per form.</p>
+<blockquote>
+<p>rg.forms does the job of a form library — dynamic, validated, reactive forms —
+the backend-first way: one Python schema, server-authoritative validation, and
+a swappable design-system renderer. You write the schema once, not twice.</p>
+</blockquote>
+<h2 id="2-what-is-being-compared">2. What is being compared<a class="headerlink" href="#2-what-is-being-compared" title="Permanent link">&para;</a></h2>
+<p>Each scenario below is a <strong>complete vertical slice</strong>: the form schema, its
+validation, the rendering, the reactivity, the transport, <strong>and</strong> the server-side
+validation and endpoint. A React form without its API handler and server
+validation is not equivalent to an rg.forms form, so both are counted.</p>
+<p>Line counts are auto-generated by
+<a href="https://github.com/raccoongang/rg.forms/blob/master/tools/measure_comparisons.py"><code>tools/measure_comparisons.py</code></a>
+from an explicit <a href="../comparisons/manifest.json">manifest</a>; they count non-blank,
+non-comment source lines (docstrings and comments excluded). The rg.forms side
+of every slice is the <strong>runnable example app</strong>; the competitor side is an
+<strong>illustrative fixture</strong> written from official-doc patterns. Full details,
+inclusions/exclusions, and honesty rules are in the
+<a href="../comparisons/methodology/">methodology</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>tools/measure_comparisons.py<span class="w">           </span><span class="c1"># regenerate the numbers</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>tools/measure_comparisons.py<span class="w"> </span>--check<span class="w">    </span><span class="c1"># CI: fail if stale/missing</span>
+</code></pre></div>
+<h2 id="3-results-overview">3. Results overview<a class="headerlink" href="#3-results-overview" title="Permanent link">&para;</a></h2>
+<p>Project-specific source lines per complete vertical slice (non-blank,
+non-comment; generated by the script, <code>2026-08</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th style="text-align: right;">rg.forms</th>
+<th style="text-align: right;">Formik + API</th>
+<th style="text-align: right;">RHF + API</th>
+<th style="text-align: right;">TanStack + API</th>
+<th>Fewer lines than client stacks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Account registration</td>
+<td style="text-align: right;"><strong>96</strong></td>
+<td style="text-align: right;">339</td>
+<td style="text-align: right;">365</td>
+<td style="text-align: right;">409</td>
+<td>243–313 (72–77%)</td>
+</tr>
+<tr>
+<td>Order configurator</td>
+<td style="text-align: right;"><strong>113</strong></td>
+<td style="text-align: right;">314</td>
+<td style="text-align: right;">281</td>
+<td style="text-align: right;">351</td>
+<td>168–238 (60–68%)</td>
+</tr>
+<tr>
+<td>Team roster*</td>
+<td style="text-align: right;"><strong>79</strong></td>
+<td style="text-align: right;">255</td>
+<td style="text-align: right;">230</td>
+<td style="text-align: right;">265</td>
+<td>151–186 (66–70%)</td>
+</tr>
+<tr>
+<td>Design-system rendering</td>
+<td style="text-align: right;"><strong>82</strong></td>
+<td style="text-align: right;">249</td>
+<td style="text-align: right;">311</td>
+<td style="text-align: right;">270</td>
+<td>167–229 (67–74%)</td>
+</tr>
+</tbody>
+</table>
+<p>* rg.forms's slice is <strong>static</strong> rows; the client stacks also implement dynamic
+add/remove, which rg.forms does not have yet — see the
+<a href="../comparisons/team-roster/">team-roster page</a>.</p>
+<p>These are the numbers for <em>these</em> implementations, not a universal law
+(methodology and caveats: <a href="../comparisons/methodology/">here</a>). The reduction is
+structural, not stylistic — it comes from removing whole layers:</p>
+<table>
+<thead>
+<tr>
+<th>Architectural fact (per business rule / field)</th>
+<th style="text-align: center;">rg.forms</th>
+<th style="text-align: center;">A client stack + API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Places one rule is declared</td>
+<td style="text-align: center;">1 (Python)</td>
+<td style="text-align: center;">2 (client schema + server)</td>
+</tr>
+<tr>
+<td>Files edited to change one rule</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">2</td>
+</tr>
+<tr>
+<td>Hand-written client/server transport boundaries</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1+</td>
+</tr>
+<tr>
+<td>Project-specific per-field renderers</td>
+<td style="text-align: center;">0 (one shared adapter)</td>
+<td style="text-align: center;">1 per field kind</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-scenario-comparisons">4. Scenario comparisons<a class="headerlink" href="#4-scenario-comparisons" title="Permanent link">&para;</a></h2>
+<p>Each scenario has a detailed page with the per-layer breakdown, the equivalent
+competitor implementations, and the trade-offs.</p>
+<ul>
+<li><strong><a href="../comparisons/registration/">Account registration</a></strong> — live username/email
+  availability + submit. rg.forms <strong>96</strong> lines vs <strong>339–409</strong>: the client async
+  validators, debounce, stale-request handling, error mapping, and the whole
+  server tier collapse into <code>validate_on="blur"</code> + one <code>reactive_validate</code> view,
+  with the uniqueness rule written once.</li>
+<li><strong><a href="../comparisons/order-configurator/">Order configurator</a></strong> — conditional
+  fields + exact-<code>Decimal</code> pricing. rg.forms <strong>113</strong> vs <strong>281–351</strong>: <code>watch()</code>
+  conditionals + a re-declared server schema + a client/server total both become
+  declarative <code>visible_when</code>/<code>disabled_when</code>/<code>computed</code>, recomputed authoritatively.</li>
+<li><strong><a href="../comparisons/team-roster/">Team roster</a></strong> — a repeatable section. rg.forms
+  <strong>79</strong> (static) vs <strong>230–265</strong> (dynamic): a fair, caveated comparison — the
+  client stacks add/remove rows, which rg.forms does not yet.</li>
+<li><strong><a href="../comparisons/design-system-rendering/">Design-system rendering</a></strong> — one
+  form, project styling. rg.forms <strong>82</strong> vs <strong>249–311</strong>: a per-field component
+  library versus one shared <code>field.html</code> adapter reused by every form.</li>
+</ul>
+<p>The <a href="../comparisons/order-configurator/">order configurator</a> also demonstrates a
+rule that has <strong>no client-library equivalent at all</strong>: a computed total the
+<em>server</em> recomputes exactly and refuses to accept from the client.</p>
+<h2 id="5-capability-map">5. Capability map<a class="headerlink" href="#5-capability-map" title="Permanent link">&para;</a></h2>
+<p>Where each rule is enforced today (browser / Datastar / server), after
+ADR-0001–0004:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>rg.forms today</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Canonical expression semantics</td>
+<td>Compiled to JS for the client and re-evaluated on the server from one AST; strict typed equality, numeric-only arithmetic, <code>/0</code>→<code>null</code></td>
+</tr>
+<tr>
+<td>Conditional visibility (<code>visible_when</code>)</td>
+<td><code>data-show</code> client + hidden fields skipped in server <code>clean</code></td>
+</tr>
+<tr>
+<td>Conditional requiredness (<code>required_when</code>)</td>
+<td>reactive <code>data-attr:required</code> + enforced in server <code>clean</code></td>
+</tr>
+<tr>
+<td>Server-authoritative computed fields</td>
+<td>live float preview + exact <code>Decimal</code> recompute in <code>clean</code> (tamper-proof)</td>
+</tr>
+<tr>
+<td>Static scoped formsets</td>
+<td>per-row scoped signals; independent reactivity; prefixed round-trip</td>
+</tr>
+<tr>
+<td>Multiple prefixed forms per page</td>
+<td>independent scopes, no signal collision</td>
+</tr>
+<tr>
+<td>Declarative incremental validation</td>
+<td><code>validate_on="blur"</code>/<code>"change"</code> → JSON-signal request + single-field SSE patch</td>
+</tr>
+<tr>
+<td>Stable a11y ids</td>
+<td><code>control_id</code>/<code>wrapper_id</code>/<code>help_id</code>/<code>error_id</code> + <code>aria-invalid</code>/<code>aria-describedby</code></td>
+</tr>
+<tr>
+<td>Design-system overrides</td>
+<td>one shared <code>rg_forms/field.html</code> adapter; documented context contract</td>
+</tr>
+<tr>
+<td>External signals</td>
+<td><code>Meta.external_signals</code> + <code>get_external_signal_values()</code> for client/server parity</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-honest-differences-and-limitations">6. Honest differences and limitations<a class="headerlink" href="#6-honest-differences-and-limitations" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>No client form-state engine</strong>, and no built-in touched/dirty state machine.
+  Where a screen wants a <code>dirty</code> guard or <code>submitting</code> flag, it is a couple of
+  Datastar signals, not a subsystem.</li>
+<li><strong>No dynamic formset mutation yet</strong> — add/remove/reorder rows is out of scope;
+  static rows behave independently (see the <a href="#4-scenario-comparisons">team-roster</a>
+  slice, which compares against the competitors' dynamic field arrays honestly).</li>
+<li><strong>No offline-first forms</strong> or offline persistence.</li>
+<li><strong>File-field incremental validation is not supported</strong> — files validate on
+  submit.</li>
+<li><strong>External signals used in arithmetic are not statically type-checked</strong> (their
+  type is unknown at build time).</li>
+<li>The <strong>browser-level Datastar conformance suite</strong> is a CI responsibility, not
+  run in unit tests.</li>
+<li>Genuinely client-bound widgets — rich in-browser editors (WYSIWYG, code,
+  canvas/WebGL), high-frequency local animation — may still warrant a client
+  component. (Common interactions often <em>assumed</em> to need one — drag-and-drop
+  reordering, autocomplete, dependent selects, live totals — are all doable
+  server-driven with Datastar.) Use rg.forms for the server-authoritative core
+  and drop to a component only where the interaction genuinely needs it; the
+  <a href="../guide/custom-rendering/">custom rendering</a> adapter is that escape hatch.</li>
+</ul>
+<h2 id="7-choosing-between-them">7. Choosing between them<a class="headerlink" href="#7-choosing-between-them" title="Permanent link">&para;</a></h2>
+<p>The honest default for most web applications is <strong>server-driven, Datastar-first</strong>:
+render on the server, let <a href="https://data-star.dev">Datastar</a> push updates over SSE,
+and ship a few kilobytes of JavaScript instead of a client application. rg.forms
+is the <em>forms layer</em> of that architecture — your rules live once in Python, the
+browser reflects them for UX, and the server stays authoritative.</p>
+<p><strong>Default to the Datastar-first approach</strong> for the software most teams actually
+build: CRUD, dashboards, onboarding and configuration flows, wizards, admin and
+back-office tools, content and commerce. This now covers much of what was once
+assumed to <em>require</em> an SPA — conditional and computed forms (this library),
+server-pushed live updates, and even real-time collaborative views. Anders
+Murphy's <a href="https://news.ycombinator.com/item?id=43971164">one-billion-checkboxes demo</a>
+is an existence proof: a real-time, collaborative, high-cardinality UI built with
+Datastar + SSE and <em>no</em> client framework (its author is candid that it is a
+demonstration, not a tuned benchmark — treat it as "this is possible," not a
+throughput guarantee). A maintenance argument compounds the point: server
+templates stay backward-compatible for years, while client frameworks tend to
+churn through rewrites every few years (<a href="https://dou.ua/forums/topic/54977/">longer argument</a>).</p>
+<p><strong>Reach for a React/SPA framework (and its form library) when the app is a
+genuinely standalone client application</strong> — not a server-rendered site with
+reactive pieces:</p>
+<ul>
+<li>offline-first / local-first behavior, or long-lived client state that must
+  survive without the server;</li>
+<li>heavy client-side computation or rendering (canvas/WebGL, spreadsheets, live
+  editors, diagramming);</li>
+<li>genuinely client-bound interaction: canvas/WebGL surfaces, rich touch-gesture
+  or direct-manipulation UIs, high-frequency local animation;</li>
+<li>an existing SPA or component ecosystem you must integrate with.</li>
+</ul>
+<p>Note what is deliberately <strong>not</strong> on that list: <strong>dynamic add / remove / reorder
+of rows — including drag-and-drop reordering.</strong> None of that is a Datastar
+limitation; it is a natural server-driven interaction — a small handler posts the
+action (or the new order) and the server re-renders the affected rows over SSE
+(Murphy's demo mutates a billion cells exactly this way). rg.forms simply does
+not yet ship a <em>declarative</em> helper for it, so today you write that handler
+yourself — still server-driven, still less code and more performant than adding a
+client framework. The missing piece is a library convenience, not an
+architectural reason to reach for an SPA.</p>
+<p>Even then the split is usually <strong>per page, not per app</strong>: the ordinary forms and
+pages stay server-driven with rg.forms, and a client component owns only the few
+screens that are truly interactive products.</p>
+<p>React form libraries are excellent at what they are designed for — client-side
+form state — and this comparison is about <strong>architecture fit, not quality</strong>. The
+substantive claim is only that far fewer applications need that client engine
+than the current default assumes. Their APIs evolve; the fixtures record the
+versions and date (2026-08) they represent.</p>
+<h3 id="further-reading">Further reading<a class="headerlink" href="#further-reading" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Anders Murphy — <em>one billion checkboxes</em>, real-time collaboration server-driven
+  with Datastar + SSE: <a href="https://news.ycombinator.com/item?id=43971164">discussion</a>.</li>
+<li>Oleksii Koval — <em><a href="https://dou.ua/forums/topic/54977/">the shift to backend-driven frontends</a></em>
+  (DOU): why Datastar-first, the framework-longevity argument, and where SPAs
+  still fit.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.annotate", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

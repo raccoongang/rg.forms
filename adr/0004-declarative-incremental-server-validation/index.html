@@ -1,0 +1,2222 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Reactive Django Forms with Datastar integration">
+      
+      
+      
+        <link rel="canonical" href="https://raccoongang.github.io/rg.forms/adr/0004-declarative-incremental-server-validation/">
+      
+      
+        <link rel="prev" href="../0003-scoped-signals-and-reactive-formsets/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-0004 Declarative incremental validation - rg.forms</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-0004-declarative-incremental-server-validation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="rg.forms" class="md-header__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            rg.forms
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-0004 Declarative incremental validation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="rg.forms" class="md-nav__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    rg.forms
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from Formik / RHF
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Comparisons
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/registration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/order-configurator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Order configurator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/team-roster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team roster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/design-system-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design-system rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visibility Rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/computed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Computed Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/conditional-attrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conditional Attributes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading Dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/field-groups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Groups
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Formsets & Scoped Signals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/sse-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSE Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/incremental-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Incremental Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/custom-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/datastar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datastar Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/fields/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/forms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ReactiveForm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/template-tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template Tags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0001-design-system-agnostic-field-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001 Design-system-agnostic rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0002-canonical-expression-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002 Canonical expression semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0003-scoped-signals-and-reactive-formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003 Scoped signals & reactive formsets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004 Declarative incremental validation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004 Declarative incremental validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#revisions-23-decisions-resolved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revisions 2–3 — decisions resolved
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-the-wiring-is-manual-and-error-prone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — The wiring is manual and error-prone
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-the-obvious-transport-contenttype-form-does-not-fit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — The obvious transport (contentType: 'form') does not fit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-missing-lifecycle-affordances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — Missing lifecycle affordances
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-transport-json-signals-for-incremental-form-post-for-submit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §1 — Transport: JSON signals for incremental, form POST for submit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1a-csrf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §1a — CSRF
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-validation-boundary-run-the-whole-form-patch-one-fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §2 — Validation boundary: run the whole form, patch one fragment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2a-json-signals-django-form-data-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §2a — JSON-signals → Django form-data adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-lifecycle-affordances-native-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §3 — Lifecycle affordances (native primitives)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-validation-url-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §4 — Validation URL propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-trigger-identity-header-transport-treated-as-untrusted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §5 — Trigger identity: header transport, treated as untrusted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-patch-target-contract-and-minimal-error-accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §6 — Patch-target contract and minimal error accessibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes-for-the-implementing-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes (for the implementing agent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#revisions-23-decisions-resolved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revisions 2–3 — decisions resolved
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-the-wiring-is-manual-and-error-prone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — The wiring is manual and error-prone
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-the-obvious-transport-contenttype-form-does-not-fit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — The obvious transport (contentType: 'form') does not fit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-missing-lifecycle-affordances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — Missing lifecycle affordances
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-transport-json-signals-for-incremental-form-post-for-submit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §1 — Transport: JSON signals for incremental, form POST for submit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1a-csrf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §1a — CSRF
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-validation-boundary-run-the-whole-form-patch-one-fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §2 — Validation boundary: run the whole form, patch one fragment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2a-json-signals-django-form-data-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §2a — JSON-signals → Django form-data adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-lifecycle-affordances-native-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §3 — Lifecycle affordances (native primitives)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-validation-url-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §4 — Validation URL propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-trigger-identity-header-transport-treated-as-untrusted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §5 — Trigger identity: header transport, treated as untrusted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-patch-target-contract-and-minimal-error-accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §6 — Patch-target contract and minimal error accessibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes-for-the-implementing-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes (for the implementing agent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="adr-0004-declarative-incremental-server-validation">ADR 0004 — Declarative incremental server validation<a class="headerlink" href="#adr-0004-declarative-incremental-server-validation" title="Permanent link">&para;</a></h1>
+<ul>
+<li>Status: Accepted (2026-08-24, review-approved after event/non-field-error clarifications) — implement after ADR-0003</li>
+<li>Date: 2026-08-24</li>
+<li>Deciders: Oleksii Koval (author of rg.forms)</li>
+<li>Relates to: <a href="../0002-canonical-expression-semantics/">ADR-0002</a> (canonical JSON signals are the request payload) and
+  <a href="../0003-scoped-signals-and-reactive-formsets/">ADR-0003</a> (scoped signal paths for the pending indicator and trigger
+  identity). Reuses the existing SSE machinery (<code>reactive_form_response</code>).</li>
+</ul>
+<h2 id="revisions-23-decisions-resolved">Revisions 2–3 — decisions resolved<a class="headerlink" href="#revisions-23-decisions-resolved" title="Permanent link">&para;</a></h2>
+<p>The first draft assumed a <code>contentType: 'form'</code> request, which is wrong for this feature. Revision 3 also completes
+the request contract (CSRF, trigger transport, JSON→form adapter, ID contract):</p>
+<ul>
+<li><strong>Transport: the default Datastar JSON-signal request</strong>, not <code>contentType: 'form'</code> (which sends <em>no signals</em> and
+  runs native form validity gating that would block validation of a partially-filled form). Final submit keeps the
+  form POST (Decision §1).</li>
+<li><strong>CSRF</strong>: the render tag is context-aware and sends Django's token as an <code>X-CSRFToken</code> header, serialized as a safe
+  JS string literal, with token-rotation tested; never <code>csrf_exempt</code> (Decision §1a).</li>
+<li><strong>Trigger transport: an <code>X-RG-Validate-Field</code> header</strong> carrying the canonical field path (scoped for formsets), not
+  a marker mixed into the signal object; cross-checked against the URL discriminator (Decision §5).</li>
+<li><strong>JSON→form adapter</strong> is a first-class component with a defined mapping table, <strong>scope authorization</strong> (a decoded
+  scope must belong to the form being validated), and <strong>signal-scope filtering</strong> (only the current form's scope is
+  read) (Decision §2a).</li>
+<li><strong>Validation boundary: run the whole form, patch one fragment</strong> (Option A). No per-field dependency inference
+  (Decision §2).</li>
+<li><strong>Stale responses: use Datastar 1.0.2's method+URL cancellation</strong> (it cancels by method+URL regardless of element),
+  turned into per-field independence via a <strong><code>?__rg_field=&lt;path&gt;</code> URL discriminator</strong> (Decision §3).</li>
+<li><strong>Pending state: the native <code>data-indicator</code></strong> on a scoped local signal <code>_rgForms.&lt;scope&gt;.validating.&lt;field&gt;</code>
+  (Decision §3).</li>
+<li><strong>Validation URL is explicit</strong> — <code>validate_action</code>, with defined unset/empty/inherit semantics (Decision §4).</li>
+<li><strong>Trigger identity is untrusted input</strong> and must be verified server-side (Decision §5).</li>
+<li><strong>Stable wrapper/error IDs</strong> (with an <code>id_for_label</code>-empty fallback, exposed in the renderer context) make the
+  single-field patch implementable; minimal <code>aria-*</code> is in the fragment contract from day one (Decision §6).</li>
+</ul>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Some rules can only be checked on the server: "is this username taken?", "is this coupon valid?", VAT/format lookups,
+cross-field rules that need database state. Today rg.forms enforces these on <strong>submit</strong>: the SSE-validation example
+(<code>examples/…/sse_validation.html</code> + <code>reactive_form_response</code>) binds the whole form, validates, and patches error
+fragments back without a page reload. Validating a <em>single field earlier</em> — as the user leaves it — is possible but
+must be <strong>hand-wired</strong> per field: <code>data-on:blur</code> / <code>data-on:input__debounce.400ms="@post(url, {contentType: 'form'})"</code>
+plus a view that knows which field to validate and how to patch only that fragment.</p>
+<p>This is the capability Formik/RHF expose as "async validators / validate-on-blur." It is worth having — but it is not
+a client-side concern. It is <strong>ordinary Django validation invoked earlier and returned through SSE</strong>, which fits
+rg.forms precisely. The goal of this ADR is to make it <em>declarative</em> so authors do not re-implement the wiring, the
+stale-response handling, and the pending state every time.</p>
+<h2 id="problems">Problems<a class="headerlink" href="#problems" title="Permanent link">&para;</a></h2>
+<h3 id="p1-the-wiring-is-manual-and-error-prone">P1 — The wiring is manual and error-prone<a class="headerlink" href="#p1-the-wiring-is-manual-and-error-prone" title="Permanent link">&para;</a></h3>
+<p>Every incremental-validated field needs its own <code>data-on:*</code> handler, debounce, content-type, and a matching
+view branch. Nothing ties the field declaration to its trigger.</p>
+<h3 id="p2-the-obvious-transport-contenttype-form-does-not-fit">P2 — The obvious transport (<code>contentType: 'form'</code>) does not fit<a class="headerlink" href="#p2-the-obvious-transport-contenttype-form-does-not-fit" title="Permanent link">&para;</a></h3>
+<p>Datastar's <code>contentType: 'form'</code> locates the closest form, runs <strong>native form validation</strong>, sends the form fields,
+and sends <strong>no signals</strong>. Two consequences make it wrong for incremental validation:</p>
+<ul>
+<li><strong>Native validity gating blocks it.</strong> Blurring <code>username</code> while another <code>required</code> field is still empty can make
+  the browser refuse the request entirely — defeating validate-on-blur on a partially-filled form.</li>
+<li><strong>Signals and trigger identity are not sent.</strong> Local signals (<code>_validating_username</code>) and any trigger marker are
+  excluded, so the server cannot receive the canonical typed values (ADR-0002) or learn which field fired.</li>
+</ul>
+<h3 id="p3-missing-lifecycle-affordances">P3 — Missing lifecycle affordances<a class="headerlink" href="#p3-missing-lifecycle-affordances" title="Permanent link">&para;</a></h3>
+<p>A robust implementation needs: <strong>stale-response protection</strong> (a late reply for an old keystroke must not overwrite a
+newer state), a <strong>pending indicator</strong> while the check is in flight, a decision on which validation runs, <strong>no
+clobbering of unrelated fields' errors</strong>, and <strong>throttling</strong> of expensive database checks. Each has a native Datastar
+primitive or a simple rule — the first draft left them unspecified.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Add a declarative, opt-in trigger on reactive fields and a server helper that runs Django validation incrementally
+and patches back a single field (or form) fragment.</p>
+<h3 id="1-transport-json-signals-for-incremental-form-post-for-submit">§1 — Transport: JSON signals for incremental, form POST for submit<a class="headerlink" href="#1-transport-json-signals-for-incremental-form-post-for-submit" title="Permanent link">&para;</a></h3>
+<p>Reactive fields accept a declarative trigger:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">username</span> <span class="o">=</span> <span class="n">ReactiveCharField</span><span class="p">(</span><span class="n">validate_on</span><span class="o">=</span><span class="s2">&quot;blur&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">coupon</span>   <span class="o">=</span> <span class="n">ReactiveCharField</span><span class="p">(</span><span class="n">validate_on</span><span class="o">=</span><span class="s2">&quot;change&quot;</span><span class="p">,</span> <span class="n">debounce</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+</code></pre></div>
+<ul>
+<li><code>validate_on</code>: <code>"blur"</code> | <code>"change"</code> (default unset → submit-only, today's behavior).</li>
+<li><code>debounce</code>: milliseconds for <code>"change"</code> (ignored for <code>"blur"</code>).</li>
+</ul>
+<p>The renderer emits the <code>data-on:*</code> handler that fires a <strong>default Datastar request (JSON signals)</strong> — <strong>not</strong>
+<code>contentType: 'form'</code>. This sends the canonical typed signals (ADR-0002), is not gated by native whole-form validity,
+carries nested/scoped signals (ADR-0003), and can carry the trigger identity in the payload/header. The server helper
+adapts the canonical signal JSON into Django form data. Final submission continues to use <code>contentType: 'form'</code> (and
+native Django POST), which is required for files and normal form handling.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>incremental check → JSON signals (typed, ungated)
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>final submit      → normal Django form POST
+</code></pre></div>
+<h3 id="1a-csrf">§1a — CSRF<a class="headerlink" href="#1a-csrf" title="Permanent link">&para;</a></h3>
+<p>A JSON Datastar POST does <strong>not</strong> carry the form's hidden <code>csrfmiddlewaretoken</code> field, so a normal CSRF-protected view
+rejects it. The generated handler must send the token as an <code>X-CSRFToken</code> header, which <code>CsrfViewMiddleware</code> accepts:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>data-on:blur=&quot;@post(&#39;/validate/&#39;, {headers: {&#39;X-CSRFToken&#39;: &#39;<span class="p">&lt;</span><span class="nt">token</span><span class="p">&gt;</span>&#39;}})&quot;
+</code></pre></div>
+<p>To supply <code>&lt;token&gt;</code>, the render tag becomes <strong>context-aware</strong> (reads the request's CSRF token from the template
+context) and injects the header into every generated incremental request. Two implementation requirements:</p>
+<ul>
+<li><strong>serialize the token and the URL as safe JavaScript string literals</strong> (e.g. <code>json.dumps</code>/<code>escapejs</code>), never
+  hand-built quoting — the token and a <code>?__rg_field=…</code> URL both end up inside a JS expression attribute;</li>
+<li><strong>test CSRF token rotation/masking</strong> with Django's normal CSRF test client (the per-response masked token must be
+  accepted).</li>
+</ul>
+<p><code>CsrfViewMiddleware</code> is required. <code>csrf_exempt</code> is <strong>not</strong> an acceptable solution.</p>
+<h3 id="2-validation-boundary-run-the-whole-form-patch-one-fragment">§2 — Validation boundary: run the whole form, patch one fragment<a class="headerlink" href="#2-validation-boundary-run-the-whole-form-patch-one-fragment" title="Permanent link">&para;</a></h3>
+<p>Django exposes no dependency metadata for <code>clean_&lt;field&gt;()</code> / <code>Form.clean()</code> / validators / uniqueness checks, so the
+library cannot infer which cross-field rules depend on the triggering field. Therefore, for v1:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">form</span> <span class="o">=</span> <span class="n">MyForm</span><span class="p">(</span><span class="n">current_values</span><span class="p">)</span>   <span class="c1"># adapted from the JSON signals</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">form</span><span class="o">.</span><span class="n">is_valid</span><span class="p">()</span>                 <span class="c1"># full, exactly like final submit</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># ... then patch ONLY the triggered field&#39;s fragment</span>
+</code></pre></div>
+<p>This gives exact final-submit semantics, no second validation API, and runs cross-field rules for free. The cost —
+validators/DB checks on unrelated fields also run — is acceptable for v1 and controllable via <code>debounce</code>. An opt-in
+per-field incremental hook is possible later <strong>only if measurement shows a need</strong>; it is deliberately excluded now to
+avoid a second validation surface.</p>
+<p><strong>Non-field errors are submit-time in v1.</strong> A <code>Form.clean()</code> failure can produce a <em>non-field</em> error rather than one
+attached to the triggering field. Since the incremental response patches only the triggering field's fragment,
+incremental validation <strong>displays only errors attached to that field</strong>; non-field errors are computed (the full form
+still runs) but <strong>not shown incrementally</strong> — they surface normally on full submit. So "runs cross-field rules" does
+not mean "shows every cross-field error mid-typing." (Patching a shared error-summary target is left to the later
+accessibility ADR.)</p>
+<blockquote>
+<p>Incremental validation displays errors attached to the triggering field. Non-field errors remain submit-time
+feedback in v1, even though full form validation runs during the incremental request.</p>
+</blockquote>
+<p><strong>"Preserve unrelated errors" needs no server state.</strong> Because the SSE response patches only the triggered field's
+wrapper, every other field's DOM (including its current error) is untouched automatically. The server computes the
+full error set for the request but <em>selects</em> only the triggered fragment to patch; it keeps no error-state session.</p>
+<h3 id="2a-json-signals-django-form-data-adapter">§2a — JSON-signals → Django form-data adapter<a class="headerlink" href="#2a-json-signals-django-form-data-adapter" title="Permanent link">&para;</a></h3>
+<p>Adapting the canonical signal JSON into the <code>QueryDict</code> a Django form binds is more than flattening. It is a
+first-class component (built on the ADR-0002 normalization and ADR-0003 scoping), with this mapping:</p>
+<table>
+<thead>
+<tr>
+<th>Signal (canonical)</th>
+<th>Django form-data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>scoped path <code>rgForms.&lt;scope&gt;.name</code></td>
+<td>prefixed HTML name <code>form-0-name</code> (reverse of the ADR-0003 scope map)</td>
+</tr>
+<tr>
+<td>unscoped path <code>name</code></td>
+<td><code>name</code></td>
+</tr>
+<tr>
+<td>array value</td>
+<td>multiple <code>QueryDict</code> entries under one key (<code>getlist</code> semantics)</td>
+</tr>
+<tr>
+<td>boolean <code>true</code></td>
+<td>the widget's checked value (e.g. <code>"on"</code>)</td>
+</tr>
+<tr>
+<td>boolean <code>false</code></td>
+<td>key <strong>absent</strong> (native unchecked-checkbox semantics)</td>
+</tr>
+<tr>
+<td><code>null</code> / empty</td>
+<td>the field's empty form representation (per ADR-0002 §2)</td>
+</tr>
+<tr>
+<td><code>external_signals</code> / reserved (<code>rgForms</code>, <code>_rgForms…</code>)</td>
+<td><strong>dropped</strong> — never become form fields</td>
+</tr>
+<tr>
+<td>file inputs</td>
+<td>unavailable in incremental validation — skipped (files validate on submit only)</td>
+</tr>
+</tbody>
+</table>
+<p>The adapter is shared and tested, not ad-hoc logic inside the view helper.</p>
+<p><strong>Scope authorization (not just decoding).</strong> A valid Base32 scope is not an authorized one. The adapter must resolve
+each scoped path against the <em>specific</em> form/formset instance it was handed and drop/reject any path whose scope does
+not belong to it — a client must not submit an encoded prefix for a different form and have it flattened into
+arbitrary form keys.</p>
+<p><strong>Signal-scope filtering.</strong> Datastar sends all non-local signals, so on a page with several reactive forms the request
+carries unrelated signal trees. For v1 the <strong>helper selects only the current form's scope</strong> (plus that form's declared
+<code>external_signals</code>) from the received object and ignores the rest. Consequently, multiple <em>unprefixed</em> forms on one
+page must use <strong>distinct Django prefixes</strong> to avoid signal collisions — document this. (A client-side <code>filterSignals</code>
+on the generated request is a possible later optimization.)</p>
+<h3 id="3-lifecycle-affordances-native-primitives">§3 — Lifecycle affordances (native primitives)<a class="headerlink" href="#3-lifecycle-affordances-native-primitives" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Stale responses (Datastar 1.0.2 model)</strong>: 1.0.2 <em>"cancel[s] in-flight requests with the same method and URL,
+  </em><em>regardless of the element</em><em> that initiated the request."</em> So a single shared <code>POST /validate/</code> endpoint would make
+  fields cancel <strong>each other</strong> (blurring <code>email</code> would abort an in-flight <code>username</code> check). We turn that into
+  correct per-field behavior with a <strong>per-field URL discriminator</strong>:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>POST /validate/?__rg_field=username
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>POST /validate/?__rg_field=rgForms.&lt;scope&gt;.email     # URL-encoded field path
+</code></pre></div>
+<p>Same field re-fires → same method+URL → Datastar cancels the stale request; different fields → different URLs →
+  concurrent. The authoritative trigger contract remains the <code>X-RG-Validate-Field</code> header (§5); the query
+  discriminator exists to give Datastar the right cancellation key, and the server <strong>cross-checks</strong> the query value
+  against the header and rejects a mismatch. (A per-field <code>AbortController</code> is the alternative but adds local state and
+  generated expressions; the URL key uses 1.0.2 as-is.)
+- <strong>Pending state</strong>: use the native <code>data-indicator</code> on a <strong>local</strong> signal under the reserved scope:
+  <code>_rgForms.validating.&lt;field&gt;</code> (unprefixed) or <code>_rgForms.&lt;scope&gt;.validating.&lt;field&gt;</code> (scoped, per ADR-0003). A
+  leading-underscore path component keeps the signal local and out of backend requests — verify that underscore-prefix
+  exclusion still applies to a <em>nested</em> path component in the targeted bundle. No custom start/finish bookkeeping.
+- <strong>Which validation runs</strong>: the whole form (§2). No per-field dependency inference.
+- <strong>Throttling</strong>: <code>debounce</code> on the client; the view stays a normal Django view, so expensive checks can be cached or
+  rate-limited by the host as usual.</p>
+<h3 id="4-validation-url-propagation">§4 — Validation URL propagation<a class="headerlink" href="#4-validation-url-propagation" title="Permanent link">&para;</a></h3>
+<p><code>render_reactive_field</code> does not currently know the submit <code>action</code>. Make the validation URL explicit and let it
+default to the submit action:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">{%</span> <span class="k">render_reactive_form</span> <span class="nv">form</span> <span class="nv">action</span><span class="o">=</span><span class="s2">&quot;/submit/&quot;</span> <span class="nv">validate_action</span><span class="o">=</span><span class="s2">&quot;/validate/&quot;</span> <span class="cp">%}</span>
+</code></pre></div>
+<p>The form <em>declaration</em> describes validation <strong>timing</strong> (<code>validate_on</code>); the rendering/view layer supplies the <strong>URL</strong>.
+<code>render_reactive_form</code> threads <code>validate_action</code> into each field; standalone <code>render_reactive_field</code> accepts it as a
+tag argument for manual layouts. Because <code>action</code> itself defaults to <code>""</code>, the three states are distinguished
+explicitly (so "unset" and "current URL" are never the same accident):</p>
+<table>
+<thead>
+<tr>
+<th><code>validate_action</code></th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>omitted</td>
+<td>inherit <code>action</code></td>
+</tr>
+<tr>
+<td><code>""</code></td>
+<td>validate against the <strong>current URL</strong> (intentional)</td>
+</tr>
+<tr>
+<td>a URL</td>
+<td>validate against that URL</td>
+</tr>
+<tr>
+<td><code>None</code> (a field has <code>validate_on</code> but no resolvable action)</td>
+<td>the field cannot render its handler → a clear <strong>render-time</strong> configuration exception (a Django system check cannot see how a template invokes the tag), never a silent no-op</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-trigger-identity-header-transport-treated-as-untrusted">§5 — Trigger identity: header transport, treated as untrusted<a class="headerlink" href="#5-trigger-identity-header-transport-treated-as-untrusted" title="Permanent link">&para;</a></h3>
+<p>The triggering field travels in a <strong>header</strong>, not mixed into the canonical signal object (which keeps the signal
+payload clean):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>X-RG-Validate-Field: username                    # ordinary form
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>X-RG-Validate-Field: rgForms.&lt;scope&gt;.username     # scoped form / formset row
+</code></pre></div>
+<p>The server resolves that path against the known form/formset structure and verifies four things — and only then acts:</p>
+<ol>
+<li>the field <strong>exists</strong>;</li>
+<li>the field has incremental validation <strong>enabled</strong> (<code>validate_on</code> set);</li>
+<li>the field's <strong>scope belongs</strong> to the supplied form/formset (decoding a scope is not authorizing it — §2a);</li>
+<li>the header and the <code>?__rg_field=</code> URL discriminator (§3) <strong>agree</strong>.</li>
+</ol>
+<p>Never dispatch to <code>clean_&lt;name&gt;()</code> or any method from an arbitrary client-provided name; the scope is derivable from
+the path, so no separate scope header is required.</p>
+<p><strong>The event is <em>not</em> part of authorization.</strong> <code>validate_on</code> (<code>"blur"</code> vs <code>"change"</code>) is <strong>renderer configuration</strong>,
+not a server-enforced rule — the request does not carry which DOM event fired, and there is no security value in
+transmitting one. A client that triggers validation more often than configured neither bypasses validation nor
+mutates state; ordinary rate limiting covers abuse. (Hence no <code>X-RG-Validate-Event</code> header.)</p>
+<h3 id="6-patch-target-contract-and-minimal-error-accessibility">§6 — Patch-target contract and minimal error accessibility<a class="headerlink" href="#6-patch-target-contract-and-minimal-error-accessibility" title="Permanent link">&para;</a></h3>
+<p>A single-field patch needs a <strong>guaranteed, formset-safe wrapper id</strong> to target. <code>field.id_for_label</code> is prefix-safe
+but can be <strong>empty</strong> (e.g. <code>auto_id=False</code>), which would collapse every wrapper to <code>_field</code>. So the contract derives
+ids from a guaranteed-non-empty <code>control_id</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>control_id = field.id_for_label or (&quot;rg_field_&quot; + b32(field.html_name))   # injective, id-safe fallback
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>input/control</td>
+<td><code>{control_id}</code></td>
+</tr>
+<tr>
+<td>field wrapper (patch target)</td>
+<td><code>{control_id}_field</code></td>
+</tr>
+<tr>
+<td>help text</td>
+<td><code>{control_id}_help</code></td>
+</tr>
+<tr>
+<td>error message</td>
+<td><code>{control_id}_error</code></td>
+</tr>
+</tbody>
+</table>
+<p>These ids are <strong>exposed in the stable renderer context</strong> (<code>control_id</code>, <code>wrapper_id</code>, <code>help_id</code>, <code>error_id</code>) so
+override templates do not reproduce the algorithm. Then the accessibility attributes, present from first
+implementation:</p>
+<ul>
+<li><code>aria-invalid</code> on the control when it has an error;</li>
+<li><code>aria-describedby</code> linking the control to the error (and help) ids above.</li>
+</ul>
+<p>Without the stable wrapper id, "patch only this field" is not generically implementable. The broader a11y contract
+(focus-first-invalid, error summary, grouped-control labeling) remains a separate ADR; only this per-field slice is in
+scope here.</p>
+<h2 id="backward-compatibility">Backward compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Opt-in and additive.</strong> Fields without <code>validate_on</code> behave exactly as today (submit-only validation). No change to
+  existing forms, templates, or views.</li>
+<li>Using the feature requires wiring an action URL, the same as the current SSE-validation example already does.</li>
+</ul>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Incremental validation becomes a one-line field declaration instead of bespoke wiring, while remaining ordinary
+  server-authoritative Django validation (whole-form run, single-fragment patch).</li>
+<li>New documented surface: <code>validate_on</code>/<code>debounce</code> kwargs, the <code>_rgForms.…validating.&lt;field&gt;</code> local signal, the
+  JSON-signal validate request, the <code>X-CSRFToken</code> + <code>X-RG-Validate-Field</code> header contract, the JSON→form-data adapter,
+  the deterministic fragment ids, and <code>validate_action</code>.</li>
+<li>Reinforces the backend-first thesis: the browser triggers, the server decides. The two request modes make the split
+  explicit — JSON signals for incremental checks, form POST for final submit.</li>
+</ul>
+<h2 id="scope-boundaries">Scope boundaries<a class="headerlink" href="#scope-boundaries" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Canonical value semantics (and the JSON-signal payload shape) — <a href="../0002-canonical-expression-semantics/">ADR-0002</a>.</li>
+<li>Row-scoped signals / reactive formsets (used by the pending indicator and trigger scope) —
+  <a href="../0003-scoped-signals-and-reactive-formsets/">ADR-0003</a>.</li>
+<li>Broader accessibility (focus-first-invalid, error summary, grouped-control labeling) — a separate a11y ADR; only the
+  minimal per-field error contract (§6) is in scope here.</li>
+<li>No client-side validation engine, no per-field incremental hooks in v1, and no async validators expressed in
+  JavaScript — validation stays in Python.</li>
+</ul>
+<h2 id="implementation-notes-for-the-implementing-agent">Implementation notes (for the implementing agent)<a class="headerlink" href="#implementation-notes-for-the-implementing-agent" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Touch points: <code>src/rg/forms/fields.py</code> (<code>validate_on</code> / <code>debounce</code> kwargs on <code>ReactiveFieldMixin</code>),
+  <code>src/rg/forms/templatetags/reactive_forms.py</code> (context-aware CSRF-token injection with safe-literal serialization
+  §1a, emit the default JSON-signal <code>data-on:*</code> handler posting to <code>?__rg_field=&lt;encoded path&gt;</code> §3 + the
+  <code>X-RG-Validate-Field</code> header, the <code>data-indicator</code> pending signal, expose the §6 ids in context, and thread
+  <code>validate_action</code> with the §4 unset/empty/inherit rules), <code>src/rg/forms/views.py</code> (<code>reactive_validate_response</code>:
+  run the §2a adapter with scope authorization + signal-scope filtering, full <code>is_valid()</code>, cross-check the trigger
+  header against the URL discriminator §5, patch only the §6 wrapper), the shared JSON→form-data adapter (§2a, built
+  on ADR-0002/0003), a single-field fragment template carrying the §6 id + <code>aria-*</code> contract, and docs + an example.</li>
+<li>Tests: a <code>validate_on="blur"</code> field fires a JSON-signal request (not <code>contentType:'form'</code>) to <code>?__rg_field=…</code>
+  carrying <code>X-CSRFToken</code> and <code>X-RG-Validate-Field</code>, and passes a <strong>CSRF-enforced</strong> view (incl. masked/rotated token);
+  two different fields hit <strong>distinct</strong> URLs (so 1.0.2 method+URL cancellation keeps them concurrent) while the same
+  field's re-fire cancels the stale request; it patches only its own §6 wrapper on error; unrelated fields' DOM errors
+  are untouched; a value clears the field's error and pending state; the adapter round-trips arrays / booleans / null
+  / scoped paths and <strong>rejects a scope not belonging to the form</strong>; a header/URL-discriminator mismatch is rejected;
+  an empty <code>id_for_label</code> still yields a unique wrapper id; forms without <code>validate_on</code> are unchanged.</li>
+<li>Verify against <strong>Datastar 1.0.2</strong>: JSON-signal request contents, <code>data-indicator</code> on a nested <code>_</code>-prefixed path, and
+  the method+URL cancellation behavior that the <code>?__rg_field=</code> discriminator relies on.</li>
+<li>Precise specs to encode as tests:</li>
+<li>append <code>__rg_field</code> via real <strong>URL parsing</strong>, preserving any existing query string and fragment on <code>validate_action</code>;</li>
+<li>serialize the URL, CSRF token, and trigger header with proper <strong>JS-string encoding</strong> (no hand-built quoting);</li>
+<li>a required <strong>file field</strong> absent from the incremental JSON has its error computed but <strong>ignored</strong> unless it is the
+    triggering field (files validate on submit);</li>
+<li>the empty-<code>id_for_label</code> <strong>fallback <code>control_id</code></strong> is an opt-in output change that appears only for incrementally
+    validated fields when <code>auto_id=False</code> — assert non-incremental output is unchanged.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.annotate", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

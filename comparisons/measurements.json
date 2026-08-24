@@ -1,0 +1,277 @@
+{
+  "note": "LOC are auto-measured (non-blank, non-comment, docstrings excluded) by tools/measure_comparisons.py. Architectural counts are declared structural facts of each slice (see docs/comparisons/methodology.md). rg.forms slices are the runnable example app; competitor slices are illustrative fixtures.",
+  "scenarios": {
+    "design-system-rendering": {
+      "stacks": {
+        "formik": {
+          "architecture": {
+            "project_specific_field_renderers": 2,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 49,
+            "client transport": 53,
+            "field components + rendering": 117,
+            "form schema + client validation": 30
+          },
+          "runnable": false,
+          "total_sloc": 249
+        },
+        "react_hook_form": {
+          "architecture": {
+            "project_specific_field_renderers": 2,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 64,
+            "client transport": 55,
+            "field components + rendering": 156,
+            "form schema + client validation": 36
+          },
+          "runnable": false,
+          "total_sloc": 311
+        },
+        "rg_forms": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 1,
+            "rule_declaration_sites_per_rule": 1,
+            "transport_boundaries": 0
+          },
+          "layers": {
+            "form (schema + rules + reactivity + server validation)": 26,
+            "rendering (template)": 35,
+            "view (transport + endpoints)": 21
+          },
+          "runnable": true,
+          "total_sloc": 82
+        },
+        "tanstack_form": {
+          "architecture": {
+            "project_specific_field_renderers": 2,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 49,
+            "client transport": 24,
+            "field components + rendering": 157,
+            "form schema + client validation": 40
+          },
+          "runnable": false,
+          "total_sloc": 270
+        }
+      },
+      "title": "Design-system rendering (one shared adapter vs per-field components)"
+    },
+    "order-configurator": {
+      "stacks": {
+        "formik": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 78,
+            "client transport": 67,
+            "form schema + client validation": 54,
+            "rendering + reactivity": 115
+          },
+          "runnable": false,
+          "total_sloc": 314
+        },
+        "react_hook_form": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 68,
+            "client transport": 54,
+            "form schema + client validation": 61,
+            "rendering + reactivity": 98
+          },
+          "runnable": false,
+          "total_sloc": 281
+        },
+        "rg_forms": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 1,
+            "rule_declaration_sites_per_rule": 1,
+            "transport_boundaries": 0
+          },
+          "layers": {
+            "form (schema + rules + reactivity + server validation)": 71,
+            "rendering (template)": 23,
+            "view (transport + endpoints)": 19
+          },
+          "runnable": true,
+          "total_sloc": 113
+        },
+        "tanstack_form": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 65,
+            "client transport": 39,
+            "form schema + client validation": 74,
+            "rendering + reactivity": 173
+          },
+          "runnable": false,
+          "total_sloc": 351
+        }
+      },
+      "title": "Order configurator (conditional fields + exact Decimal)"
+    },
+    "registration": {
+      "stacks": {
+        "formik": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 72,
+            "client transport": 76,
+            "form schema + client validation": 70,
+            "rendering + reactivity": 121
+          },
+          "runnable": false,
+          "total_sloc": 339
+        },
+        "react_hook_form": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 93,
+            "client transport": 67,
+            "form schema + client validation": 71,
+            "rendering + reactivity": 134
+          },
+          "runnable": false,
+          "total_sloc": 365
+        },
+        "rg_forms": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 1,
+            "rule_declaration_sites_per_rule": 1,
+            "transport_boundaries": 0
+          },
+          "layers": {
+            "form (schema + rules + reactivity + server validation)": 63,
+            "rendering (template)": 18,
+            "view (transport + endpoints)": 15
+          },
+          "runnable": true,
+          "total_sloc": 96
+        },
+        "tanstack_form": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 73,
+            "client transport": 48,
+            "form schema + client validation": 86,
+            "rendering + reactivity": 202
+          },
+          "runnable": false,
+          "total_sloc": 409
+        }
+      },
+      "title": "Account registration with incremental validation"
+    },
+    "team-roster": {
+      "stacks": {
+        "formik": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 50,
+            "client transport": 48,
+            "form schema + client validation": 42,
+            "rendering + reactivity": 115
+          },
+          "runnable": false,
+          "total_sloc": 255
+        },
+        "react_hook_form": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 62,
+            "client transport": 42,
+            "form schema + client validation": 43,
+            "rendering + reactivity": 83
+          },
+          "runnable": false,
+          "total_sloc": 230
+        },
+        "rg_forms": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 1,
+            "rule_declaration_sites_per_rule": 1,
+            "transport_boundaries": 0
+          },
+          "layers": {
+            "form (row schema + rules + reactivity + server validation)": 27,
+            "rendering (template)": 37,
+            "view (transport + endpoints)": 15
+          },
+          "runnable": true,
+          "total_sloc": 79
+        },
+        "tanstack_form": {
+          "architecture": {
+            "project_specific_field_renderers": 0,
+            "rule_change_sites_per_rule": 2,
+            "rule_declaration_sites_per_rule": 2,
+            "transport_boundaries": 1
+          },
+          "layers": {
+            "backend validation + endpoint": 42,
+            "client transport": 28,
+            "form schema + client validation": 44,
+            "rendering + reactivity": 151
+          },
+          "runnable": false,
+          "total_sloc": 265
+        }
+      },
+      "title": "Team roster (static formset vs dynamic field array)"
+    }
+  }
+}

@@ -1,0 +1,1821 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Reactive Django Forms with Datastar integration">
+      
+      
+      
+        <link rel="canonical" href="https://raccoongang.github.io/rg.forms/adr/0001-design-system-agnostic-field-rendering/">
+      
+      
+        <link rel="prev" href="../../examples/">
+      
+      
+        <link rel="next" href="../0002-canonical-expression-semantics/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-0001 Design-system-agnostic rendering - rg.forms</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-0001-design-system-agnostic-field-rendering-driven-by-python-metadata" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="rg.forms" class="md-header__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            rg.forms
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-0001 Design-system-agnostic rendering
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="rg.forms" class="md-nav__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    rg.forms
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from Formik / RHF
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Comparisons
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/registration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/order-configurator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Order configurator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/team-roster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team roster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/design-system-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design-system rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visibility Rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/computed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Computed Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/conditional-attrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conditional Attributes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading Dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/field-groups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Groups
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Formsets & Scoped Signals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/sse-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSE Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/incremental-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Incremental Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/custom-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/datastar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datastar Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/fields/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/forms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ReactiveForm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/template-tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template Tags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001 Design-system-agnostic rendering
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001 Design-system-agnostic rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-no-mapped-html-input-type-in-the-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — No mapped HTML input type in the context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-presentational-widget-attrs-are-not-surfaced-the-main-blocker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — Presentational widget attrs are not surfaced (the main blocker)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-the-override-contract-is-undocumented-and-unstable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — The override contract is undocumented and unstable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-formset-prefixes-are-dropped-latent-correctness-bug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4 — Formset prefixes are dropped (latent correctness bug)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backward-compatibility-hard-requirement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward compatibility (hard requirement)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes-for-the-implementing-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes (for the implementing agent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0002-canonical-expression-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002 Canonical expression semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0003-scoped-signals-and-reactive-formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003 Scoped signals & reactive formsets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0004-declarative-incremental-server-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004 Declarative incremental validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-no-mapped-html-input-type-in-the-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — No mapped HTML input type in the context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-presentational-widget-attrs-are-not-surfaced-the-main-blocker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — Presentational widget attrs are not surfaced (the main blocker)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-the-override-contract-is-undocumented-and-unstable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — The override contract is undocumented and unstable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-formset-prefixes-are-dropped-latent-correctness-bug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4 — Formset prefixes are dropped (latent correctness bug)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backward-compatibility-hard-requirement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward compatibility (hard requirement)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes-for-the-implementing-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes (for the implementing agent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="adr-0001-design-system-agnostic-field-rendering-driven-by-python-metadata">ADR 0001 — Design-system-agnostic field rendering driven by Python metadata<a class="headerlink" href="#adr-0001-design-system-agnostic-field-rendering-driven-by-python-metadata" title="Permanent link">&para;</a></h1>
+<ul>
+<li>Status: Accepted</li>
+<li>Date: 2026-08-23</li>
+<li>Implemented: 2026-08-23 (P1–P4 + docs + example + tests)</li>
+<li>Deciders: Oleksii Koval (author of rg.forms)</li>
+<li>Motivating consumer: a downstream Django project adopting rg.forms as its form-rendering layer.</li>
+</ul>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>rg.forms' thesis is that <strong>form metadata lives in Python and rendering is a central, swappable
+concern</strong>: a developer declares fields (with <code>visible_when</code>, <code>required_when</code>, <code>computed</code>,
+cascading <code>choices_from</code>, and ordinary presentational hints) once in Python, and every form
+renders with no per-form HTML. The <code>rg_forms/*.html</code> templates the package ships are <strong>reference
+examples</strong> (Bulma CSS), meant to be overridden per project so the library adopts the host app's
+design system.</p>
+<p>A consuming project tried to realize this and hit friction. Its real design language is a bespoke
+component set (a composed input control with a title element, floating labels, icon/prefix/suffix
+slots, and dedicated error/disabled state classes), not plain Bulma <code>.input</code>. The
+project overrode <code>templates/rg_forms/field.html</code> to <strong>delegate</strong> to those components. That works,
+but three gaps in the library made the override harder than it should be, and a fourth is a latent
+correctness bug for any consumer using formsets.</p>
+<p>In its first migration step the project delegated only the text-family widgets
+(<code>textinput</code>/<code>emailinput</code>/<code>urlinput</code>/<code>numberinput</code>) to its components; the remaining widgets still
+fall through to the shipped Bulma markup. The gaps below block a clean, complete delegation.</p>
+<p>Current <code>render_reactive_field</code> inclusion-tag context (from
+<code>src/rg/forms/templatetags/reactive_forms.py</code>) passes: <code>field</code> (BoundField), <code>formatted_value</code>,
+<code>label</code>, <code>help_text</code>, <code>visible_when</code>, <code>required_when</code>, <code>computed</code>, <code>disabled_when</code>,
+<code>read_only_when</code>, <code>help_text_when</code>, <code>placeholder_when</code>, <code>min_when</code>, <code>max_when</code>, <code>is_required</code>,
+<code>field_name</code>, <code>widget_type</code>, <code>errors</code>, <code>html5_attrs</code>, <code>choices</code>.</p>
+<h2 id="problems">Problems<a class="headerlink" href="#problems" title="Permanent link">&para;</a></h2>
+<h3 id="p1-no-mapped-html-input-type-in-the-context">P1 — No mapped HTML input type in the context<a class="headerlink" href="#p1-no-mapped-html-input-type-in-the-context" title="Permanent link">&para;</a></h3>
+<p>The context exposes <code>widget_type</code> (e.g. <code>"emailinput"</code>, <code>"datetimeinput"</code>) but not the HTML
+<code>type</code> attribute an <code>&lt;input&gt;</code> needs (<code>"email"</code>, <code>"datetime-local"</code>). A design-system override that
+routes several widget types through one input component must re-derive this itself. The naive
+<code>widget_type|cut:"input"</code> template trick gives the wrong answer for <code>datetimeinput</code>
+(→ <code>"datetime"</code>, not <code>"datetime-local"</code>) and is fragile in general.</p>
+<h3 id="p2-presentational-widget-attrs-are-not-surfaced-the-main-blocker">P2 — Presentational widget attrs are not surfaced (the main blocker)<a class="headerlink" href="#p2-presentational-widget-attrs-are-not-surfaced-the-main-blocker" title="Permanent link">&para;</a></h3>
+<p>The whole point is "presentation as Python metadata," yet the tag ignores
+<code>field.field.widget.attrs</code>. Placeholder, autocomplete, autofocus, inputmode, and any custom
+<code>data-*</code> a developer declared on the widget never reach the template context. A consumer template
+can reach into <code>field.field.widget.attrs.placeholder</code> manually, but:</p>
+<ul>
+<li>it is undocumented and easy to get wrong,</li>
+<li>it bypasses the library's own <code>placeholder_when</code> / dynamic-attr story, and</li>
+<li>there is no single, blessed way to pass "render this field with this placeholder/autocomplete"
+  from Python without dropping to <code>widget=forms.TextInput(attrs=…)</code>, which is exactly the
+  boilerplate rg.forms exists to remove.</li>
+</ul>
+<h3 id="p3-the-override-contract-is-undocumented-and-unstable">P3 — The override contract is undocumented and unstable<a class="headerlink" href="#p3-the-override-contract-is-undocumented-and-unstable" title="Permanent link">&para;</a></h3>
+<p><code>rg_forms/field.html</code> is intended to be overridden, but nothing documents the <strong>context contract</strong>
+(the list of variables above) as a stable, supported surface. A consumer overriding the template is
+coding against internals that could change silently. There is also no guide for "bring your own
+design system," and the shipped templates are not clearly labeled as examples rather than product.</p>
+<h3 id="p4-formset-prefixes-are-dropped-latent-correctness-bug">P4 — Formset prefixes are dropped (latent correctness bug)<a class="headerlink" href="#p4-formset-prefixes-are-dropped-latent-correctness-bug" title="Permanent link">&para;</a></h3>
+<p>The shipped <code>field.html</code> renders <code>name="{{ field_name }}"</code> and <code>id="id_{{ field_name }}"</code>, where
+<code>field_name</code> is the <strong>unprefixed</strong> <code>bound_field.name</code>. Inside a Django formset the submitted name
+must be the <strong>prefixed</strong> <code>bound_field.html_name</code> (e.g. <code>form-0-role</code>) and the id must be
+<code>bound_field.id_for_label</code>. As shipped, <code>render_reactive_field</code> produces colliding, unsubmittable
+fields in a formset. A consumer hit this and abandoned <code>render_reactive_field</code> for a formset,
+rendering native <code>{{ field }}</code> output instead. (Delegating to components that use
+<code>field.html_name</code>/<code>field.id_for_label</code> sidesteps it, but the shipped template and the documented
+contract must not encourage the unprefixed form.)</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Make the field-rendering layer design-system-agnostic and metadata-complete, without changing
+rg.forms' Python-first API:</p>
+<ol>
+<li>
+<p><strong>P1 — Add <code>input_type</code> to the <code>render_reactive_field</code> context.</strong> Compute the correct HTML
+   input type from the widget (map <code>datetimeinput → "datetime-local"</code>, <code>dateinput → "date"</code>,
+   <code>timeinput → "time"</code>, <code>emailinput → "email"</code>, <code>urlinput → "url"</code>, <code>numberinput → "number"</code>,
+   password → <code>"password"</code>, default <code>"text"</code>). Keep <code>widget_type</code> for branching; add <code>input_type</code>
+   for the <code>&lt;input&gt;</code>.</p>
+</li>
+<li>
+<p><strong>P2 — Surface presentational widget attrs.</strong> Add <code>widget_attrs</code> to the context, carrying a
+   sanitized copy of <code>field.field.widget.attrs</code> (at minimum <code>placeholder</code>, <code>autocomplete</code>,
+   <code>autofocus</code>, <code>inputmode</code>, plus any <code>data-*</code>). Additionally (or alternatively) accept first-class
+   presentational kwargs on the reactive fields — <code>placeholder=</code>, <code>autocomplete=</code>, <code>autofocus=</code> —
+   stored on the field and merged into <code>widget_attrs</code>, so a developer never has to hand-build a
+   <code>widget=…</code> just to set a placeholder. Document precedence (explicit kwarg &gt; widget.attrs).</p>
+</li>
+<li>
+<p><strong>P3 — Document and stabilize the override contract.</strong> Publish the context-variable contract as
+   a supported API in <code>docs/reference/template-tags.md</code>, add a <code>docs/guide/custom-rendering.md</code>
+   ("bring your own design system") showing a delegating <code>field.html</code> that forwards context to a
+   host component, and label the shipped Bulma templates as reference examples in-file and in
+   docs. Treat the context keys as semver-relevant surface going forward.</p>
+</li>
+<li>
+<p><strong>P4 — Fix formset-safe naming.</strong> Change the shipped <code>field.html</code> (and any doc examples) to use
+   <code>field.html_name</code> for <code>name</code>, <code>field.id_for_label</code> for <code>id</code>, and the matching <code>for</code>/aria ids.
+   Add a formset test. This is a bug fix and should ship regardless of the rest.</p>
+</li>
+</ol>
+<p><code>reactive_form_response</code> (SSE submit helper) is already markup-agnostic and needs no change; it is
+called from the host view and returns SSE patches/redirects against a host-supplied fragment
+template.</p>
+<h2 id="backward-compatibility-hard-requirement">Backward compatibility (hard requirement)<a class="headerlink" href="#backward-compatibility-hard-requirement" title="Permanent link">&para;</a></h2>
+<p>This change MUST NOT force any existing consumer to patch project code. It is additive plus one
+bug fix that is a no-op in the common case. The implementing agent must preserve the following:</p>
+<ul>
+<li><strong>Context keys are additive only.</strong> <code>render_reactive_field</code> may ADD keys (<code>input_type</code>,
+  <code>widget_attrs</code>) but must NOT rename, remove, or change the meaning/type of any existing key
+  (<code>field</code>, <code>formatted_value</code>, <code>label</code>, <code>help_text</code>, <code>visible_when</code>, <code>required_when</code>, <code>computed</code>,
+  <code>disabled_when</code>, <code>read_only_when</code>, <code>help_text_when</code>, <code>placeholder_when</code>, <code>min_when</code>, <code>max_when</code>,
+  <code>is_required</code>, <code>field_name</code>, <code>widget_type</code>, <code>errors</code>, <code>html5_attrs</code>, <code>choices</code>). This is what
+  guarantees existing project template overrides keep working untouched.</li>
+<li><strong>New field kwargs are optional</strong> (<code>placeholder=</code>/<code>autocomplete=</code>/<code>autofocus=</code> default to
+  unset); forms that don't use them behave exactly as before.</li>
+<li><strong>P4 is a no-op for the common case.</strong> For a non-formset form with the default <code>auto_id</code>,
+  <code>field.html_name == field.name</code> and <code>field.id_for_label == "id_" + name</code>, so the generated
+  <code>name</code>/<code>id</code> are byte-identical. Output changes only for formsets (a fix) and custom <code>auto_id</code>
+  (a correction).</li>
+</ul>
+<p><strong>Migration required:</strong> none, to keep working.
+<strong>Opt-in:</strong> consumers adopt the new metadata (<code>input_type</code>, <code>widget_attrs</code>, first-class kwargs)
+only when they want them.
+<strong>CHANGELOG-worthy behavior change:</strong> consumers still using the shipped Bulma <code>field.html</code>
+will see previously-dropped <code>widget.attrs</code> (placeholder/autocomplete) begin to render once P2 lands
+— benign, but call it out in release notes. Anyone who copied the old shipped template into their
+project retains the P4 formset bug until they re-sync; that is their code, not a forced change.</p>
+<p>Because the change is backward compatible, it can ship in a minor release. If any of the above
+cannot be honored (e.g. a context key must change), that would be a breaking change and belongs in
+a separate major-version ADR, not this one.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Consumers can override one template (<code>rg_forms/field.html</code>) into a thin dispatcher that forwards
+  <code>field</code>, <code>input_type</code>, <code>widget_attrs</code>, and the reactive-attr set to their own components — no
+  per-form HTML, presentation declared in Python.</li>
+<li><code>render_reactive_field</code> becomes safe in formsets (P4), removing the one hard incompatibility that
+  pushed a consumer off the tag.</li>
+<li>The Bulma example templates remain, now explicitly as examples; existing users relying on
+  them are unaffected (the additions are backward-compatible context keys; P4 changes only the
+  generated <code>name</code>/<code>id</code>, which is a fix, not a breaking change for non-formset forms because the
+  prefix is empty there).</li>
+<li>Small ongoing cost: the context contract is now a supported surface to keep stable.</li>
+</ul>
+<h2 id="implementation-notes-for-the-implementing-agent">Implementation notes (for the implementing agent)<a class="headerlink" href="#implementation-notes-for-the-implementing-agent" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Touch points: <code>src/rg/forms/templatetags/reactive_forms.py</code> (context in <code>render_reactive_field</code>),
+  <code>src/rg/forms/fields.py</code> (optional first-class <code>placeholder</code>/<code>autocomplete</code>/<code>autofocus</code> kwargs on
+  <code>ReactiveFieldMixin</code>), <code>src/rg/forms/templates/rg_forms/field.html</code> (P4 naming; label as example),
+  <code>docs/reference/template-tags.md</code> + new <code>docs/guide/custom-rendering.md</code>, and tests under
+  <code>tests/</code>.</li>
+<li>Keep additions backward-compatible: only ADD context keys; do not rename or remove existing ones.</li>
+<li>Add tests: (a) <code>input_type</code> mapping incl. <code>datetime-local</code>; (b) <code>widget_attrs</code> carries
+  placeholder/autocomplete and first-class kwargs override widget.attrs; (c) a formset renders
+  prefixed <code>name</code>/<code>id</code> and round-trips a POST.</li>
+<li>Recommended consumer pattern: the overridden <code>rg_forms/field.html</code> is a thin dispatcher on
+  <code>widget_type</code> that <code>{% include %}</code>s the host design-system component, and the host input
+  component gains an additive, default-off reactive <code>bind</code> mode (emit <code>data-bind</code> +
+  <code>visible_when</code>/<code>disabled_when</code>/<code>read_only_when</code>/<code>computed</code> pass-throughs) so native-submit forms
+  render unchanged.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.annotate", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -2,54 +2,114 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://raccoongang.github.io/rg.forms/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/comparison/</loc>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/examples/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/quickstart/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/adr/0001-design-system-agnostic-field-rendering/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/adr/0002-canonical-expression-semantics/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/adr/0003-scoped-signals-and-reactive-formsets/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/adr/0004-declarative-incremental-server-validation/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/comparisons/cascading/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/comparisons/design-system-rendering/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/comparisons/methodology/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/comparisons/order-configurator/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/comparisons/registration/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/comparisons/team-roster/</loc>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/guide/cascading/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/guide/computed/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/guide/conditional-attrs/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/guide/custom-rendering/</loc>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/guide/datastar/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/guide/field-groups/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/guide/formsets/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/guide/incremental-validation/</loc>
+         <lastmod>2026-08-24</lastmod>
+    </url>
+    <url>
+         <loc>https://raccoongang.github.io/rg.forms/guide/sse-validation/</loc>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/guide/validation/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/guide/visibility/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/reference/fields/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/reference/forms/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
     <url>
          <loc>https://raccoongang.github.io/rg.forms/reference/template-tags/</loc>
-         <lastmod>2026-02-05</lastmod>
+         <lastmod>2026-08-24</lastmod>
     </url>
 </urlset>

@@ -1,0 +1,2325 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Reactive Django Forms with Datastar integration">
+      
+      
+      
+        <link rel="canonical" href="https://raccoongang.github.io/rg.forms/adr/0002-canonical-expression-semantics/">
+      
+      
+        <link rel="prev" href="../0001-design-system-agnostic-field-rendering/">
+      
+      
+        <link rel="next" href="../0003-scoped-signals-and-reactive-formsets/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-0002 Canonical expression semantics - rg.forms</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-0002-canonical-clientserver-expression-semantics-and-reactive-value-normalization" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="rg.forms" class="md-header__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            rg.forms
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-0002 Canonical expression semantics
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="rg.forms" class="md-nav__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    rg.forms
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from Formik / RHF
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Comparisons
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/registration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/order-configurator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Order configurator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/team-roster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team roster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/design-system-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design-system rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visibility Rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/computed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Computed Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/conditional-attrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conditional Attributes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading Dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/field-groups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Groups
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Formsets & Scoped Signals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/sse-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSE Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/incremental-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Incremental Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/custom-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/datastar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datastar Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/fields/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/forms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ReactiveForm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/template-tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template Tags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0001-design-system-agnostic-field-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001 Design-system-agnostic rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002 Canonical expression semantics
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002 Canonical expression semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#revision-3-the-expression-language-is-compiled-not-inherited" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revision 3 — the expression language is compiled, not inherited
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#revision-2-decisions-resolved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revision 2 — decisions resolved
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problems-concrete-divergences-verified-in-the-current-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems (concrete divergences, verified in the current code)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Problems (concrete divergences, verified in the current code)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-numeric-looking-values-are-silently-coerced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — Numeric-looking values are silently coerced
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-multi-value-signals-collapse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — Multi-value signals collapse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-bound-vs-unbound-type-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — Bound vs unbound type split
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-boolean-checkbox-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4 — Boolean / checkbox semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5-null-empty-false-conflation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P5 — null / empty / false conflation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p6-operator-and-evaluation-semantics-mismatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P6 — Operator and evaluation-semantics mismatch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p7-invalid-expressions-fail-silently-and-the-fail-openclosed-behavior-is-inconsistent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P7 — Invalid expressions fail silently, and the fail-open/closed behavior is inconsistent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-two-layers-reactive-normalization-vs-authoritative-cleaning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §1 — Two layers: reactive normalization vs authoritative cleaning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-explicit-supported-types-and-per-field-canonical-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §2 — Explicit supported types and per-field canonical values
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-operator-matrix-arrays-and-the-decimal-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §3 — Operator matrix, arrays, and the Decimal contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-clientserver-conformance-tests-two-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §4 — Client/server conformance tests (two levels)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-early-rejection-and-the-external-signal-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §5 — Early rejection, and the external-signal policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope-boundaries-explicitly-not-in-this-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope boundaries (explicitly not in this ADR)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes-for-the-implementing-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes (for the implementing agent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0003-scoped-signals-and-reactive-formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003 Scoped signals & reactive formsets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0004-declarative-incremental-server-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004 Declarative incremental validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#revision-3-the-expression-language-is-compiled-not-inherited" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revision 3 — the expression language is compiled, not inherited
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#revision-2-decisions-resolved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revision 2 — decisions resolved
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problems-concrete-divergences-verified-in-the-current-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems (concrete divergences, verified in the current code)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Problems (concrete divergences, verified in the current code)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-numeric-looking-values-are-silently-coerced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — Numeric-looking values are silently coerced
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-multi-value-signals-collapse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — Multi-value signals collapse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-bound-vs-unbound-type-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — Bound vs unbound type split
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p4-boolean-checkbox-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P4 — Boolean / checkbox semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p5-null-empty-false-conflation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P5 — null / empty / false conflation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p6-operator-and-evaluation-semantics-mismatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P6 — Operator and evaluation-semantics mismatch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p7-invalid-expressions-fail-silently-and-the-fail-openclosed-behavior-is-inconsistent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P7 — Invalid expressions fail silently, and the fail-open/closed behavior is inconsistent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-two-layers-reactive-normalization-vs-authoritative-cleaning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §1 — Two layers: reactive normalization vs authoritative cleaning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-explicit-supported-types-and-per-field-canonical-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §2 — Explicit supported types and per-field canonical values
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-operator-matrix-arrays-and-the-decimal-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §3 — Operator matrix, arrays, and the Decimal contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-clientserver-conformance-tests-two-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §4 — Client/server conformance tests (two levels)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-early-rejection-and-the-external-signal-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        §5 — Early rejection, and the external-signal policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope-boundaries-explicitly-not-in-this-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope boundaries (explicitly not in this ADR)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes-for-the-implementing-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes (for the implementing agent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="adr-0002-canonical-clientserver-expression-semantics-and-reactive-value-normalization">ADR 0002 — Canonical client/server expression semantics and reactive value normalization<a class="headerlink" href="#adr-0002-canonical-clientserver-expression-semantics-and-reactive-value-normalization" title="Permanent link">&para;</a></h1>
+<ul>
+<li>Status: Accepted (2026-08-24, review-approved) — implement first, ahead of ADR-0003/0004</li>
+<li>Date: 2026-08-24</li>
+<li>Deciders: Oleksii Koval (author of rg.forms)</li>
+<li>Supersedes the "render on Django widget context" idea as the <em>next</em> ADR: that rendering refactor is still
+  wanted, but it is downstream of this one and is deferred to a later ADR.</li>
+</ul>
+<h2 id="revision-3-the-expression-language-is-compiled-not-inherited">Revision 3 — the expression language is compiled, not inherited<a class="headerlink" href="#revision-3-the-expression-language-is-compiled-not-inherited" title="Permanent link">&para;</a></h2>
+<p>The load-bearing decision, made explicit: <strong>rg.forms expressions are a small DSL that is compiled from one AST to two
+targets</strong> — the Python evaluator and a Datastar/JavaScript expression string. rg.forms defines its <em>own</em> semantics; it
+does <strong>not</strong> inherit JavaScript's surprising rules (loose <code>==</code>, operand-returning <code>&amp;&amp;</code>/<code>||</code>, string <code>+</code>, truthy <code>[]</code>).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>author writes rg.forms DSL
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        ↓ parse
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>       AST
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        ├── Python evaluator      (server: correctness)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        └── JS expression serializer → data-* attribute (client: UX)
+</code></pre></div>
+<p>Expressions are therefore <strong>transmitted compiled, never raw</strong>. Revision 3 resolves the semantic decisions Revision 2
+left to "the implementation":</p>
+<ul>
+<li><strong>Arrays are values, not operands</strong> — canonical in signals/requests, but <strong>not referenceable in expressions</strong> in
+  v1 (JS array equality/truthiness are not portable; §3).</li>
+<li><strong>The full operator matrix is in this ADR</strong> (§3): strict typed <code>==</code> → JS <code>===</code>; Boolean-only <code>&amp;&amp;</code>/<code>||</code>/<code>!</code>;
+  numeric-only arithmetic with string operands rejected at build time; <strong>division by zero and invalid numeric operands
+  both yield <code>null</code> identically on client and server</strong> (guarded serialization — no <code>Infinity</code>/<code>NaN</code>, nothing excluded
+  from conformance).</li>
+<li><strong>Temporarily-invalid numeric input</strong> has an explicit state (§2), with matching arithmetic/comparison guards (§3).</li>
+<li><strong>Decimal computed fields</strong> have a preview-vs-authoritative contract (§3).</li>
+<li><strong><code>rgForms</code> is a reserved top-level signal namespace</strong> (§5), used by ADR-0003 scoping.</li>
+</ul>
+<h2 id="revision-2-decisions-resolved">Revision 2 — decisions resolved<a class="headerlink" href="#revision-2-decisions-resolved" title="Permanent link">&para;</a></h2>
+<p>The first draft left six boundaries implicit. They are now decided in this document:</p>
+<ul>
+<li><strong>Decimal</strong> stays a canonical <strong>string</strong> signal; <code>integer</code>/<code>float</code> are JS numbers; exact arithmetic is a server
+  concern (Decision §2, §3).</li>
+<li><strong>Empty values are field-specific</strong>, not a single <code>null</code> (Decision §2, empty-value table).</li>
+<li><strong>date / time / datetime / UUID</strong> are supported canonical <strong>strings</strong> (Decision §2).</li>
+<li><strong>Arrays</strong> are canonical values but are <strong>not referenceable in expressions</strong> in v1 (Revision 3 correction —
+  Decision §3).</li>
+<li><strong>External signals</strong> are allowed only when declared in <code>Meta.external_signals</code>; the system check enforces this
+  (Decision §5).</li>
+<li><strong>Normalization ≠ validation</strong>: extraction/normalization is a distinct, loss-minimizing layer that never calls
+  <code>field.clean()</code> (Decision §1).</li>
+</ul>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>rg.forms' central promise (see <a href="../../comparison/">comparison.md</a> and
+<a href="../../guide/custom-rendering/#feature-parity-where-each-rule-is-enforced">the feature-parity matrix</a>) is:</p>
+<blockquote>
+<p>A rule is declared once in Python, evaluated in the browser for UX and re-evaluated on the server for
+correctness.</p>
+</blockquote>
+<p>That promise only holds if <strong>both evaluators interpret the same expression against the same values identically</strong>.
+Today they can diverge. The client evaluates JavaScript over Datastar signals (typed: boolean, number, string,
+array); the server evaluates a custom AST (<code>src/rg/forms/expressions.py</code>) over values produced by
+<code>ReactiveForm._get_form_data()</code> (<code>src/rg/forms/forms.py</code>), which are raw POST strings when the form is bound and
+native Python objects (from <code>initial</code>) when it is unbound. The two paths coerce values differently, and neither is
+anchored to the JSON signal representation the client actually sees (<code>get_signals_json</code>).</p>
+<p>When client and server disagree, the developer is pushed back toward defensive <code>clean()</code> logic on every field —
+which erodes the very code-saving benefit that justifies the architecture. Making the small shared reactive language
+rigorous is therefore more important than any additional feature.</p>
+<h2 id="problems-concrete-divergences-verified-in-the-current-code">Problems (concrete divergences, verified in the current code)<a class="headerlink" href="#problems-concrete-divergences-verified-in-the-current-code" title="Permanent link">&para;</a></h2>
+<h3 id="p1-numeric-looking-values-are-silently-coerced">P1 — Numeric-looking values are silently coerced<a class="headerlink" href="#p1-numeric-looking-values-are-silently-coerced" title="Permanent link">&para;</a></h3>
+<p><code>_get_field_value</code> converts any numeric-looking string to <code>int</code>/<code>Decimal</code>
+(<code>expressions.py</code>: <code>"001"</code> → <code>int("001")</code> → <code>1</code>). <code>_compare_equal</code> then stringifies when either side is a string.
+So for a choice code <code>"001"</code>:</p>
+<ul>
+<li>Client: <code>$code == '001'</code> → <code>"001" == "001"</code> → <strong>true</strong>.</li>
+<li>Server: field coerced to <code>1</code>, literal stays <code>"001"</code> → <code>str(1) == str("001")</code> → <code>"1" == "001"</code> → <strong>false</strong>.</li>
+</ul>
+<p>Leading zeros, ZIP codes, phone prefixes, and ID-like choice values all break this way.</p>
+<h3 id="p2-multi-value-signals-collapse">P2 — Multi-value signals collapse<a class="headerlink" href="#p2-multi-value-signals-collapse" title="Permanent link">&para;</a></h3>
+<p><code>_get_form_data()</code> builds <code>{key: self.data.get(key)}</code>, taking a single value from the <code>QueryDict</code>. A
+<code>SelectMultiple</code> / <code>ReactiveMultipleChoiceField</code> submits several values under one name; the server sees only the
+last. Any expression over a multi-value field (membership, length, "contains") cannot be evaluated correctly, and
+array semantics are undefined on both sides.</p>
+<h3 id="p3-bound-vs-unbound-type-split">P3 — Bound vs unbound type split<a class="headerlink" href="#p3-bound-vs-unbound-type-split" title="Permanent link">&para;</a></h3>
+<p>Unbound (<code>GET</code>/initial render): <code>_get_form_data()</code> returns <code>dict(self.initial)</code> — native <code>bool</code>, <code>date</code>, <code>Decimal</code>.
+Bound (<code>POST</code>): the same method returns POST <strong>strings</strong>. The identical expression therefore evaluates different
+types at render-time versus submit-time on the server alone, independent of the client.</p>
+<h3 id="p4-boolean-checkbox-semantics">P4 — Boolean / checkbox semantics<a class="headerlink" href="#p4-boolean-checkbox-semantics" title="Permanent link">&para;</a></h3>
+<p>A Datastar checkbox signal is boolean <code>true</code>/<code>false</code>. A native checkbox POSTs <code>"on"</code> when checked and is <strong>absent</strong>
+when unchecked; <code>_get_field_value</code> maps <code>""</code>/missing to <code>None</code>. So <code>$agree == true</code> and <code>$agree</code> (truthiness) do not
+line up across client and server.</p>
+<h3 id="p5-null-empty-false-conflation">P5 — <code>null</code> / empty / <code>false</code> conflation<a class="headerlink" href="#p5-null-empty-false-conflation" title="Permanent link">&para;</a></h3>
+<p><code>self.data.get(field_name, "")</code> plus "<code>""</code> → <code>None</code>" means missing key, empty string, and cleared value all become
+<code>None</code>, while the client distinguishes <code>null</code>, <code>''</code>, <code>false</code>, and <code>0</code>. Comparisons against these differ.</p>
+<h3 id="p6-operator-and-evaluation-semantics-mismatch">P6 — Operator and evaluation-semantics mismatch<a class="headerlink" href="#p6-operator-and-evaluation-semantics-mismatch" title="Permanent link">&para;</a></h3>
+<p>The Python evaluator does not match JavaScript for: <code>+</code> (numeric add vs string concat), truthiness, <code>==</code> loose
+equality/coercion, and division by zero (server returns <code>Decimal(0)</code>; JS yields <code>Infinity</code>/<code>NaN</code>). Any expression
+mixing types or using arithmetic can diverge.</p>
+<h3 id="p7-invalid-expressions-fail-silently-and-the-fail-openclosed-behavior-is-inconsistent">P7 — Invalid expressions fail silently, and the fail-open/closed behavior is inconsistent<a class="headerlink" href="#p7-invalid-expressions-fail-silently-and-the-fail-openclosed-behavior-is-inconsistent" title="Permanent link">&para;</a></h3>
+<p><code>_evaluate_expression</code> returns <code>None</code> on any parse/eval error, and each caller interprets that differently. The actual
+matrix today is:</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>On evaluation error</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>visible_when</code> (field)</td>
+<td>defaults <strong>visible</strong></td>
+<td>fail-open</td>
+</tr>
+<tr>
+<td>group <code>visible_when</code></td>
+<td>defaults <strong>visible</strong></td>
+<td>fail-open</td>
+</tr>
+<tr>
+<td><code>required_when</code></td>
+<td>defaults <strong>not required</strong></td>
+<td>fail-open</td>
+</tr>
+<tr>
+<td><code>computed</code></td>
+<td>leaves the <strong>submitted value</strong> unchanged</td>
+<td>passthrough</td>
+</tr>
+</tbody>
+</table>
+<p>So a typo, an unknown field reference, or an unsupported operator degrades silently — usually fail-open — rather than
+surfacing. For a correctness-critical layer that is the wrong default for <em>authoring</em> errors: they should be caught at
+build time, not swallowed at runtime. This ADR keeps the runtime behavior fail-open (a broken rule must not hide a
+field or silently drop a value) <strong>but logs it</strong>, and moves detection of malformed/unknown expressions to a
+build-time system check (Decision §5) so they never reach runtime in the first place.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Define a <strong>canonical reactive value model</strong> shared by the client seed, the server evaluator, and validation, plus a
+normalization step and conformance tests that keep them in lock-step.</p>
+<h3 id="1-two-layers-reactive-normalization-vs-authoritative-cleaning">§1 — Two layers: reactive normalization vs authoritative cleaning<a class="headerlink" href="#1-two-layers-reactive-normalization-vs-authoritative-cleaning" title="Permanent link">&para;</a></h3>
+<p>Separate the two responsibilities that the current code conflates:</p>
+<ul>
+<li><strong>Reactive normalization</strong> — a single, <em>loss-minimizing</em> function that maps a field's raw source to its canonical
+  reactive value, used identically for the client seed and for server-side expression evaluation. Extraction is via
+  the widget, not the field's full clean:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">widget</span><span class="o">.</span><span class="n">value_from_datadict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">files</span><span class="p">,</span> <span class="n">html_name</span><span class="p">)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># then a field-kind-specific conversion to the canonical type (see §2)</span>
+</code></pre></div>
+<p>Conversion may use field-specific logic or a careful <code>to_python()</code>, but <strong>never <code>field.clean()</code></strong> — <code>clean()</code> runs
+  required checks and validators and would reject <em>temporarily invalid</em> input. While a number field holds <code>"-"</code>,
+  normalization must keep it representable (not coerce to <code>null</code> merely because <code>IntegerField.to_python("-")</code> raises).
+  Normalization is total: it always yields a canonical value, even for in-progress input.</p>
+<ul>
+<li><strong>Authoritative cleaning</strong> — Django's <code>field.clean()</code> / <code>Form.clean()</code> during validation, unchanged. This is where
+  correctness and precision live (e.g. exact <code>Decimal</code> totals).</li>
+</ul>
+<p>Both the bound (<code>QueryDict</code>) and unbound (<code>initial</code>) server paths run through reactive normalization, eliminating the
+render-time/submit-time type split (P3). The canonical value is <strong>anchored to <code>get_signals_json</code></strong>: whatever the
+client is seeded with is, by definition, what the server normalizes to.</p>
+<h3 id="2-explicit-supported-types-and-per-field-canonical-values">§2 — Explicit supported types and per-field canonical values<a class="headerlink" href="#2-explicit-supported-types-and-per-field-canonical-values" title="Permanent link">&para;</a></h3>
+<p>The reactive language supports exactly: <strong>string</strong>, <strong>boolean</strong>, <strong>number</strong>, <strong>null</strong>, and <strong>array</strong>. Each field maps
+to one canonical type, and each field kind has a defined <em>empty</em> value (Datastar preserves a predefined signal's type
+on bind, so the initial type and the empty value must be correct):</p>
+<table>
+<thead>
+<tr>
+<th>Field kind</th>
+<th>Canonical type</th>
+<th>Canonical empty</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>char / choice / email / url / text</td>
+<td>string</td>
+<td><code>""</code></td>
+<td><strong>never numeric-coerced</strong> — fixes P1 (<code>"001"</code> stays <code>"001"</code>)</td>
+</tr>
+<tr>
+<td>integer / float</td>
+<td>number (or in-progress string)</td>
+<td><code>null</code></td>
+<td>valid → number; empty → <code>null</code>; <strong>temporarily-invalid input</strong> (e.g. <code>"-"</code>, <code>"1."</code>) → the original <strong>string</strong>, so typing is never destroyed</td>
+</tr>
+<tr>
+<td>decimal</td>
+<td><strong>string</strong></td>
+<td><code>""</code></td>
+<td>exact; see §3 — not a JS number</td>
+</tr>
+<tr>
+<td>boolean</td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td><code>"on"</code>/absent → <code>true</code>/<code>false</code> — fixes P4</td>
+</tr>
+<tr>
+<td>multiple choice</td>
+<td>array</td>
+<td><code>[]</code></td>
+<td>via <code>QueryDict.getlist()</code> — fixes P2</td>
+</tr>
+<tr>
+<td>date</td>
+<td>string</td>
+<td><code>""</code></td>
+<td><code>YYYY-MM-DD</code></td>
+</tr>
+<tr>
+<td>time</td>
+<td>string</td>
+<td><code>""</code></td>
+<td>widget precision (e.g. <code>HH:MM</code>)</td>
+</tr>
+<tr>
+<td>datetime</td>
+<td>string</td>
+<td><code>""</code></td>
+<td>local <code>YYYY-MM-DDTHH:MM</code></td>
+</tr>
+<tr>
+<td>UUID</td>
+<td>string</td>
+<td><code>""</code></td>
+<td>canonical string form</td>
+</tr>
+<tr>
+<td>optional file</td>
+<td>null</td>
+<td><code>null</code></td>
+<td>not expression-addressable beyond presence</td>
+</tr>
+</tbody>
+</table>
+<p>This replaces the earlier contradictory "empty → <code>null</code>, distinct from <code>''</code>/<code>false</code>/<code>0</code>": the empty value is
+<strong>field-specific</strong> (fixes P5), matching HTML/Datastar behavior.</p>
+<h3 id="3-operator-matrix-arrays-and-the-decimal-contract">§3 — Operator matrix, arrays, and the Decimal contract<a class="headerlink" href="#3-operator-matrix-arrays-and-the-decimal-contract" title="Permanent link">&para;</a></h3>
+<p>Because expressions are <strong>compiled</strong> (Revision 3), rg.forms defines its own operator semantics and emits a JS string
+that reproduces them exactly. The matrix is normative:</p>
+<table>
+<thead>
+<tr>
+<th>Op</th>
+<th>Allowed operands</th>
+<th>Result</th>
+<th>Client compilation</th>
+<th>Python behavior</th>
+<th>Error behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>==</code> <code>!=</code></td>
+<td>same canonical type (string↔string, number↔number, bool↔bool, null↔any)</td>
+<td>boolean</td>
+<td><code>===</code> / <code>!==</code></td>
+<td>strict typed equality (no cross-type coercion)</td>
+<td>mismatched types → <code>!=</code> true, <code>==</code> false (never an error)</td>
+</tr>
+<tr>
+<td><code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td>
+<td>number↔number, string↔string</td>
+<td>boolean</td>
+<td>same operators</td>
+<td>typed compare</td>
+<td>any operand <code>null</code>/invalid → <code>false</code></td>
+</tr>
+<tr>
+<td><code>&amp;&amp;</code> <code>\|\|</code></td>
+<td>any (coerced to boolean)</td>
+<td><strong>boolean</strong></td>
+<td><code>(Boolean(a) &amp;&amp; Boolean(b))</code> — never operand-returning</td>
+<td><code>bool(a) and bool(b)</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>!</code></td>
+<td>any</td>
+<td>boolean</td>
+<td><code>!Boolean(a)</code></td>
+<td><code>not bool(a)</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>+</code> <code>-</code> <code>*</code> <code>/</code></td>
+<td>number↔number (decimal strings coerced, see below)</td>
+<td>number | null</td>
+<td>guarded — see below</td>
+<td>numeric, same guard</td>
+<td><strong>string operands rejected at build time</strong>; invalid operand or <code>/0</code> → <code>null</code> on both sides</td>
+</tr>
+</tbody>
+</table>
+<p>Truthiness (for <code>&amp;&amp;</code>/<code>||</code>/<code>!</code>, matching <code>Boolean(x)</code> in JS): falsy = <code>""</code>, <code>null</code>, <code>false</code>, <code>0</code>; truthy otherwise.
+Strings are <strong>not</strong> numeric-coerced for <code>==</code> (so a choice code <code>"001"</code> compares as <code>"001"</code> on both sides — fixes P1),
+and <code>+</code> is <strong>numeric only</strong> — string concatenation is rejected during expression validation (§5), not silently
+compiled to JS <code>+</code>.</p>
+<p><strong>Arrays are values, not operands.</strong> In v1 an array-typed field (multiple choice) is a valid canonical signal/request
+value but <strong>cannot be referenced in a reactive expression</strong>: JS array semantics are not portable —
+<code>Boolean([]) === true</code>, and <code>[] == []</code> / <code>[1] == [1]</code> are <code>false</code> (identity comparison) — so equality and truthiness
+would silently diverge from any server emulation. Referencing an array field in an expression is rejected at build
+time (§5). A future grammar addition (<code>contains(...)</code>, <code>length(...)</code>) will introduce array operations with explicitly
+defined cross-runtime semantics.</p>
+<p><strong>Arithmetic is total and identical on both sides — no divergent edge cases, none excluded from conformance.</strong> Two
+rules make it so:</p>
+<ul>
+<li><strong>Division by zero → <code>null</code></strong> (not <code>Decimal(0)</code>, not <code>Infinity</code>/<code>NaN</code>, not an exception). The serializer emits an
+  explicit guard, and the Python evaluator applies the same rule:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="mf">0</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">b</span><span class="p">)</span>
+</code></pre></div>
+<ul>
+<li><strong>A temporarily-invalid numeric operand → <code>null</code> for arithmetic, <code>false</code> for comparison</strong> (equality stays strict
+  typed). An integer/float signal may transiently hold a non-number string like <code>"-"</code> (§2); arithmetic must not leak
+  <code>NaN</code>. The serializer guards each numeric operand, and Python mirrors it:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">(</span><span class="ow">typeof</span><span class="w"> </span><span class="nx">$quantity</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">$quantity</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span>
+</code></pre></div>
+<p>Comparisons involving a resulting <code>null</code> follow the matrix (<code>null</code> compared → <code>false</code> except <code>==</code>/<code>!=</code>). Because both
+sides implement identical guards, <strong>these cases are part of the conformance fixture (§4), not excluded from it.</strong></p>
+<p><strong>Decimal contract (preview vs authoritative).</strong> <code>decimal</code> is a canonical <strong>string</strong> signal (JS numbers cannot hold
+arbitrary decimals exactly). For a computed field like <code>computed="$quantity * $unit_price"</code> where <code>unit_price</code> is a
+<code>ReactiveDecimalField</code>:</p>
+<ul>
+<li>arithmetic operators <strong>numerically coerce</strong> decimal-string operands for a <strong>preview-only</strong> client result;</li>
+<li>the server <strong>recomputes the authoritative value</strong> from Django <code>Decimal</code> operands during cleaning (§1) — it does not
+  trust the browser's float arithmetic;</li>
+<li><strong>the server-computed result is passed through the target field's conversion/validation (<code>to_python</code>/validators)
+  before it enters <code>cleaned_data</code>.</strong> Today <code>_clean_fields()</code> overwrites the cleaned value with the raw computed result
+  <em>without</em> re-cleaning it; that is insufficient for an authoritative <code>Decimal</code>. The implementation must convert and
+  validate the computed result through the target field, never store a browser preview value as the authoritative
+  result. (A full computed-dependency graph for ordered/circular computed fields can remain a later concern.)</li>
+<li>the browser result is therefore preview-only and must not be presented as exact;</li>
+<li>the conformance fixture (§4) compares <strong>rounded/display</strong> output for decimal arithmetic, not exact binary
+  intermediates.</li>
+</ul>
+<h3 id="4-clientserver-conformance-tests-two-levels">§4 — Client/server conformance tests (two levels)<a class="headerlink" href="#4-clientserver-conformance-tests-two-levels" title="Permanent link">&para;</a></h3>
+<p>The executable definition of "the two sides agree":</p>
+<ol>
+<li><strong>Expression fixture</strong> — a large table of <code>(expression, signals) → expected</code>, evaluated by <strong>both</strong> the Python
+   evaluator and a JavaScript evaluation of the same expressions. Fast; runs in CI without a browser. This covers the
+   expression grammar and operator semantics.</li>
+<li><strong>Browser integration suite</strong> — a smaller set exercised against the <strong>actual pinned Datastar bundle</strong>, since
+   Datastar owns signal parsing and attribute binding, which a bare JS <code>eval</code> harness does not reproduce. This
+   verifies the real boundary (type preservation on bind, empty-value typing, array binding).</li>
+</ol>
+<h3 id="5-early-rejection-and-the-external-signal-policy">§5 — Early rejection, and the external-signal policy<a class="headerlink" href="#5-early-rejection-and-the-external-signal-policy" title="Permanent link">&para;</a></h3>
+<p>Validate expressions when the form class is constructed and via a Django <strong>system check</strong>: parse each expression, and
+require every <code>$reference</code> to resolve to one of:</p>
+<ul>
+<li>a declared <strong>field</strong> of the form,</li>
+<li>a signal declared in <code>Meta.external_signals</code> (for intentional page-level signals), or</li>
+<li>a library-<strong>reserved</strong> signal.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyForm</span><span class="p">(</span><span class="n">ReactiveForm</span><span class="p">):</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="k">class</span><span class="w"> </span><span class="nc">Meta</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="n">external_signals</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;feature_enabled&quot;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Reserved namespace.</strong> The top-level signal <code>rgForms</code> is reserved for the library (ADR-0003 uses <code>$rgForms.&lt;scope&gt;.…</code>
+for per-form scoping, and ADR-0004 uses <code>$_rgForms.…</code> for pending indicators). <code>external_signals</code> may not declare it,
+and the check rejects author expressions that reference it directly.</p>
+<p>The system check rejects, at build time: genuinely unknown references, unsupported operators/types, <strong>string operands
+to arithmetic</strong> (§3), and <strong>references to array-typed fields</strong> (§3). To ease adoption this can land first as a
+<strong>warning</strong>, graduating to an error in a later minor release. Runtime evaluation errors remain fail-open per the P7
+matrix but are <strong>logged</strong>, never silently swallowed.</p>
+<h2 id="backward-compatibility">Backward compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Expression syntax is unchanged</strong> for the supported subset; existing valid expressions keep parsing.</li>
+<li><strong>Some results change — as corrections.</strong> Forms that (unknowingly) depended on the buggy numeric coercion of choice
+  codes, or on multi-value collapse, will evaluate differently. These are bug fixes; they must be called out in the
+  CHANGELOG, and the conformance fixture documents the new, correct behavior.</li>
+<li><strong>Early rejection may surface latent authoring bugs</strong> (typos, stale field references) as system-check errors. To
+  ease adoption, this can land first as a <strong>warning</strong>, then graduate to an error in a subsequent minor release.</li>
+<li>No change to the field API or to the <code>render_reactive_field</code> context is required by this ADR.</li>
+</ul>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The reactive language becomes small, explicit, and testable, and the backend-first thesis becomes dependable
+  rather than best-effort.</li>
+<li><code>min_when</code> / <code>max_when</code> server enforcement (currently client-only) becomes <em>possible</em> once normalization exists,
+  but is out of scope here — it belongs to a later validation ADR. Until then their client-only status stays
+  documented (see the parity matrix). Renaming them is an alternative if server parity is not pursued.</li>
+<li>A JavaScript conformance harness is a new (small) test dependency. It runs the same fixture the Python tests run.</li>
+</ul>
+<h2 id="scope-boundaries-explicitly-not-in-this-adr">Scope boundaries (explicitly <em>not</em> in this ADR)<a class="headerlink" href="#scope-boundaries-explicitly-not-in-this-adr" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Rendering on Django's <code>widget.get_context()</code> and a semantic <code>control</code> object — separate, later ADR.</li>
+<li>Scoped signals and reactive formsets (<code>$rgForms.&lt;scope&gt;.&lt;field&gt;</code>) — ADR-0003.</li>
+<li>Declarative incremental server validation (<code>validate_on="blur"</code>) — ADR-0004.</li>
+<li>Accessibility contract (<code>aria-invalid</code>/<code>aria-describedby</code>, focus-first-invalid) — later ADR.</li>
+</ul>
+<h2 id="implementation-notes-for-the-implementing-agent">Implementation notes (for the implementing agent)<a class="headerlink" href="#implementation-notes-for-the-implementing-agent" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Touch points: <code>src/rg/forms/expressions.py</code> (evaluator semantics per the §3 matrix in <code>_get_field_value</code>,
+  <code>_compare_equal</code>, <code>_binary_op</code>, plus a new <strong>AST → JS expression serializer</strong> — the compile target that emits the
+  <code>data-*</code> string, so client and server share one AST), <code>src/rg/forms/forms.py</code> (<code>_get_form_data</code> and <code>get_signals</code> →
+  route through reactive normalization; use <code>widget.value_from_datadict</code> for extraction and <code>getlist()</code> semantics for
+  multi-value), a normalization helper (new module or extend <code>expressions</code>) that is field-kind-aware per §2 and never
+  calls <code>field.clean()</code>, a Django system check for expression validity + <code>Meta.external_signals</code> + <code>rgForms</code>
+  reservation, and tests under <code>tests/</code>.</li>
+<li>Add tests: (a) the level-1 expression fixture (Python vs JS) and the level-2 browser suite against the pinned
+  Datastar bundle; (b) the P1–P6 divergence cases as regression tests, including <code>"001"</code> choice-code equality,
+  multi-value arrays, and the per-field empty-value table; (c) normalization keeps in-progress input (<code>"-"</code>)
+  representable rather than nulling it; (d) system-check rejection of unknown references and acceptance of declared
+  <code>external_signals</code>.</li>
+<li>The level-1 fixture is the contract — write it first and make both evaluators pass it. Do <strong>not</strong> implement
+  array membership/length until a grammar addition is designed.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.annotate", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
