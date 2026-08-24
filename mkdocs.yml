@@ -73,3 +73,8 @@ nav:
       - ReactiveForm: reference/forms.md
       - Template Tags: reference/template-tags.md
   - Examples: examples.md
+  - Architecture Decisions:
+      - ADR-0001 Design-system-agnostic rendering: adr/0001-design-system-agnostic-field-rendering.md
+      - ADR-0002 Canonical expression semantics: adr/0002-canonical-expression-semantics.md
+      - ADR-0003 Scoped signals & reactive formsets: adr/0003-scoped-signals-and-reactive-formsets.md
+      - ADR-0004 Declarative incremental validation: adr/0004-declarative-incremental-server-validation.md
