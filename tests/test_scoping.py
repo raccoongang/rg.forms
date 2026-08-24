@@ -138,7 +138,7 @@ class GroupForm(ReactiveForm):
 class TestGroupScoping:
     def test_group_visible_when_scoped_in_prefixed_form(self):
         form = GroupForm(prefix="form-0")
-        ctx = render_field_group(form, "co")
+        ctx = render_field_group({}, form, "co")
         scope = encode_scope("form-0")
         assert ctx["group_visible_when"] == (
             f'($rgForms.{scope}.account_type === "business")'
@@ -146,7 +146,7 @@ class TestGroupScoping:
 
     def test_group_visible_when_unscoped_without_prefix(self):
         form = GroupForm()
-        ctx = render_field_group(form, "co")
+        ctx = render_field_group({}, form, "co")
         assert ctx["group_visible_when"] == '($account_type === "business")'
 
 

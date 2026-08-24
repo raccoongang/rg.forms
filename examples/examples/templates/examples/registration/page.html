@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Account Registration - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Account registration</h1>
+<p class="subtitle">Incremental validation on blur — ADR-0001 / ADR-0004</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> type <code>admin</code> or <code>alice</code> as the username and click away — the
+    availability check runs on blur. Use <code>taken@example.com</code> for the email. Switch the account type to
+    <em>Business</em> to reveal the company-email field. The same rules run again on final submit.</p>
+</div>
+
+{% if submitted %}
+<div class="notification is-success">Account created for <strong>{{ submitted.username }}</strong> ({{ submitted.email }}).</div>
+{% endif %}
+
+<div class="box">
+    {% render_reactive_form form "Create account" action="" validate_action=validate_action %}
+</div>
+{% endblock %}

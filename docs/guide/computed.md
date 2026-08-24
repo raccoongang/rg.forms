@@ -75,3 +75,13 @@ Or use `data-computed` to create a named signal:
 <div data-computed:total="$quantity * $unit_price"></div>
 <p>Total: <span data-text="$total"></span></p>
 ```
+
+## Compare: derived state vs a declared computed value
+
+In React you derive a value with `watch()` + `useEffect` (or a `useMemo`) and
+write it back into form state, then recompute (or trust the client) on the
+server. In rg.forms `computed="$qty * $price"` is declared on the field: the
+browser shows a live **preview**, and the server **recomputes the authoritative
+value exactly** (with `Decimal`) during validation, ignoring any tampered
+submission. See the order-configurator slice in the
+[comparison](../comparison.md).

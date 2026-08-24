@@ -96,3 +96,17 @@ All expressions are evaluated on the backend during form validation. This means:
 1. **Hidden fields are safe** — even if a malicious user submits data for a hidden field, it's set to `None`
 2. **Required rules are enforced** — client-side required indicators are cosmetic, the backend is the authority
 3. **No client-side bypassing** — JavaScript disabled? The backend still validates correctly
+
+## Compare: conditional JSX vs a compiled expression
+
+In a React form you gate a field with `{watch('type') === 'urgent' && <Field…/>}`
+(or a `values.type === …` render branch) — and then re-express the same
+condition in the server's validation so a hidden field isn't required. The
+condition lives in two places and can drift.
+
+In rg.forms `visible_when="$type == 'urgent'"` is declared once. It is
+**compiled** to a Datastar expression for the browser (`data-show`) and
+**re-evaluated on the server**, where a hidden field is skipped during
+validation. One declaration, enforced on both sides. See the
+[full comparison](../comparison.md) and the order-configurator fixtures under
+`docs/comparisons/fixtures/`.

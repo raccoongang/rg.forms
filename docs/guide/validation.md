@@ -122,3 +122,13 @@ def my_view(request):
 This is especially useful for backend-heavy validations (database lookups, external API calls, cross-field business rules) where the user might submit multiple times before getting it right.
 
 See the [SSE Validation guide](sse-validation.md) for full details.
+
+## Compare: one schema vs client + server schemas
+
+A React stack typically validates twice: a client schema (Yup/Zod) for UX, and a
+server schema (a serializer or form) for correctness — the same rules written in
+two languages, kept in sync by hand. rg.forms validates **once**: ordinary
+Django `clean_<field>()` / `clean()` on the `ReactiveForm`. The browser mirrors
+the declarative rules for UX; the server is always authoritative. See the
+[comparison methodology](../comparisons/methodology.md) for how the duplicated
+client/server rules are counted in each slice.

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Settings Dashboard - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Settings dashboard</h1>
+<p class="subtitle">Two prefixed forms, one page, no cross-talk — ADR-0003 / ADR-0004</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> both forms have fields named <code>email</code> and <code>name</code>, yet toggling
+    "Enable notifications" only affects the notifications form, and editing the profile email never touches the
+    other. Each form's signals live under its own scope.</p>
+</div>
+
+{% if saved %}
+<div class="notification is-success">Saved the <strong>{{ saved.0 }}</strong> form.</div>
+{% endif %}
+
+<div class="columns">
+    <div class="column">
+        <div class="box">
+            <h2 class="title is-5">Profile</h2>
+            <form method="post" data-signals='{{ profile.get_signals_json }}'>
+                {% csrf_token %}
+                <input type="hidden" name="which" value="profile">
+                {% for field in profile %}
+                    {% render_reactive_field field validate_action="/settings-dashboard/validate/" csrf_token=csrf_token %}
+                {% endfor %}
+                <button type="submit" class="button is-primary">Save profile</button>
+            </form>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box">
+            <h2 class="title is-5">Notifications</h2>
+            <form method="post" data-signals='{{ notifications.get_signals_json }}'>
+                {% csrf_token %}
+                <input type="hidden" name="which" value="notifications">
+                {% for field in notifications %}
+                    {% render_reactive_field field %}
+                {% endfor %}
+                <button type="submit" class="button is-primary">Save notifications</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

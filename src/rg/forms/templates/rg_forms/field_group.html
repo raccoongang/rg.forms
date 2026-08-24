@@ -11,7 +11,7 @@
     {% endif %}
 
     {% for field_name, bound_field in fields %}
-    {% render_reactive_field bound_field %}
+    {% render_reactive_field bound_field validate_action=validate_action csrf_token=csrf_token %}
     {% endfor %}
 </fieldset>
 {% endif %}

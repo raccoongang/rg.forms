@@ -135,15 +135,25 @@ acceptance rules through visibility (`visible_when`), requiredness
 / `max_when` are client-only today — do not rely on them as a validation
 boundary; enforce authoritative bounds with a validator or `clean()`.
 
-## Formsets
+!!! note "Accessibility (ADR-0004 §6)"
+    The renderer now exposes stable ids (`control_id`, `wrapper_id`, `help_id`,
+    `error_id`) and the shipped template sets `aria-invalid` on an errored
+    control and `aria-describedby` linking it to its error/help text. Override
+    templates get these from the context — see the
+    [context contract](../reference/template-tags.md#context-contract).
+
+## Formsets and scoped signals
 
 Because the override uses `field.html_name` and `field.id_for_label`, the tag
 works inside a Django formset — each row renders prefixed, non-colliding names
-(`form-0-role`, `form-1-role`) that round-trip a POST:
+(`form-0-role`, `form-1-role`) that round-trip a POST. Since ADR-0003 each row
+also gets its **own scoped Datastar signal namespace**, so per-row
+`visible_when` / `required_when` / `computed` rules fire independently. Seed the
+whole formset with `{% templatetag openblock %} reactive_formset_signals formset {% templatetag closeblock %}`:
 
 ```html
 {% load reactive_forms %}
-<form method="post">
+<form method="post" data-signals='{% reactive_formset_signals formset %}'>
     {% csrf_token %}
     {{ formset.management_form }}
     {% for f in formset.forms %}
@@ -158,3 +168,14 @@ works inside a Django formset — each row renders prefixed, non-colliding names
 
 Each rendered field carries its prefixed `name`/`id`, so the view's
 `formset.is_valid()` binds the POST back to the right row with no extra work.
+See the [Formsets & scoped signals](formsets.md) guide for the full story
+(including that dynamic add/remove/reorder remains out of scope for now).
+
+## Compare: a component library vs one shared adapter
+
+A React project builds a `<Field>`/`<TextField>`/`<SelectField>` component per
+input kind and wires each to the form library. rg.forms projects override **one**
+`rg_forms/field.html` adapter for the whole design system; every form uses it
+with no per-form or per-field component code. The
+[design-system-rendering comparison](../comparison.md) counts the per-field
+components a client stack maintains against rg.forms's single shared adapter.

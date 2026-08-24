@@ -1,6 +1,10 @@
 # Examples
 
-The `examples/` directory in the repository contains a full Django project demonstrating all rg.forms features.
+The `examples/` directory is a runnable Django project demonstrating the
+capabilities delivered by [ADR-0001](adr/0001-design-system-agnostic-field-rendering.md)
+through [ADR-0004](adr/0004-declarative-incremental-server-validation.md). Every
+example is a real, interactive form — not documentation pseudocode — with all
+validation and business rules **server-authoritative**.
 
 ## Running the example project
 
@@ -16,48 +20,70 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Visit [http://localhost:8000/](http://localhost:8000/) to see all examples.
+Visit [http://localhost:8000/](http://localhost:8000/) for the example index.
 
-## Included examples
+## Example matrix
 
-### Order Form
-Demonstrates `visible_when` for conditional field visibility. Fields appear and disappear based on order type selection.
+Each example maps a realistic scenario to the ADRs and rg.forms features it
+exercises, the client-library pattern it corresponds to, whether it has a full
+side-by-side [comparison](comparison.md), and the limitations it exposes.
 
-### Price Calculator
-Demonstrates `computed` fields. The total updates in real time as quantity and price change.
+| # | Example | Scenario | ADRs | rg.forms features | Client-lib analogue | Full comparison | Limitations exposed |
+|---|---|---|---|---|---|:---:|---|
+| 1 | **Account registration** | Sign up with live username/email availability | 0001, 0004 | `validate_on`, `debounce`, pending indicator, CSRF, `clean_<field>`, cross-field `clean()`, aria ids | Formik async validation · RHF async field validation · TanStack `onChangeAsync` | ✅ | file-field incremental validation not supported |
+| 2 | **Order configurator** | Plan/product order with conditional fields & pricing | 0001, 0002 | `visible_when`, `required_when`, `disabled_when`, `read_only_when`, `help_text_when`, `computed`, exact `Decimal`, canonical string codes | Formik dependent fields + Yup `.when()` · RHF `watch()` · TanStack listeners | ✅ | `disabled_when`/`min_when`/`max_when` are client-only |
+| 3 | **Team roster** | A static formset of team-member rows | 0001, 0002, 0003 | scoped signals, `reactive_formset_signals`, per-row `visible_when`/`required_when`, prefixed names | Formik `FieldArray` · RHF `useFieldArray` · TanStack array fields | ✅ | **static rows only** — no add/remove/reorder yet |
+| 4 | **Settings dashboard** | Several prefixed forms on one page | 0003, 0004 | per-form scope, overlapping logical names, independent incremental validation | (multiple independent `useForm` instances) | — | forms must use distinct prefixes |
+| 5 | **Feature-flagged form** | Permission/plan-aware visibility | 0002 | `Meta.external_signals`, `get_external_signal_values()`, field-wins-on-collision | server-provided props gating client render | — | external signals in arithmetic aren't statically typed |
+| 6 | **Canonical values lab** | Educational tour of the value model | 0002 | string codes, number/decimal split, checkbox=`false`, array, per-field empty, `/0`→`null`, non-finite→`null` | (n/a — semantics reference) | — | arrays are not expression-addressable in v1 |
+| 7 | **Design-system override** | One form, two renderers | 0001 | `bind_attr`, `control_attrs`, `widget_attrs`, `control_id`/`wrapper_id`/`help_id`/`error_id`, widget fallback | a `<Field>` component library | ✅ | — |
+| 8 | **Business onboarding** | A larger multi-section form | 0001, 0002, 0004 | field groups + group `visible_when`, conditional attrs, cross-field `clean()`, one incremental field, exact computed limit | a multi-step wizard | — | non-field errors are submit-time in v1 |
 
-### Contact Form
-Demonstrates `required_when` for dynamic requirements. Email or phone becomes required based on contact method.
+### Retained feature demos
 
-### Backend Validation
-Shows how the backend evaluates all reactive expressions during validation:
+Two earlier examples cover features outside the matrix above and remain:
 
-- Hidden fields are skipped (even if `required=True`)
-- Dynamic requirements are enforced
-- Computed values are recalculated (client value ignored)
+- **Cascading dropdowns** — dependent selects via `choices_from` + `depends_on`
+  with server re-render (a distinct feature from the reactive expression model).
+- **Whole-form SSE submit** — `reactive_form_response()` patches the entire form
+  fragment on submit (contrast with the *per-field* incremental validation in #1).
 
-### Conditional Attributes
-Demonstrates `disabled_when`, `read_only_when`, and `help_text_when` for dynamic field states.
+`risks` documents the honest trade-offs of the backend-first approach.
 
-### Cascading Dropdowns
-Dependent dropdowns with server-side re-rendering via Datastar SSE. Category selection updates available products.
+## What each example teaches
 
-### Field Groups
-Fields organized into sections with shared `visible_when` rules. Business fields appear only for business accounts.
+1. **Account registration** — incremental validation is *ordinary Django
+   validation invoked earlier and returned over SSE*: one `validate_on` field
+   declaration and one `reactive_validate` endpoint, no per-field wiring.
+2. **Order configurator** — one Python schema drives conditional visibility,
+   requiredness, disabled/read-only state, dynamic help, and an exact-`Decimal`
+   total that the server recomputes authoritatively (a tampered total is
+   ignored). A choice code `"001"` stays a string on both sides.
+3. **Team roster** — standard Django formset rows behave independently: typing
+   in row 0 does not affect row 1, and per-row conditionals fire per row.
+4. **Settings dashboard** — scoping is not only a formset feature: several
+   prefixed forms with overlapping field names coexist without collision.
+5. **Feature-flagged form** — a server-owned signal (permission/plan/flag)
+   drives the same rule on client and server; a client cannot forge it.
+6. **Canonical values lab** — the exact canonical type of every field kind, and
+   the total, divergence-free arithmetic rules.
+7. **Design-system override** — the same form contract rendered by two
+   presentation adapters with zero form-class changes.
+8. **Business onboarding** — the approach scales to a realistic multi-section
+   form with grouped visibility and one database-backed incremental check.
 
-### SSE Validation
-Backend-heavy validation without full page reloads. Demonstrates `reactive_form_response()` with:
+## Source layout
 
-- Username uniqueness check (simulated database lookup)
-- Coupon code verification (server-side lookup)
-- VAT number format validation (would call external API in production)
-- Cross-field business rules (business accounts require company email)
+Examples are organized one module per scenario for readability:
 
-On validation errors, only the form HTML is patched via SSE — the rest of the page stays untouched.
+```text
+examples/examples/
+    forms/          # one module per example (registration.py, order_configurator.py, …)
+    views/          # matching view modules + shared GET/POST helpers
+    services.py     # deterministic, clearly-labeled fake "database" services
+    templates/examples/<example>/
+```
 
-## Source code
-
-- **Forms**: `examples/examples/forms.py`
-- **Views**: `examples/examples/views.py`
-- **Templates**: `examples/examples/templates/examples/`
-- **Base template**: `examples/templates/base.html`
+- **Shared renderer**: `src/rg/forms/templates/rg_forms/` (the reference Bulma
+  adapter; overridden in the design-system example).
+- **Base template**: `examples/templates/base.html`.

@@ -84,6 +84,10 @@ django_settings_module = "tests.settings"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py"]
+# The library test suite lives in tests/. The example project has its own
+# suite under examples/ (run with the example settings) — keep it out of the
+# root run so it isn't collected under tests.settings.
+testpaths = ["tests"]
 # src/ first so the local package under src/rg/forms shadows any installed
 # copy of rg.forms; "." keeps the top-level tests package importable
 # (tests.settings). Without src/ here, bare `pytest` imports an installed

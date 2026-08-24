@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Team Roster - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Team roster</h1>
+<p class="subtitle">A static Django formset with independent per-row reactivity — ADR-0003</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> set <em>row 1</em>'s role to <code>Admin</code> — only that row reveals its admin
+    note. Set a role to <code>Owner</code>/<code>Admin</code> and its email becomes required — again, per row. Typing
+    in one row never affects another because each row binds to its own scoped signal.</p>
+    <p class="mt-2"><em>Scope note:</em> dynamic add/remove/reorder of rows is intentionally out of scope for now;
+    this demonstrates static rows that behave independently.</p>
+</div>
+
+{% if saved %}
+<div class="notification is-success">Saved {{ saved|length }} team member(s).</div>
+{% endif %}
+
+<div class="box">
+    {# One combined seed for the whole formset — a single form can't see its siblings. #}
+    <form method="post" data-signals='{% reactive_formset_signals formset %}'>
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {% for row in formset.forms %}
+        <fieldset class="box">
+            <legend class="label">Team member #{{ forloop.counter }}</legend>
+            <div class="columns">
+                <div class="column">{% render_reactive_field row.full_name %}</div>
+                <div class="column">{% render_reactive_field row.role %}</div>
+            </div>
+            <div class="columns">
+                <div class="column">{% render_reactive_field row.email %}</div>
+                <div class="column">{% render_reactive_field row.admin_note %}</div>
+            </div>
+        </fieldset>
+        {% endfor %}
+        <button type="submit" class="button is-primary">Save team</button>
+    </form>
+</div>
+{% endblock %}

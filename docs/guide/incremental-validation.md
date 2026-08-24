@@ -95,3 +95,14 @@ The single-field fragment carries a stable wrapper id plus `aria-invalid` and
 `aria-describedby` linking the control to its error/help text, from the first
 render. Broader accessibility (focus-first-invalid, error summaries) is a
 separate concern.
+
+## Compare: async validators + API plumbing vs `validate_on`
+
+Formik/RHF/TanStack expose async field validators, but you still wire the debounce,
+the fetch to your API, the stale-response handling, the pending flag, and the
+error mapping — and you write the endpoint. rg.forms reduces that to
+`validate_on="blur"` on the field plus one `reactive_validate` view: the request,
+CSRF header, per-field cancellation, pending indicator, and single-field patch
+are generated, and the check is just ordinary Django validation. See the
+[registration comparison](../comparison.md) and the
+`docs/comparisons/fixtures/*/registration/` fixtures.

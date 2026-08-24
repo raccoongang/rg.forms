@@ -514,12 +514,17 @@ def render_reactive_form(context, form, submit_label="Submit", action="", valida
     }
 
 
-@register.inclusion_tag("rg_forms/field_group.html")
-def render_field_group(form, group_name: str):
+@register.inclusion_tag("rg_forms/field_group.html", takes_context=True)
+def render_field_group(context, form, group_name: str, validate_action=_UNSET):
     """Render a field group with its fields.
+
+    Context-aware (like ``render_reactive_form``): it forwards the request's CSRF
+    token and an optional ``validate_action`` to each field so incremental
+    validation (ADR-0004) works for fields declared inside a group.
 
     Usage:
         {% render_field_group form "personal_info" %}
+        {% render_field_group form "company" validate_action="/validate/" %}
     """
     group = form.get_group(group_name)
     if not group:
@@ -542,6 +547,8 @@ def render_field_group(form, group_name: str):
         "group_name": group_name,
         "group_visible_when": group_visible_when,
         "fields": fields,
+        "validate_action": validate_action,
+        "csrf_token": context.get("csrf_token"),
     }
 
 

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Order Configurator - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Order configurator</h1>
+<p class="subtitle">Conditional fields + exact Decimal pricing — ADR-0001 / ADR-0002</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> pick a plan. <em>Starter (code 001)</em> disables the seats field; <em>Enterprise
+    (code 100)</em> reveals a required contact field — proving the leading-zero code <code>"001"</code> compares as a
+    string, not the number 1. The total is a live float <em>preview</em>; on submit the server recomputes it exactly
+    with <code>Decimal</code> and ignores any tampered value.</p>
+</div>
+
+{% if result %}
+<div class="notification is-success">
+    Plan <strong>{{ result.plan }}</strong> × {{ result.seats }} seat(s) @ {{ result.unit_price }} =
+    <strong>{{ result.total }}</strong> (after coupon: {{ result.discounted }}).
+    <em>These are the server's authoritative Decimal values.</em>
+</div>
+{% endif %}
+
+<div class="box">
+    {% render_reactive_form form "Place order" action="" %}
+</div>
+{% endblock %}

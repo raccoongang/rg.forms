@@ -1,0 +1,173 @@
+{
+  "_comment": "Explicit whole-vertical-slice manifest for tools/measure_comparisons.py. rg.forms layers point at the REAL runnable example app; competitor layers point at illustrative fixtures. Shared infrastructure (the rg.forms field renderer, URL routing, React/build boilerplate, framework routers) is excluded on BOTH sides. See methodology.md.",
+  "scenarios": {
+    "registration": {
+      "title": "Account registration with incremental validation",
+      "rg_forms": {
+        "runnable": true,
+        "layers": {
+          "form (schema + rules + reactivity + server validation)": ["examples/examples/forms/registration.py"],
+          "rendering (template)": ["examples/examples/templates/examples/registration/page.html"],
+          "view (transport + endpoints)": ["examples/examples/views/registration.py"]
+        },
+        "architecture": {"transport_boundaries": 0, "rule_declaration_sites_per_rule": 1, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 1}
+      },
+      "formik": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/formik/registration/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/formik/registration/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/formik/registration/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/formik/registration/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      },
+      "react_hook_form": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/react_hook_form/registration/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/react_hook_form/registration/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/react_hook_form/registration/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/react_hook_form/registration/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      },
+      "tanstack_form": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/tanstack_form/registration/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/tanstack_form/registration/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/tanstack_form/registration/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/tanstack_form/registration/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      }
+    },
+    "order-configurator": {
+      "title": "Order configurator (conditional fields + exact Decimal)",
+      "rg_forms": {
+        "runnable": true,
+        "layers": {
+          "form (schema + rules + reactivity + server validation)": ["examples/examples/forms/order_configurator.py"],
+          "rendering (template)": ["examples/examples/templates/examples/order_configurator/page.html"],
+          "view (transport + endpoints)": ["examples/examples/views/order_configurator.py"]
+        },
+        "architecture": {"transport_boundaries": 0, "rule_declaration_sites_per_rule": 1, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 1}
+      },
+      "formik": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/formik/order-configurator/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/formik/order-configurator/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/formik/order-configurator/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/formik/order-configurator/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      },
+      "react_hook_form": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/react_hook_form/order-configurator/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/react_hook_form/order-configurator/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/react_hook_form/order-configurator/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/react_hook_form/order-configurator/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      },
+      "tanstack_form": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/tanstack_form/order-configurator/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/tanstack_form/order-configurator/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/tanstack_form/order-configurator/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/tanstack_form/order-configurator/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      }
+    },
+    "team-roster": {
+      "title": "Team roster (static formset vs dynamic field array)",
+      "rg_forms": {
+        "runnable": true,
+        "layers": {
+          "form (row schema + rules + reactivity + server validation)": ["examples/examples/forms/team_formset.py"],
+          "rendering (template)": ["examples/examples/templates/examples/team_formset/page.html"],
+          "view (transport + endpoints)": ["examples/examples/views/team_formset.py"]
+        },
+        "architecture": {"transport_boundaries": 0, "rule_declaration_sites_per_rule": 1, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 1}
+      },
+      "formik": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/formik/team-roster/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/formik/team-roster/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/formik/team-roster/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/formik/team-roster/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      },
+      "react_hook_form": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/react_hook_form/team-roster/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/react_hook_form/team-roster/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/react_hook_form/team-roster/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/react_hook_form/team-roster/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      },
+      "tanstack_form": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/tanstack_form/team-roster/schema.ts"],
+          "rendering + reactivity": ["docs/comparisons/fixtures/tanstack_form/team-roster/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/tanstack_form/team-roster/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/tanstack_form/team-roster/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 2}
+      }
+    },
+    "design-system-rendering": {
+      "title": "Design-system rendering (one shared adapter vs per-field components)",
+      "rg_forms": {
+        "runnable": true,
+        "layers": {
+          "form (schema + rules + reactivity + server validation)": ["examples/examples/forms/design_systems.py"],
+          "rendering (template)": ["examples/examples/templates/examples/design_systems/page.html"],
+          "view (transport + endpoints)": ["examples/examples/views/design_systems.py"]
+        },
+        "architecture": {"transport_boundaries": 0, "rule_declaration_sites_per_rule": 1, "project_specific_field_renderers": 0, "rule_change_sites_per_rule": 1}
+      },
+      "formik": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/formik/design-system-rendering/schema.ts"],
+          "field components + rendering": ["docs/comparisons/fixtures/formik/design-system-rendering/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/formik/design-system-rendering/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/formik/design-system-rendering/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 2, "rule_change_sites_per_rule": 2}
+      },
+      "react_hook_form": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/react_hook_form/design-system-rendering/schema.ts"],
+          "field components + rendering": ["docs/comparisons/fixtures/react_hook_form/design-system-rendering/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/react_hook_form/design-system-rendering/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/react_hook_form/design-system-rendering/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 2, "rule_change_sites_per_rule": 2}
+      },
+      "tanstack_form": {
+        "runnable": false,
+        "layers": {
+          "form schema + client validation": ["docs/comparisons/fixtures/tanstack_form/design-system-rendering/schema.ts"],
+          "field components + rendering": ["docs/comparisons/fixtures/tanstack_form/design-system-rendering/form.tsx"],
+          "client transport": ["docs/comparisons/fixtures/tanstack_form/design-system-rendering/api.ts"],
+          "backend validation + endpoint": ["docs/comparisons/fixtures/tanstack_form/design-system-rendering/server.py"]
+        },
+        "architecture": {"transport_boundaries": 1, "rule_declaration_sites_per_rule": 2, "project_specific_field_renderers": 2, "rule_change_sites_per_rule": 2}
+      }
+    }
+  }
+}

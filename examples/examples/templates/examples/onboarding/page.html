@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Business Onboarding - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Business onboarding</h1>
+<p class="subtitle">A larger multi-section form — ADR-0001 / ADR-0002 / ADR-0004</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> choose <em>Business</em> to reveal the company and billing sections. The workspace
+    subdomain is checked for availability on blur (try <code>admin</code>); the monthly total is computed exactly
+    from seats × price; and a business account requires a company (non-free) email.</p>
+</div>
+
+{% if submitted %}
+<div class="notification is-success">Onboarded <strong>{{ submitted.first_name }} {{ submitted.last_name }}</strong>{% if submitted.company_name %} — {{ submitted.company_name }} ({{ submitted.monthly_total }}/mo){% endif %}.</div>
+{% endif %}
+
+<div class="box">
+    <form method="post" data-signals='{{ form.get_signals_json }}'>
+        {% csrf_token %}
+        {% render_field_group form "personal" %}
+        {% render_field_group form "business" validate_action="/onboarding/validate/" %}
+        {% render_field_group form "billing" %}
+        <button type="submit" class="button is-primary">Complete onboarding</button>
+    </form>
+</div>
+{% endblock %}

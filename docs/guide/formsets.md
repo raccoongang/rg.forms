@@ -63,3 +63,16 @@ identity, and seeding is flat — byte-compatible with non-formset usage.
 Dynamic add / remove / reorder of rows (`TOTAL_FORMS` management, `DELETE`/
 `ORDER`, server re-render) is a separate concern. This feature delivers the
 invariant that makes it possible: **static rows that behave independently.**
+
+## Compare: field arrays vs static Django formsets
+
+Formik `FieldArray`, RHF `useFieldArray`, and TanStack array fields manage a
+**dynamic** list in browser state (add/remove/reorder) and validate it client-
+side, with a server counterpart to re-validate on submit. rg.forms makes a
+**static** Django formset fully reactive per row (independent scoped signals),
+with validation and row binding handled by ordinary `formset.is_valid()`.
+
+The honest difference: **dynamic add/remove/reorder is not implemented in
+rg.forms yet** — this slice compares independent *static* rows against the
+competitors' dynamic arrays, and the [team-roster comparison](../comparison.md)
+states that gap explicitly.

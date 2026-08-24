@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Canonical Values Lab - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Canonical value semantics lab</h1>
+<p class="subtitle">How each field kind is typed in the seed — ADR-0002</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> edit fields and watch the live signal JSON below. Note the code <code>"001"</code>
+    stays a <em>string</em>, the checkbox is a <em>boolean</em>, tags are an <em>array</em>, decimal is a
+    <em>string</em> (computed exactly on the server), and an integer/float are <em>numbers</em>.</p>
+</div>
+
+{% if submitted %}
+<div class="notification is-success"><strong>Server-cleaned values:</strong> {{ submitted }}</div>
+{% endif %}
+
+<div class="columns">
+    <div class="column">
+        <div class="box">
+            {% render_reactive_form form "Submit" action="" %}
+        </div>
+    </div>
+    <div class="column">
+        <div class="box">
+            <h2 class="title is-5">Live signals</h2>
+            <div data-signals='{{ form.get_signals_json }}'>
+                <pre data-text="JSON.stringify({code:$code, quantity:$quantity, ratio:$ratio, unit_price:$unit_price, agree:$agree, tags:$tags, line_total:$line_total}, null, 2)"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="box">
+    <h2 class="title is-5">Canonical type reference</h2>
+    <table class="table is-fullwidth">
+        <thead><tr><th>Field kind</th><th>Canonical type</th><th>Empty value</th></tr></thead>
+        <tbody>
+            <tr><td>char / choice / email / url / text / date / time / datetime / uuid</td><td>string</td><td><code>""</code></td></tr>
+            <tr><td>integer / float</td><td>number (or in-progress string)</td><td><code>null</code></td></tr>
+            <tr><td>decimal</td><td>string (computed exactly server-side)</td><td><code>""</code></td></tr>
+            <tr><td>boolean</td><td>boolean</td><td><code>false</code></td></tr>
+            <tr><td>multiple choice</td><td>array</td><td><code>[]</code></td></tr>
+        </tbody>
+    </table>
+    <p>Arithmetic is total: division by zero and non-finite/invalid operands become <code>null</code> identically on
+    the client and server; arrays are not expression-addressable in v1.</p>
+</div>
+{% endblock %}

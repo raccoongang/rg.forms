@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Feature-Flagged Form - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Feature-flagged / permission-aware form</h1>
+<p class="subtitle">A server-owned signal drives the same rule on both sides — ADR-0002 §5</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> the plan tier and beta flag below are decided by the <em>server</em>. Flip them to
+    watch both the client (visibility) and the server (validation) react identically. A client cannot forge these —
+    they come from <code>get_external_signal_values()</code>, not from submitted data.</p>
+    <div class="buttons">
+        <a class="button {% if plan_tier == 'free' %}is-primary{% endif %}" href="?plan=free&beta={% if can_use_beta %}1{% endif %}">Plan: free</a>
+        <a class="button {% if plan_tier == 'paid' %}is-primary{% endif %}" href="?plan=paid&beta={% if can_use_beta %}1{% endif %}">Plan: paid</a>
+        <a class="button {% if not can_use_beta %}is-primary{% endif %}" href="?plan={{ plan_tier }}">Beta: off</a>
+        <a class="button {% if can_use_beta %}is-primary{% endif %}" href="?plan={{ plan_tier }}&beta=1">Beta: on</a>
+    </div>
+    <p class="mt-2">Server sees: <code>plan_tier={{ plan_tier }}</code>, <code>can_use_beta={{ can_use_beta }}</code>.</p>
+</div>
+
+{% if submitted %}
+<div class="notification is-success">Saved. priority_support={{ submitted.priority_support }}, beta={{ submitted.beta_feature_opt_in }}.</div>
+{% endif %}
+
+<div class="box">
+    {# Seed the server-owned external signals for the client; the form seeds its
+       own field signals. Datastar merges signals from ancestor elements. #}
+    <div data-signals='{{ form.external_signals_json }}'>
+        {% render_reactive_form form "Save settings" action="" %}
+    </div>
+</div>
+{% endblock %}

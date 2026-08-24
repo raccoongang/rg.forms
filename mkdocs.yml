@@ -49,6 +49,12 @@ nav:
   - Home: index.md
   - Quick Start: quickstart.md
   - Coming from Formik / RHF: comparison.md
+  - Comparisons:
+      - Methodology: comparisons/methodology.md
+      - Registration: comparisons/registration.md
+      - Order configurator: comparisons/order-configurator.md
+      - Team roster: comparisons/team-roster.md
+      - Design-system rendering: comparisons/design-system-rendering.md
   - Guide:
       - Visibility Rules: guide/visibility.md
       - Computed Fields: guide/computed.md
