@@ -5,6 +5,8 @@ All notable changes to rg.forms are documented here. This project adheres to
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-24
+
 Implements ADR-0002 (canonical expression semantics), ADR-0003 (scoped signals /
 reactive formsets), and ADR-0004 (declarative incremental server validation).
 
