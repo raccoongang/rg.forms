@@ -14,6 +14,11 @@
   earlier "verify and choose" placeholder (Decision §1).
 - **`rgForms` is reserved in [ADR-0002 §5](0002-canonical-expression-semantics.md)** so external signals cannot
   collide with the scoping object.
+- **Scoped bindings use the attribute-*value* form** (`data-bind="rgForms.<scope>.role"`), not the keyed form, because
+  HTML lowercases attribute names and would corrupt the camelCase path; seeding uses object syntax; expressions use
+  `$rgForms.<scope>.role` (Decision §1).
+- **Decoding an encoded scope is not authorization** — the server resolves it against the actual form/formset being
+  validated (Decision §1; enforced by ADR-0004's adapter).
 - **Scope applies to any prefixed form**, not only formsets. The compatibility guarantee is corrected accordingly.
 - **Expression rewriting** is fully specified: parse → rewrite field references → **canonical re-serialization**
   (precedence-preserving, escaping), applied to **every** expression-bearing metadata slot (including group
@@ -81,10 +86,22 @@ For a scoped field, distinguish:
 | Submitted HTML name | `form-0-role` | `BoundField.html_name` (already used) |
 | Datastar signal path (nested) | `rgForms.<scope>.role` | see below |
 
-Signals are **nested**, using Datastar's dot-notation object signals (`data-bind:rgForms.<scope>.role`,
-`$rgForms.<scope>.role` in expressions), under the **reserved `rgForms` top-level namespace** (reserved in
-[ADR-0002 §5](0002-canonical-expression-semantics.md), so an external signal cannot collide with it). This reads far
-better than a flat mangled key and seeds as one object per scope.
+Signals are **nested**, using Datastar's dot-notation object signals under the **reserved `rgForms` top-level
+namespace** (reserved in [ADR-0002 §5](0002-canonical-expression-semantics.md), so an external signal cannot collide
+with it). This reads far better than a flat mangled key and seeds as one object per scope.
+
+**Scoped bindings use the attribute-*value* form, never the keyed form.** HTML attribute *names* are
+case-insensitive and the browser lowercases them, so `data-bind:rgForms.<scope>.role` would degrade to a
+`rgforms…` path while seeds/expressions use `$rgForms…` — a silent mismatch. Datastar supports the signal name in the
+attribute value, which preserves casing exactly. The three surfaces are therefore:
+
+| Surface | Form |
+|---|---|
+| Scoped binding | `data-bind="rgForms.<scope>.role"` (value form — preserves case) |
+| Seeding | Datastar **object** signal syntax under `rgForms.<scope>` (not per-attribute keys) |
+| Expression reference | compiled `$rgForms.<scope>.role` |
+
+Unprefixed simple bindings stay byte-identical in the keyed form: `data-bind:role`.
 
 **The scope encoder is decided** (not left to implementation). The HTML name with `-`→`_` is rejected: it is not
 injective — Django allows custom prefixes, and both `a-b_c` and `a_b-c` collapse to `a_b_c`. The encoder is a
@@ -101,8 +118,11 @@ signal_path = f"rgForms.{encode_scope(bound_field.form.prefix)}.{logical_name}"
 Properties: injective (Base32 is reversible and the `p` prefix guarantees a leading letter), identifier-safe (no dot,
 hyphen, or `_`-prefix delimiter), no numeric leading path component (so it sidesteps any numeric-key ambiguity in
 Datastar expression paths), and trivially testable. Human readability of the encoded scope does not matter — authors
-keep writing `$role`. The submitted HTML name need not be recoverable from the path; the server holds the form/prefix
-mapping.
+keep writing `$role`.
+
+**Decoding is not authorization.** The scope is reversible, but on an incoming request the server must **resolve** the
+encoded scope against the *actual* form/formset it is validating and reject a scope that does not belong to it — never
+blindly decode a client-supplied scope into arbitrary form keys. ADR-0004's adapter owns this check.
 
 Unprefixed forms are unchanged: no prefix → the signal name is the logical name, exactly as today.
 

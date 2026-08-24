@@ -26,8 +26,10 @@ left to "the implementation":
 - **Arrays are values, not operands** — canonical in signals/requests, but **not referenceable in expressions** in
   v1 (JS array equality/truthiness are not portable; §3).
 - **The full operator matrix is in this ADR** (§3): strict typed `==` → JS `===`; Boolean-only `&&`/`||`/`!`;
-  numeric-only arithmetic with string operands rejected at build time; zero divisor is an evaluation error.
-- **Temporarily-invalid numeric input** has an explicit state (§2).
+  numeric-only arithmetic with string operands rejected at build time; **division by zero and invalid numeric operands
+  both yield `null` identically on client and server** (guarded serialization — no `Infinity`/`NaN`, nothing excluded
+  from conformance).
+- **Temporarily-invalid numeric input** has an explicit state (§2), with matching arithmetic/comparison guards (§3).
 - **Decimal computed fields** have a preview-vs-authoritative contract (§3).
 - **`rgForms` is a reserved top-level signal namespace** (§5), used by ADR-0003 scoping.
 
@@ -189,7 +191,7 @@ that reproduces them exactly. The matrix is normative:
 | `<` `>` `<=` `>=` | number↔number, string↔string | boolean | same operators | typed compare | any operand `null`/invalid → `false` |
 | `&&` `\|\|` | any (coerced to boolean) | **boolean** | `(Boolean(a) && Boolean(b))` — never operand-returning | `bool(a) and bool(b)` | — |
 | `!` | any | boolean | `!Boolean(a)` | `not bool(a)` | — |
-| `+` `-` `*` `/` | number↔number (decimal strings coerced, see below) | number | same operators | numeric | **string operands rejected at build time**; zero divisor → evaluation error |
+| `+` `-` `*` `/` | number↔number (decimal strings coerced, see below) | number \| null | guarded — see below | numeric, same guard | **string operands rejected at build time**; invalid operand or `/0` → `null` on both sides |
 
 Truthiness (for `&&`/`||`/`!`, matching `Boolean(x)` in JS): falsy = `""`, `null`, `false`, `0`; truthy otherwise.
 Strings are **not** numeric-coerced for `==` (so a choice code `"001"` compares as `"001"` on both sides — fixes P1),
@@ -203,10 +205,26 @@ would silently diverge from any server emulation. Referencing an array field in 
 time (§5). A future grammar addition (`contains(...)`, `length(...)`) will introduce array operations with explicitly
 defined cross-runtime semantics.
 
-**Division by zero is an evaluation error**, not `Decimal(0)` (today's misleading behavior). On the server it raises
-and the P7 fail-open fallback applies (logged). On the client, JS yields `Infinity`/`NaN`; because a divisor that can
-be zero is an authoring hazard, guard it in the expression (e.g. gate the computed with `visible_when`). Zero-divisor
-cases are excluded from the strict conformance fixture (§4) and documented as a preview caveat.
+**Arithmetic is total and identical on both sides — no divergent edge cases, none excluded from conformance.** Two
+rules make it so:
+
+- **Division by zero → `null`** (not `Decimal(0)`, not `Infinity`/`NaN`, not an exception). The serializer emits an
+  explicit guard, and the Python evaluator applies the same rule:
+
+  ```javascript
+  (b === 0 ? null : a / b)
+  ```
+
+- **A temporarily-invalid numeric operand → `null` for arithmetic, `false` for comparison** (equality stays strict
+  typed). An integer/float signal may transiently hold a non-number string like `"-"` (§2); arithmetic must not leak
+  `NaN`. The serializer guards each numeric operand, and Python mirrors it:
+
+  ```javascript
+  (typeof $quantity === "number" ? $quantity * 2 : null)
+  ```
+
+Comparisons involving a resulting `null` follow the matrix (`null` compared → `false` except `==`/`!=`). Because both
+sides implement identical guards, **these cases are part of the conformance fixture (§4), not excluded from it.**
 
 **Decimal contract (preview vs authoritative).** `decimal` is a canonical **string** signal (JS numbers cannot hold
 arbitrary decimals exactly). For a computed field like `computed="$quantity * $unit_price"` where `unit_price` is a
@@ -215,6 +233,11 @@ arbitrary decimals exactly). For a computed field like `computed="$quantity * $u
 - arithmetic operators **numerically coerce** decimal-string operands for a **preview-only** client result;
 - the server **recomputes the authoritative value** from Django `Decimal` operands during cleaning (§1) — it does not
   trust the browser's float arithmetic;
+- **the server-computed result is passed through the target field's conversion/validation (`to_python`/validators)
+  before it enters `cleaned_data`.** Today `_clean_fields()` overwrites the cleaned value with the raw computed result
+  *without* re-cleaning it; that is insufficient for an authoritative `Decimal`. The implementation must convert and
+  validate the computed result through the target field, never store a browser preview value as the authoritative
+  result. (A full computed-dependency graph for ordered/circular computed fields can remain a later concern.)
 - the browser result is therefore preview-only and must not be presented as exact;
 - the conformance fixture (§4) compares **rounded/display** output for decimal arithmetic, not exact binary
   intermediates.
