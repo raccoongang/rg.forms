@@ -1,10 +1,25 @@
 # ADR 0002 — Canonical client/server expression semantics and reactive value normalization
 
-- Status: Proposed
+- Status: Proposed — Revision 2 (resolves review blockers; ready to implement on sign-off)
 - Date: 2026-08-24
 - Deciders: Oleksii Koval (author of rg.forms)
 - Supersedes the "render on Django widget context" idea as the *next* ADR: that rendering refactor is still
   wanted, but it is downstream of this one and is deferred to a later ADR.
+
+## Revision 2 — decisions resolved
+
+The first draft left six boundaries implicit. They are now decided in this document:
+
+- **Decimal** stays a canonical **string** signal; `integer`/`float` are JS numbers; exact arithmetic is a server
+  concern (Decision §2, §3).
+- **Empty values are field-specific**, not a single `null` (Decision §2, empty-value table).
+- **date / time / datetime / UUID** are supported canonical **strings** (Decision §2).
+- **Arrays** support equality, inequality, and truthiness only; **membership/length are deferred** until an explicit
+  grammar exists (Decision §3).
+- **External signals** are allowed only when declared in `Meta.external_signals`; the system check enforces this
+  (Decision §5).
+- **Normalization ≠ validation**: extraction/normalization is a distinct, loss-minimizing layer that never calls
+  `field.clean()` (Decision §1).
 
 ## Context
 
@@ -68,48 +83,128 @@ The Python evaluator does not match JavaScript for: `+` (numeric add vs string c
 equality/coercion, and division by zero (server returns `Decimal(0)`; JS yields `Infinity`/`NaN`). Any expression
 mixing types or using arithmetic can diverge.
 
-### P7 — Invalid expressions fail silently
+### P7 — Invalid expressions fail silently, and the fail-open/closed behavior is inconsistent
 
-`_evaluate_expression` returns `None` on any parse/eval error, which downstream treats as false/hidden. A typo, an
-unknown field reference, or an unsupported operator therefore degrades silently to "field hidden / not required"
-instead of surfacing — the most dangerous possible default for a correctness-critical layer.
+`_evaluate_expression` returns `None` on any parse/eval error, and each caller interprets that differently. The actual
+matrix today is:
+
+| Rule | On evaluation error | Effect |
+|---|---|---|
+| `visible_when` (field) | defaults **visible** | fail-open |
+| group `visible_when` | defaults **visible** | fail-open |
+| `required_when` | defaults **not required** | fail-open |
+| `computed` | leaves the **submitted value** unchanged | passthrough |
+
+So a typo, an unknown field reference, or an unsupported operator degrades silently — usually fail-open — rather than
+surfacing. For a correctness-critical layer that is the wrong default for *authoring* errors: they should be caught at
+build time, not swallowed at runtime. This ADR keeps the runtime behavior fail-open (a broken rule must not hide a
+field or silently drop a value) **but logs it**, and moves detection of malformed/unknown expressions to a
+build-time system check (Decision §5) so they never reach runtime in the first place.
 
 ## Decision
 
 Define a **canonical reactive value model** shared by the client seed, the server evaluator, and validation, plus a
 normalization step and conformance tests that keep them in lock-step.
 
-1. **Field-aware value normalization.** Introduce a single normalization function that maps a field's value —
-   whether from `initial` (unbound) or the `QueryDict` (bound) — to a canonical typed value, using the Django
-   field/widget as the authority. This function is the one place that decides types, and it must produce values that
-   compare identically to what `get_signals_json` seeds into the client. Both the bound and unbound server paths use
-   it, eliminating P3.
+### §1 — Two layers: reactive normalization vs authoritative cleaning
 
-2. **Explicit supported value types.** The reactive language supports exactly: `string`, `boolean`,
-   `number` (int/Decimal), `null`, and `array` (for multi-value fields). Each field maps to one canonical type:
-   - choice/char/email/url/text → **string** (never numeric-coerced — fixes P1);
-   - integer/float/decimal → **number**;
-   - boolean → **boolean** (`"on"`/absent normalized to `true`/`false` — fixes P4);
-   - multiple-choice → **array** via `QueryDict.getlist()` (fixes P2);
-   - empty/missing → **null**, kept distinct from `''`, `false`, `0` (fixes P5).
+Separate the two responsibilities that the current code conflates:
 
-3. **Exact coercion and equality semantics.** Specify, in one table, how each operator (`==`, `!=`, `<`, `>`, `&&`,
-   `||`, `+`, `-`, `*`, `/`, `!`) behaves for the supported types, chosen to match Datastar/JavaScript for that
-   subset (fixes P6). Equality on strings is string equality; on numbers, numeric; arrays support membership/length;
-   `null` comparisons are explicit.
+- **Reactive normalization** — a single, *loss-minimizing* function that maps a field's raw source to its canonical
+  reactive value, used identically for the client seed and for server-side expression evaluation. Extraction is via
+  the widget, not the field's full clean:
 
-4. **Client/server conformance tests.** A shared fixture of `(expression, signals) → expected` cases, evaluated by
-   **both** the Python evaluator and a JavaScript/Datastar evaluation harness, asserting identical results. This
-   fixture is the executable definition of "the two sides agree" and guards every future change.
+  ```python
+  raw = field.widget.value_from_datadict(data, files, html_name)
+  # then a field-kind-specific conversion to the canonical type (see §2)
+  ```
 
-5. **Early rejection of unsupported expressions.** Validate expressions when the form class is constructed and via a
-   Django **system check**: parse them, verify every `$field` reference resolves to a declared field, and reject
-   unsupported operators/types. Authoring errors fail loudly at startup, not silently as "hidden" at runtime
-   (fixes P7). Runtime evaluation errors are logged rather than swallowed to a bare `None`.
+  Conversion may use field-specific logic or a careful `to_python()`, but **never `field.clean()`** — `clean()` runs
+  required checks and validators and would reject *temporarily invalid* input. While a number field holds `"-"`,
+  normalization must keep it representable (not coerce to `null` merely because `IntegerField.to_python("-")` raises).
+  Normalization is total: it always yields a canonical value, even for in-progress input.
 
-The canonical representation is **anchored to `get_signals_json`**: whatever the client is seeded with is, by
-definition, the value the server normalizes to. That single anchor is what makes "declare once, behave on both
-sides" true rather than aspirational.
+- **Authoritative cleaning** — Django's `field.clean()` / `Form.clean()` during validation, unchanged. This is where
+  correctness and precision live (e.g. exact `Decimal` totals).
+
+Both the bound (`QueryDict`) and unbound (`initial`) server paths run through reactive normalization, eliminating the
+render-time/submit-time type split (P3). The canonical value is **anchored to `get_signals_json`**: whatever the
+client is seeded with is, by definition, what the server normalizes to.
+
+### §2 — Explicit supported types and per-field canonical values
+
+The reactive language supports exactly: **string**, **boolean**, **number**, **null**, and **array**. Each field maps
+to one canonical type, and each field kind has a defined *empty* value (Datastar preserves a predefined signal's type
+on bind, so the initial type and the empty value must be correct):
+
+| Field kind | Canonical type | Canonical empty | Notes |
+|---|---|---|---|
+| char / choice / email / url / text | string | `""` | **never numeric-coerced** — fixes P1 (`"001"` stays `"001"`) |
+| integer / float | number | `null` | JS number semantics |
+| decimal | **string** | `""` | exact; see §3 — not a JS number |
+| boolean | boolean | `false` | `"on"`/absent → `true`/`false` — fixes P4 |
+| multiple choice | array | `[]` | via `QueryDict.getlist()` — fixes P2 |
+| date | string | `""` | `YYYY-MM-DD` |
+| time | string | `""` | widget precision (e.g. `HH:MM`) |
+| datetime | string | `""` | local `YYYY-MM-DDTHH:MM` |
+| UUID | string | `""` | canonical string form |
+| optional file | null | `null` | not expression-addressable beyond presence |
+
+This replaces the earlier contradictory "empty → `null`, distinct from `''`/`false`/`0`": the empty value is
+**field-specific** (fixes P5), matching HTML/Datastar behavior.
+
+### §3 — Decimal contract, and exact operator/equality semantics
+
+**Decimal stays a string signal.** JavaScript numbers cannot represent arbitrary decimals exactly, and the signal
+serializer already emits `Decimal` as a string. Therefore:
+
+- `integer` / `float` → reactive **number** (IEEE-754 / JS semantics);
+- `decimal` → canonical **decimal string**;
+- arithmetic on a Decimal-backed signal is **not** exact in the browser — it is either explicitly converted or
+  documented as unsuitable for precision-sensitive math. Display-only totals may use JS number arithmetic, but must
+  not be presented as authoritative;
+- the server **always recomputes** authoritative totals from Django `Decimal` values during cleaning (§1).
+
+Specify, in one table (in the implementation), how each operator behaves for the supported types, chosen to match
+Datastar/JavaScript for that subset (fixes P6):
+
+- `==` / `!=`: string equality for strings; numeric for numbers; element-wise for arrays; `null` compared explicitly.
+- `<` `>` `<=` `>=`: numbers and comparable strings; `null` comparisons are false (except `==`/`!=`).
+- `&&` `||` `!`: JS truthiness over the canonical types (`""`, `null`, `false`, `0`, `[]` are falsy).
+- `+` `-` `*` `/`: numeric only; division-by-zero semantics documented to match the chosen contract.
+- **Arrays**: equality, inequality, and truthiness are defined. **Membership and length are deferred** — the grammar
+  has no `in` operator, property access, or function calls today, so this ADR does **not** promise `contains`/
+  `length`. Those require an explicit grammar addition in a follow-up.
+
+### §4 — Client/server conformance tests (two levels)
+
+The executable definition of "the two sides agree":
+
+1. **Expression fixture** — a large table of `(expression, signals) → expected`, evaluated by **both** the Python
+   evaluator and a JavaScript evaluation of the same expressions. Fast; runs in CI without a browser. This covers the
+   expression grammar and operator semantics.
+2. **Browser integration suite** — a smaller set exercised against the **actual pinned Datastar bundle**, since
+   Datastar owns signal parsing and attribute binding, which a bare JS `eval` harness does not reproduce. This
+   verifies the real boundary (type preservation on bind, empty-value typing, array binding).
+
+### §5 — Early rejection, and the external-signal policy
+
+Validate expressions when the form class is constructed and via a Django **system check**: parse each expression, and
+require every `$reference` to resolve to one of:
+
+- a declared **field** of the form,
+- a signal declared in `Meta.external_signals` (for intentional page-level signals), or
+- a library-**reserved** signal.
+
+```python
+class MyForm(ReactiveForm):
+    class Meta:
+        external_signals = {"feature_enabled"}
+```
+
+Genuinely unknown references, unsupported operators, and unsupported types are rejected. To ease adoption this can
+land first as a **warning**, graduating to an error in a later minor release. Runtime evaluation errors remain
+fail-open per the P7 matrix but are **logged**, never silently swallowed.
 
 ## Backward compatibility
 
@@ -140,9 +235,14 @@ sides" true rather than aspirational.
 ## Implementation notes (for the implementing agent)
 
 - Touch points: `src/rg/forms/expressions.py` (evaluator coercion in `_get_field_value`, `_compare_equal`,
-  `_binary_op`), `src/rg/forms/forms.py` (`_get_form_data` → per-field normalization; use `getlist()` for
-  multi-value; align with `get_signals`/`get_signals_json`), a normalization helper (new module or extend
-  `expressions`), a Django system check for expression validity, and tests under `tests/`.
-- Add tests: (a) the client/server conformance fixture; (b) the P1–P6 divergence cases as regression tests;
-  (c) system-check rejection of unknown-field and unsupported-operator expressions.
-- The conformance fixture is the contract — write it first and make both evaluators pass it.
+  `_binary_op`), `src/rg/forms/forms.py` (`_get_form_data` and `get_signals` → route through reactive normalization;
+  use `widget.value_from_datadict` for extraction and `getlist()` semantics for multi-value), a normalization helper
+  (new module or extend `expressions`) that is field-kind-aware per §2 and never calls `field.clean()`, a Django
+  system check for expression validity + `Meta.external_signals`, and tests under `tests/`.
+- Add tests: (a) the level-1 expression fixture (Python vs JS) and the level-2 browser suite against the pinned
+  Datastar bundle; (b) the P1–P6 divergence cases as regression tests, including `"001"` choice-code equality,
+  multi-value arrays, and the per-field empty-value table; (c) normalization keeps in-progress input (`"-"`)
+  representable rather than nulling it; (d) system-check rejection of unknown references and acceptance of declared
+  `external_signals`.
+- The level-1 fixture is the contract — write it first and make both evaluators pass it. Do **not** implement
+  array membership/length until a grammar addition is designed.

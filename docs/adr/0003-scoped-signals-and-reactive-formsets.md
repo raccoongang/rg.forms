@@ -1,10 +1,24 @@
 # ADR 0003 — Scoped signals and reactive formsets
 
-- Status: Proposed
+- Status: Proposed — Revision 2 (resolves review blockers)
 - Date: 2026-08-24
 - Deciders: Oleksii Koval (author of rg.forms)
 - Depends on: [ADR-0002](0002-canonical-expression-semantics.md) (the expression parser it introduces is reused here
-  to rewrite field references safely).
+  to rewrite field references safely, and its external-signal policy governs unknown references).
+
+## Revision 2 — decisions resolved
+
+- **Signal namespace is decided: nested Datastar signals**, not flat mangled names (Datastar supports dot-notation
+  nested signals and `data-bind:foo.bar`). The scope key comes from an **injective, tested encoder** of the form
+  prefix — a plain `-`→`_` replacement is *not* reversible and is rejected (Decision §1).
+- **Scope applies to any prefixed form**, not only formsets. The compatibility guarantee is corrected accordingly.
+- **Expression rewriting** is fully specified: parse → rewrite field references → **canonical re-serialization**
+  (precedence-preserving, escaping), applied to **every** expression-bearing metadata slot, before derived
+  expressions like `required_expr` are composed. Unknown references follow ADR-0002's external-signal policy.
+- **Formset seeding** gets a dedicated owner — a `{% reactive_formset_signals formset %}` tag — because a single
+  form instance cannot see its siblings.
+- **Add / remove / reorder is removed from this ADR** and split into a separate dynamic-formset-mutation ADR. This
+  ADR covers **scoped signals for prefixed forms and static formsets** only.
 
 ## Context
 
@@ -40,58 +54,90 @@ occurrences inside string literals, or partial matches like `$role_id`).
 `get_signals_json()` emits `{"role": …}`, not per-row entries, so initial values for row 1+ are missing or wrong, and
 the seeded object does not match the per-row signal names the inputs bind to.
 
-### P4 — No add / remove / reorder
+### P4 — No add / remove / reorder *(deferred — separate ADR)*
 
-Standard formsets grow via `TOTAL_FORMS` and an empty-form template. There is no reactive way to add, remove, or
-reorder rows, keep stable row identity, or keep the management form in sync.
+Standard formsets grow via `TOTAL_FORMS` and an empty-form template, with no reactive way to add, remove, or reorder
+rows. This is a genuinely separate problem — indexed submission names, `DELETE`/`ORDER` handling, management-form
+counts, stable-key-vs-Django-index divergence, and server re-rendering all need their own decisions — so it is
+**out of scope here** and moves to a dedicated dynamic-formset-mutation ADR. This ADR delivers only the invariant
+that makes any of that possible: **static rows that behave independently**.
 
 ## Decision
 
-Introduce a **row-scoped signal model** and make the tag, the signal seeding, and expression rewriting all agree on
-it. Deliver reactive independence first; add/remove/reorder second.
+Introduce a **scoped signal model** for prefixed forms and make the tag, the signal seeding, and expression rewriting
+all agree on it. Scope applies to any prefixed form (standalone prefixed forms and each row of a static formset).
 
-### 1. A three-plus-one naming model
+### §1 — Nested signal namespace with an injective scope encoder
 
-For a field inside a formset, distinguish:
+For a scoped field, distinguish:
 
 | Concept | Example | Source |
 |---|---|---|
-| Logical field name (what the author writes in expressions) | `role` | field definition |
+| Logical field name (what the author writes) | `role` | field definition |
 | Submitted HTML name | `form-0-role` | `BoundField.html_name` (already used) |
-| Datastar signal name (must be identifier-safe) | `form_0_role` | derived from the prefix |
-| Optional row-local alias (readability inside expressions) | `$row.role` | see below |
+| Datastar signal path (nested) | `forms.<scope>.role` | see below |
 
-The signal name is derived from the HTML name with a defined, reversible mangling (`-` → `_`) chosen to be a valid
-Datastar/JS identifier. Whether the signals are **flat** (`$form_0_role`) or **nested** (`$form.0.role`, a Datastar
-nested-signal object) is the main open decision — nested reads better in expressions and seeds as one object per row,
-flat is simpler to mangle. The implementing ADR revision must verify the choice against Datastar's actual signal-name
-and nesting rules before committing. Non-formset forms are unchanged: no prefix → signal name == logical name.
+Signals are **nested**, using Datastar's dot-notation object signals (`data-bind:forms.<scope>.role`,
+`$forms.<scope>.role` in expressions). This reads far better than a flat mangled key and seeds as one object per
+scope.
 
-### 2. Per-row expression rewriting via the ADR-0002 parser
+The scope key is **not** the HTML name with `-`→`_`, because that mapping is not injective — Django allows custom
+prefixes, and both `a-b_c` and `a_b-c` collapse to `a_b_c`. Instead:
 
-At render time, the tag knows the field's form and prefix (`bound_field.form.prefix`). It parses each reactive
-expression (using the parser from ADR-0002), rewrites every `$field` **reference** that resolves to a declared field
-of that form to the row-scoped signal name, and leaves literals and unknown tokens untouched. Because this operates
-on the parsed AST/token stream — not raw strings — it fixes P2 safely. Outside a formset the rewrite is the identity.
+```python
+signal_scope = encode(bound_field.form.prefix)   # injective, tested, documented
+signal_path  = f"forms.{signal_scope}.{logical_name}"
+```
 
-### 3. Formset-aware signal seeding
+The submitted HTML name does **not** need to be mechanically recoverable from the signal path — the server already
+holds the form/prefix mapping. The encoder need only be injective and identifier-safe. Because expression paths must
+be valid identifiers, if numeric path components (`.0.`) do not behave in Datastar expressions, the encoder emits an
+identifier-safe key (e.g. `row0`) rather than a bare number. **Verify numeric-vs-identifier path components against
+the pinned Datastar bundle before implementing**, and choose the encoder accordingly.
 
-`get_signals`/`get_signals_json` gains a formset-aware form that emits one entry per (row, field) under the same
-scoped names the inputs bind to, so initial values line up for every row (fixes P3). A template helper renders the
-combined `data-signals` for a whole formset.
+Unprefixed forms are unchanged: no prefix → the signal name is the logical name, exactly as today.
 
-### 4. Add / remove / reorder (second phase)
+### §2 — Expression rewriting: parse, rewrite references, re-serialize
 
-A small set of Datastar-driven actions clone the empty-form template into a new row, increment `TOTAL_FORMS`, seed the
-new row's signals, and support removing/reordering with **stable row keys** so signals and expressions track the row,
-not the index. This phase is explicitly deferred until (1)–(3) land and two static rows are proven independent.
+At render time the tag knows the field's form and prefix (`bound_field.form.prefix`). For each expression it:
+
+1. **parses** to an AST (ADR-0002 parser);
+2. **rewrites** every `$reference` node that resolves to a declared field of that form to the scoped signal path,
+   **preserving** references that ADR-0002 classifies as declared external / reserved signals, and treating genuinely
+   unknown references per ADR-0002's policy (warn/error, not silent);
+3. **re-serializes** the AST back to an expression with a canonical, **precedence-preserving** serializer that
+   correctly escapes string literals.
+
+This must run on **every** expression-bearing metadata slot, and it must happen **before** derived expressions are
+composed (so `required_expr`, `placeholder_expr`, `min_expr`, `max_expr` are built from already-scoped sources):
+
+- `visible_when`, `required_when`, `computed`, `disabled_when`, `read_only_when`
+- the **keys** of `help_text_when`, `placeholder_when`, `min_when`, `max_when`
+- group `visible_when` expressions
+
+Operating on the AST — not raw strings — is what makes this safe (no rewriting inside literals, no `$role_id`
+near-match). Outside a prefixed form the rewrite is the identity. Fixes P2.
+
+### §3 — Formset-aware signal seeding
+
+A single `ReactiveForm` instance cannot see its sibling rows, so it cannot emit the combined seed. Add a dedicated
+template tag that owns this:
+
+```django
+<form data-signals='{% reactive_formset_signals formset %}'>
+```
+
+It emits one nested entry per (scope, field) under the same signal paths the inputs bind to, so initial values line
+up for every row (fixes P3). (A `ReactiveFormSetMixin.get_signals_json()` is an alternative owner; the tag is the
+smaller addition.)
 
 ## Backward compatibility
 
-- **Non-formset forms are byte-identical.** With no prefix, scoped name == logical name, the expression rewrite is the
-  identity, and seeding is unchanged.
-- **Formset rendering changes** from shared to per-row signals — a behavior fix for anyone already rendering formset
-  rows with `render_reactive_field` (previously broken). Call out in the CHANGELOG.
+- **Unprefixed forms are byte-identical.** With no prefix, the signal name == logical name, the expression rewrite is
+  the identity, and seeding is unchanged.
+- **Any prefixed form now receives scoped signals** — standalone prefixed forms as well as formset rows. This is the
+  desired behavior, but it does mean a *prefixed standalone* form changes from shared to scoped signals, not only
+  formsets. Call it out in the CHANGELOG alongside the formset fix.
 - The field API is unchanged; authors keep writing `$role`.
 
 ## Consequences
@@ -106,15 +152,18 @@ not the index. This phase is explicitly deferred until (1)–(3) land and two st
 
 - Canonical value semantics — [ADR-0002](0002-canonical-expression-semantics.md).
 - Incremental server validation — ADR-0004.
-- Nested/related formsets and drag-drop reordering UI — out of scope; only flat add/remove/reorder with stable keys is
-  considered, and only in the second phase.
+- **Dynamic formset mutation** (add / remove / reorder, `DELETE`/`ORDER`, `TOTAL_FORMS` management, stable-key vs
+  Django-index reconciliation, server re-render) — a separate later ADR, not this one.
 
 ## Implementation notes (for the implementing agent)
 
-- Touch points: `src/rg/forms/templatetags/reactive_forms.py` (derive prefix, scope `data-bind` and every
-  `data-attr:*`/`data-show` expression per row), `src/rg/forms/forms.py` (formset-aware `get_signals`), the parser
-  from ADR-0002 (reference-rewriting transform), and a formset signals template tag.
-- Tests: two static rows evaluate independently (visibility/required/computed per row); scoped names appear in
-  `data-bind` and in seeded signals; expression rewriting does not touch literals or `$role_id`-style near-matches;
-  non-formset output is unchanged. Add/remove/reorder tests follow in the second phase.
-- Resolve the flat-vs-nested signal-name decision against Datastar's documented rules before implementing.
+- Touch points: `src/rg/forms/templatetags/reactive_forms.py` (derive the scope from `bound_field.form.prefix`; scope
+  `data-bind` and rewrite every expression slot listed in §2 *before* composing derived expressions),
+  `src/rg/forms/forms.py` (scope-aware `get_signals`), the parser + canonical serializer from ADR-0002, the injective
+  scope encoder (§1), and the `reactive_formset_signals` template tag (§3).
+- Tests: the scope encoder is injective over adversarial prefixes (`a-b_c` vs `a_b-c`); two static rows evaluate
+  independently (visibility/required/computed per row); scoped paths appear in `data-bind` and in seeded signals;
+  rewriting covers *all* metadata slots and does not touch literals or `$role_id`-style near-matches; declared
+  external signals survive rewriting; unprefixed output is unchanged.
+- Verify nested/numeric signal-path behavior against the pinned Datastar bundle and pick the encoder key style (§1)
+  before implementing.
