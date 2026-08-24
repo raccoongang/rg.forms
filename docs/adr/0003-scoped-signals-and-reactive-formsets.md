@@ -6,15 +6,19 @@
 - Depends on: [ADR-0002](0002-canonical-expression-semantics.md) (the expression parser it introduces is reused here
   to rewrite field references safely, and its external-signal policy governs unknown references).
 
-## Revision 2 — decisions resolved
+## Revisions 2–3 — decisions resolved
 
-- **Signal namespace is decided: nested Datastar signals**, not flat mangled names (Datastar supports dot-notation
-  nested signals and `data-bind:foo.bar`). The scope key comes from an **injective, tested encoder** of the form
-  prefix — a plain `-`→`_` replacement is *not* reversible and is rejected (Decision §1).
+- **Signal namespace is nested Datastar signals** under the reserved `rgForms` top-level namespace (Datastar supports
+  dot-notation nested signals and `data-bind:foo.bar`). The scope key comes from a **decided Base32 encoder** of the
+  form prefix — injective, identifier-safe, leading-letter — replacing the rejected non-injective `-`→`_` idea and the
+  earlier "verify and choose" placeholder (Decision §1).
+- **`rgForms` is reserved in [ADR-0002 §5](0002-canonical-expression-semantics.md)** so external signals cannot
+  collide with the scoping object.
 - **Scope applies to any prefixed form**, not only formsets. The compatibility guarantee is corrected accordingly.
 - **Expression rewriting** is fully specified: parse → rewrite field references → **canonical re-serialization**
-  (precedence-preserving, escaping), applied to **every** expression-bearing metadata slot, before derived
-  expressions like `required_expr` are composed. Unknown references follow ADR-0002's external-signal policy.
+  (precedence-preserving, escaping), applied to **every** expression-bearing metadata slot (including group
+  `visible_when`), before derived expressions like `required_expr` are composed. Unknown references follow ADR-0002's
+  external-signal policy.
 - **Formset seeding** gets a dedicated owner — a `{% reactive_formset_signals formset %}` tag — because a single
   form instance cannot see its siblings.
 - **Add / remove / reorder is removed from this ADR** and split into a separate dynamic-formset-mutation ADR. This
@@ -75,25 +79,30 @@ For a scoped field, distinguish:
 |---|---|---|
 | Logical field name (what the author writes) | `role` | field definition |
 | Submitted HTML name | `form-0-role` | `BoundField.html_name` (already used) |
-| Datastar signal path (nested) | `forms.<scope>.role` | see below |
+| Datastar signal path (nested) | `rgForms.<scope>.role` | see below |
 
-Signals are **nested**, using Datastar's dot-notation object signals (`data-bind:forms.<scope>.role`,
-`$forms.<scope>.role` in expressions). This reads far better than a flat mangled key and seeds as one object per
-scope.
+Signals are **nested**, using Datastar's dot-notation object signals (`data-bind:rgForms.<scope>.role`,
+`$rgForms.<scope>.role` in expressions), under the **reserved `rgForms` top-level namespace** (reserved in
+[ADR-0002 §5](0002-canonical-expression-semantics.md), so an external signal cannot collide with it). This reads far
+better than a flat mangled key and seeds as one object per scope.
 
-The scope key is **not** the HTML name with `-`→`_`, because that mapping is not injective — Django allows custom
-prefixes, and both `a-b_c` and `a_b-c` collapse to `a_b_c`. Instead:
+**The scope encoder is decided** (not left to implementation). The HTML name with `-`→`_` is rejected: it is not
+injective — Django allows custom prefixes, and both `a-b_c` and `a_b-c` collapse to `a_b_c`. The encoder is a
+Base32 of the prefix:
 
 ```python
-signal_scope = encode(bound_field.form.prefix)   # injective, tested, documented
-signal_path  = f"forms.{signal_scope}.{logical_name}"
+def encode_scope(prefix: str) -> str:
+    # injective, identifier-safe, deterministic, Unicode-safe; always starts with a letter
+    return "p" + base64.b32encode(prefix.encode("utf-8")).decode("ascii").rstrip("=").lower()
+
+signal_path = f"rgForms.{encode_scope(bound_field.form.prefix)}.{logical_name}"
 ```
 
-The submitted HTML name does **not** need to be mechanically recoverable from the signal path — the server already
-holds the form/prefix mapping. The encoder need only be injective and identifier-safe. Because expression paths must
-be valid identifiers, if numeric path components (`.0.`) do not behave in Datastar expressions, the encoder emits an
-identifier-safe key (e.g. `row0`) rather than a bare number. **Verify numeric-vs-identifier path components against
-the pinned Datastar bundle before implementing**, and choose the encoder accordingly.
+Properties: injective (Base32 is reversible and the `p` prefix guarantees a leading letter), identifier-safe (no dot,
+hyphen, or `_`-prefix delimiter), no numeric leading path component (so it sidesteps any numeric-key ambiguity in
+Datastar expression paths), and trivially testable. Human readability of the encoded scope does not matter — authors
+keep writing `$role`. The submitted HTML name need not be recoverable from the path; the server holds the form/prefix
+mapping.
 
 Unprefixed forms are unchanged: no prefix → the signal name is the logical name, exactly as today.
 
@@ -127,9 +136,10 @@ template tag that owns this:
 <form data-signals='{% reactive_formset_signals formset %}'>
 ```
 
-It emits one nested entry per (scope, field) under the same signal paths the inputs bind to, so initial values line
-up for every row (fixes P3). (A `ReactiveFormSetMixin.get_signals_json()` is an alternative owner; the tag is the
-smaller addition.)
+It emits one nested `rgForms.<scope>.<field>` entry per (scope, field) under the same signal paths the inputs bind
+to, so initial values line up for every row (fixes P3). Seed using Datastar's **object** signal syntax (not
+individual `data-bind` attribute names) to avoid attribute-name casing surprises with the `rgForms` key. (A
+`ReactiveFormSetMixin.get_signals_json()` is an alternative owner; the tag is the smaller addition.)
 
 ## Backward compatibility
 
@@ -157,13 +167,17 @@ smaller addition.)
 
 ## Implementation notes (for the implementing agent)
 
-- Touch points: `src/rg/forms/templatetags/reactive_forms.py` (derive the scope from `bound_field.form.prefix`; scope
+- Touch points: `src/rg/forms/templatetags/reactive_forms.py` (`render_reactive_field` **and** `render_field_group`
+  must derive the scope from `bound_field.form.prefix` / the group's form and share one rewrite service; scope
   `data-bind` and rewrite every expression slot listed in §2 *before* composing derived expressions),
-  `src/rg/forms/forms.py` (scope-aware `get_signals`), the parser + canonical serializer from ADR-0002, the injective
+  `src/rg/forms/forms.py` (scope-aware `get_signals`), the parser + canonical serializer from ADR-0002, the Base32
   scope encoder (§1), and the `reactive_formset_signals` template tag (§3).
-- Tests: the scope encoder is injective over adversarial prefixes (`a-b_c` vs `a_b-c`); two static rows evaluate
-  independently (visibility/required/computed per row); scoped paths appear in `data-bind` and in seeded signals;
-  rewriting covers *all* metadata slots and does not touch literals or `$role_id`-style near-matches; declared
-  external signals survive rewriting; unprefixed output is unchanged.
-- Verify nested/numeric signal-path behavior against the pinned Datastar bundle and pick the encoder key style (§1)
-  before implementing.
+- Tests: the Base32 scope encoder is injective over adversarial prefixes (`a-b_c` vs `a_b-c`, Unicode); two static
+  rows evaluate independently (visibility/required/computed per row); scoped paths appear in `data-bind` and in seeded
+  signals; rewriting covers *all* metadata slots and does not touch literals or `$role_id`-style near-matches; a
+  **field group** (`render_field_group`) inside a prefixed form receives the same scope and its group `visible_when`
+  is rewritten (explicit test, not just listed); declared external signals survive rewriting; `rgForms` is rejected as
+  an author reference; unprefixed output is unchanged.
+- Verify nested `rgForms.<scope>.<field>` binding/seeding against the pinned Datastar bundle before implementing. This
+  work targets **Datastar 1.0.2** (stable), upgraded from `1.0.0-RC.7`; 1.0.2 also fixed `data-bind` array-signal bugs
+  relevant to multi-value fields.

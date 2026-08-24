@@ -7,22 +7,29 @@
   [ADR-0003](0003-scoped-signals-and-reactive-formsets.md) (scoped signal paths for the pending indicator and trigger
   identity). Reuses the existing SSE machinery (`reactive_form_response`).
 
-## Revision 2 — decisions resolved
+## Revisions 2–3 — decisions resolved
 
-The first draft assumed a `contentType: 'form'` request, which is wrong for this feature. Resolved:
+The first draft assumed a `contentType: 'form'` request, which is wrong for this feature. Revision 3 also completes
+the request contract (CSRF, trigger transport, JSON→form adapter, ID contract):
 
 - **Transport: the default Datastar JSON-signal request**, not `contentType: 'form'` (which sends *no signals* and
   runs native form validity gating that would block validation of a partially-filled form). Final submit keeps the
   form POST (Decision §1).
-- **Validation boundary: run the whole form, patch one fragment** (Option A). No attempt to infer per-field
-  dependencies (Decision §2).
+- **CSRF**: the render tag is context-aware and sends Django's token as an `X-CSRFToken` header; never `csrf_exempt`
+  (Decision §1a).
+- **Trigger transport: an `X-RG-Validate-Field` header** carrying the canonical field path (scoped for formsets), not
+  a marker mixed into the signal object (Decision §5).
+- **JSON→form adapter** is a first-class component with a defined mapping table (Decision §2a).
+- **Validation boundary: run the whole form, patch one fragment** (Option A). No per-field dependency inference
+  (Decision §2).
 - **Stale responses: rely on Datastar's built-in per-element request cancellation** first; tokens only if integration
-  tests prove it insufficient (Decision §3).
-- **Pending state: the native `data-indicator`** on a local `_validating_<field>` signal (Decision §3).
-- **Validation URL is explicit** — `validate_action`, defaulting to `action` (Decision §4).
+  tests on the pinned bundle prove it insufficient (Decision §3).
+- **Pending state: the native `data-indicator`** on a scoped local signal `_rgForms.<scope>.validating.<field>`
+  (Decision §3).
+- **Validation URL is explicit** — `validate_action`, with defined unset/empty/inherit semantics (Decision §4).
 - **Trigger identity is untrusted input** and must be verified server-side (Decision §5).
-- **Minimal error accessibility** (`aria-invalid`, `aria-describedby`, stable ids) is part of the fragment contract
-  from day one (Decision §6).
+- **Stable wrapper/error IDs** make the single-field patch implementable; minimal `aria-*` is in the fragment
+  contract from day one (Decision §6).
 
 ## Context
 
@@ -90,6 +97,19 @@ incremental check → JSON signals (typed, ungated)
 final submit      → normal Django form POST
 ```
 
+### §1a — CSRF
+
+A JSON Datastar POST does **not** carry the form's hidden `csrfmiddlewaretoken` field, so a normal CSRF-protected view
+rejects it. The generated handler must send the token as an `X-CSRFToken` header, which `CsrfViewMiddleware` accepts:
+
+```html
+data-on:blur="@post('/validate/', {headers: {'X-CSRFToken': '<token>'}})"
+```
+
+To supply `<token>`, the render tag becomes **context-aware** (reads the request's CSRF token from the template
+context) and injects the header into every generated incremental request. `CsrfViewMiddleware` is required, and a
+real CSRF-enforced request is part of the test suite. `csrf_exempt` is **not** an acceptable solution.
+
 ### §2 — Validation boundary: run the whole form, patch one fragment
 
 Django exposes no dependency metadata for `clean_<field>()` / `Form.clean()` / validators / uniqueness checks, so the
@@ -110,15 +130,35 @@ now to avoid a second validation surface.
 wrapper, every other field's DOM (including its current error) is untouched automatically. The server computes the
 full error set for the request but *selects* only the triggered fragment to patch; it keeps no error-state session.
 
+### §2a — JSON-signals → Django form-data adapter
+
+Adapting the canonical signal JSON into the `QueryDict` a Django form binds is more than flattening. It is a
+first-class component (built on the ADR-0002 normalization and ADR-0003 scoping), with this mapping:
+
+| Signal (canonical) | Django form-data |
+|---|---|
+| scoped path `rgForms.<scope>.name` | prefixed HTML name `form-0-name` (reverse of the ADR-0003 scope map) |
+| unscoped path `name` | `name` |
+| array value | multiple `QueryDict` entries under one key (`getlist` semantics) |
+| boolean `true` | the widget's checked value (e.g. `"on"`) |
+| boolean `false` | key **absent** (native unchecked-checkbox semantics) |
+| `null` / empty | the field's empty form representation (per ADR-0002 §2) |
+| `external_signals` / reserved (`rgForms`, `_rgForms…`) | **dropped** — never become form fields |
+| file inputs | unavailable in incremental validation — skipped (files validate on submit only) |
+
+The adapter is shared and tested, not ad-hoc logic inside the view helper.
+
 ### §3 — Lifecycle affordances (native primitives)
 
 - **Stale responses**: rely on Datastar's built-in cancellation of in-flight requests to the same URL/method from the
   same initiating element; requests from different fields stay independent. Add a per-field token **only if**
-  integration tests show cancellation is insufficient (e.g. the server finishes after a client abort). Document the
-  dependency on this Datastar guarantee (verify against the pinned bundle).
-- **Pending state**: use the native `data-indicator` on a **local** signal, e.g.
-  `data-indicator:_validating_<field>` — the leading underscore keeps it local and out of backend requests by
-  default. No custom start/finish bookkeeping. In a formset the indicator signal uses the ADR-0003 scope.
+  integration tests show cancellation is insufficient (e.g. the server finishes after a client abort). This is a
+  runtime behavior of a specific bundle — verify it against the version this work targets (**Datastar 1.0.2**,
+  stable), not against generic docs.
+- **Pending state**: use the native `data-indicator` on a **local** signal under the reserved scope:
+  `_rgForms.validating.<field>` (unprefixed) or `_rgForms.<scope>.validating.<field>` (scoped, per ADR-0003). A
+  leading-underscore path component keeps the signal local and out of backend requests — verify that underscore-prefix
+  exclusion still applies to a *nested* path component in the targeted bundle. No custom start/finish bookkeeping.
 - **Which validation runs**: the whole form (§2). No per-field dependency inference.
 - **Throttling**: `debounce` on the client; the view stays a normal Django view, so expensive checks can be cached or
   rate-limited by the host as usual.
@@ -132,27 +172,53 @@ default to the submit action:
 {% render_reactive_form form action="/submit/" validate_action="/validate/" %}
 ```
 
-`validate_action` defaults to `action`. The form *declaration* describes validation **timing** (`validate_on`); the
-rendering/view layer supplies the **URL**. `render_reactive_form` threads `validate_action` into each field; standalone
-`render_reactive_field` accepts it as a tag argument for manual layouts.
+The form *declaration* describes validation **timing** (`validate_on`); the rendering/view layer supplies the **URL**.
+`render_reactive_form` threads `validate_action` into each field; standalone `render_reactive_field` accepts it as a
+tag argument for manual layouts. Because `action` itself defaults to `""`, the three states are distinguished
+explicitly (so "unset" and "current URL" are never the same accident):
 
-### §5 — Trigger identity is untrusted input
+| `validate_action` | Meaning |
+|---|---|
+| omitted | inherit `action` |
+| `""` | validate against the **current URL** (intentional) |
+| a URL | validate against that URL |
+| `None` (a field has `validate_on` but no resolvable action) | the field cannot render its handler → a system-check/config error, not a silent no-op |
 
-Whatever the transport, the field name in the request is client-supplied. Before acting, the server must verify that
-the field **exists**, has `validate_on` **enabled**, the **event is permitted**, and the field **belongs to the
-submitted form/formset scope**. Never dispatch to `clean_<name>()` or any method from an arbitrary client-provided
-name.
+### §5 — Trigger identity: header transport, treated as untrusted
 
-### §6 — Minimal error accessibility (part of the fragment contract)
+The triggering field travels in a **header**, not mixed into the canonical signal object (which keeps the signal
+payload clean):
 
-Incremental errors must be accessible from their first implementation, so the patched field fragment sets:
+```text
+X-RG-Validate-Field: username                    # ordinary form
+X-RG-Validate-Field: rgForms.<scope>.username     # scoped form / formset row
+```
+
+The server resolves that path against the known form/formset structure. Because it is client-supplied, it must verify
+that the field **exists**, has `validate_on` **enabled**, the **event is permitted**, and the field **belongs to the
+submitted form/formset scope** — and only then act. Never dispatch to `clean_<name>()` or any method from an arbitrary
+client-provided name. The scope is derivable from the path, so no separate scope header is required.
+
+### §6 — Patch-target contract and minimal error accessibility
+
+A single-field patch needs a **guaranteed, formset-safe wrapper id** to target. The fragment contract fixes these
+deterministic ids (all derived from `field.id_for_label`, which is already prefix-safe):
+
+| Element | Id |
+|---|---|
+| field wrapper (patch target) | `{{ field.id_for_label }}_field` |
+| input/control | `{{ field.id_for_label }}` |
+| help text | `{{ field.id_for_label }}_help` |
+| error message | `{{ field.id_for_label }}_error` |
+
+and the accessibility attributes, present from first implementation:
 
 - `aria-invalid` on the control when it has an error;
-- `aria-describedby` linking the control to a **stable** error-message element id;
-- the error element carries that stable id.
+- `aria-describedby` linking the control to the error (and help) ids above.
 
-This is the minimal slice of the future accessibility ADR that this feature cannot ship without; the broader a11y
-contract (focus-first-invalid, error summary, grouped-control labeling) remains a separate ADR.
+Without the stable wrapper id, "patch only this field" is not generically implementable. The broader a11y contract
+(focus-first-invalid, error summary, grouped-control labeling) remains a separate ADR; only this per-field slice is in
+scope here.
 
 ## Backward compatibility
 
@@ -164,8 +230,9 @@ contract (focus-first-invalid, error summary, grouped-control labeling) remains 
 
 - Incremental validation becomes a one-line field declaration instead of bespoke wiring, while remaining ordinary
   server-authoritative Django validation (whole-form run, single-fragment patch).
-- New documented surface: `validate_on`/`debounce` kwargs, the `_validating_<field>` local signal, the JSON-signal
-  validate request + trigger contract, and `validate_action`.
+- New documented surface: `validate_on`/`debounce` kwargs, the `_rgForms.…validating.<field>` local signal, the
+  JSON-signal validate request, the `X-CSRFToken` + `X-RG-Validate-Field` header contract, the JSON→form-data adapter,
+  the deterministic fragment ids, and `validate_action`.
 - Reinforces the backend-first thesis: the browser triggers, the server decides. The two request modes make the split
   explicit — JSON signals for incremental checks, form POST for final submit.
 
@@ -182,13 +249,16 @@ contract (focus-first-invalid, error summary, grouped-control labeling) remains 
 ## Implementation notes (for the implementing agent)
 
 - Touch points: `src/rg/forms/fields.py` (`validate_on` / `debounce` kwargs on `ReactiveFieldMixin`),
-  `src/rg/forms/templatetags/reactive_forms.py` (emit the default JSON-signal `data-on:*` handler, the
-  `data-indicator` pending signal, and thread `validate_action`), `src/rg/forms/views.py`
-  (`reactive_validate_response`: adapt canonical signal JSON → form data, run full `is_valid()`, verify the trigger
-  identity per §5, patch only the triggered fragment), a single-field fragment template carrying the §6 `aria-*`
-  contract, and docs + an example.
-- Tests: a `validate_on="blur"` field fires a JSON-signal request (not `contentType:'form'`) and patches only its own
-  fragment on error; unrelated fields' DOM errors are untouched; a valid value clears the field's error and pending
-  state; an untrusted/unknown trigger field is rejected; forms without `validate_on` are unchanged.
+  `src/rg/forms/templatetags/reactive_forms.py` (context-aware CSRF-token injection §1a, emit the default JSON-signal
+  `data-on:*` handler + `X-RG-Validate-Field` header, the `data-indicator` pending signal, and thread
+  `validate_action` with the §4 unset/empty/inherit rules), `src/rg/forms/views.py` (`reactive_validate_response`:
+  run the §2a JSON→form-data adapter, full `is_valid()`, verify the trigger identity per §5, patch only the §6
+  wrapper), the shared JSON→form-data adapter (§2a, built on ADR-0002/0003), a single-field fragment template
+  carrying the §6 id + `aria-*` contract, and docs + an example.
+- Tests: a `validate_on="blur"` field fires a JSON-signal request (not `contentType:'form'`) carrying `X-CSRFToken`
+  and `X-RG-Validate-Field`, and passes a **CSRF-enforced** view; it patches only its own §6 wrapper on error;
+  unrelated fields' DOM errors are untouched; a valid value clears the field's error and pending state; the JSON→form
+  adapter round-trips arrays / booleans / null / scoped paths; an untrusted/unknown trigger field is rejected; forms
+  without `validate_on` are unchanged.
 - Verify against the pinned Datastar bundle: JSON-signal request contents, `data-indicator` behavior, and in-flight
   request cancellation (before deciding whether a stale-response token is needed at all).

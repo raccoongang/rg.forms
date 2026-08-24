@@ -1,10 +1,35 @@
 # ADR 0002 — Canonical client/server expression semantics and reactive value normalization
 
-- Status: Proposed — Revision 2 (resolves review blockers; ready to implement on sign-off)
+- Status: Proposed — Revision 3 (defines its own semantics via a compiled DSL; ready to implement on sign-off)
 - Date: 2026-08-24
 - Deciders: Oleksii Koval (author of rg.forms)
 - Supersedes the "render on Django widget context" idea as the *next* ADR: that rendering refactor is still
   wanted, but it is downstream of this one and is deferred to a later ADR.
+
+## Revision 3 — the expression language is compiled, not inherited
+
+The load-bearing decision, made explicit: **rg.forms expressions are a small DSL that is compiled from one AST to two
+targets** — the Python evaluator and a Datastar/JavaScript expression string. rg.forms defines its *own* semantics; it
+does **not** inherit JavaScript's surprising rules (loose `==`, operand-returning `&&`/`||`, string `+`, truthy `[]`).
+
+```text
+author writes rg.forms DSL
+        ↓ parse
+       AST
+        ├── Python evaluator      (server: correctness)
+        └── JS expression serializer → data-* attribute (client: UX)
+```
+
+Expressions are therefore **transmitted compiled, never raw**. Revision 3 resolves the semantic decisions Revision 2
+left to "the implementation":
+
+- **Arrays are values, not operands** — canonical in signals/requests, but **not referenceable in expressions** in
+  v1 (JS array equality/truthiness are not portable; §3).
+- **The full operator matrix is in this ADR** (§3): strict typed `==` → JS `===`; Boolean-only `&&`/`||`/`!`;
+  numeric-only arithmetic with string operands rejected at build time; zero divisor is an evaluation error.
+- **Temporarily-invalid numeric input** has an explicit state (§2).
+- **Decimal computed fields** have a preview-vs-authoritative contract (§3).
+- **`rgForms` is a reserved top-level signal namespace** (§5), used by ADR-0003 scoping.
 
 ## Revision 2 — decisions resolved
 
@@ -14,8 +39,8 @@ The first draft left six boundaries implicit. They are now decided in this docum
   concern (Decision §2, §3).
 - **Empty values are field-specific**, not a single `null` (Decision §2, empty-value table).
 - **date / time / datetime / UUID** are supported canonical **strings** (Decision §2).
-- **Arrays** support equality, inequality, and truthiness only; **membership/length are deferred** until an explicit
-  grammar exists (Decision §3).
+- **Arrays** are canonical values but are **not referenceable in expressions** in v1 (Revision 3 correction —
+  Decision §3).
 - **External signals** are allowed only when declared in `Meta.external_signals`; the system check enforces this
   (Decision §5).
 - **Normalization ≠ validation**: extraction/normalization is a distinct, loss-minimizing layer that never calls
@@ -140,7 +165,7 @@ on bind, so the initial type and the empty value must be correct):
 | Field kind | Canonical type | Canonical empty | Notes |
 |---|---|---|---|
 | char / choice / email / url / text | string | `""` | **never numeric-coerced** — fixes P1 (`"001"` stays `"001"`) |
-| integer / float | number | `null` | JS number semantics |
+| integer / float | number (or in-progress string) | `null` | valid → number; empty → `null`; **temporarily-invalid input** (e.g. `"-"`, `"1."`) → the original **string**, so typing is never destroyed |
 | decimal | **string** | `""` | exact; see §3 — not a JS number |
 | boolean | boolean | `false` | `"on"`/absent → `true`/`false` — fixes P4 |
 | multiple choice | array | `[]` | via `QueryDict.getlist()` — fixes P2 |
@@ -153,28 +178,46 @@ on bind, so the initial type and the empty value must be correct):
 This replaces the earlier contradictory "empty → `null`, distinct from `''`/`false`/`0`": the empty value is
 **field-specific** (fixes P5), matching HTML/Datastar behavior.
 
-### §3 — Decimal contract, and exact operator/equality semantics
+### §3 — Operator matrix, arrays, and the Decimal contract
 
-**Decimal stays a string signal.** JavaScript numbers cannot represent arbitrary decimals exactly, and the signal
-serializer already emits `Decimal` as a string. Therefore:
+Because expressions are **compiled** (Revision 3), rg.forms defines its own operator semantics and emits a JS string
+that reproduces them exactly. The matrix is normative:
 
-- `integer` / `float` → reactive **number** (IEEE-754 / JS semantics);
-- `decimal` → canonical **decimal string**;
-- arithmetic on a Decimal-backed signal is **not** exact in the browser — it is either explicitly converted or
-  documented as unsuitable for precision-sensitive math. Display-only totals may use JS number arithmetic, but must
-  not be presented as authoritative;
-- the server **always recomputes** authoritative totals from Django `Decimal` values during cleaning (§1).
+| Op | Allowed operands | Result | Client compilation | Python behavior | Error behavior |
+|---|---|---|---|---|---|
+| `==` `!=` | same canonical type (string↔string, number↔number, bool↔bool, null↔any) | boolean | `===` / `!==` | strict typed equality (no cross-type coercion) | mismatched types → `!=` true, `==` false (never an error) |
+| `<` `>` `<=` `>=` | number↔number, string↔string | boolean | same operators | typed compare | any operand `null`/invalid → `false` |
+| `&&` `\|\|` | any (coerced to boolean) | **boolean** | `(Boolean(a) && Boolean(b))` — never operand-returning | `bool(a) and bool(b)` | — |
+| `!` | any | boolean | `!Boolean(a)` | `not bool(a)` | — |
+| `+` `-` `*` `/` | number↔number (decimal strings coerced, see below) | number | same operators | numeric | **string operands rejected at build time**; zero divisor → evaluation error |
 
-Specify, in one table (in the implementation), how each operator behaves for the supported types, chosen to match
-Datastar/JavaScript for that subset (fixes P6):
+Truthiness (for `&&`/`||`/`!`, matching `Boolean(x)` in JS): falsy = `""`, `null`, `false`, `0`; truthy otherwise.
+Strings are **not** numeric-coerced for `==` (so a choice code `"001"` compares as `"001"` on both sides — fixes P1),
+and `+` is **numeric only** — string concatenation is rejected during expression validation (§5), not silently
+compiled to JS `+`.
 
-- `==` / `!=`: string equality for strings; numeric for numbers; element-wise for arrays; `null` compared explicitly.
-- `<` `>` `<=` `>=`: numbers and comparable strings; `null` comparisons are false (except `==`/`!=`).
-- `&&` `||` `!`: JS truthiness over the canonical types (`""`, `null`, `false`, `0`, `[]` are falsy).
-- `+` `-` `*` `/`: numeric only; division-by-zero semantics documented to match the chosen contract.
-- **Arrays**: equality, inequality, and truthiness are defined. **Membership and length are deferred** — the grammar
-  has no `in` operator, property access, or function calls today, so this ADR does **not** promise `contains`/
-  `length`. Those require an explicit grammar addition in a follow-up.
+**Arrays are values, not operands.** In v1 an array-typed field (multiple choice) is a valid canonical signal/request
+value but **cannot be referenced in a reactive expression**: JS array semantics are not portable —
+`Boolean([]) === true`, and `[] == []` / `[1] == [1]` are `false` (identity comparison) — so equality and truthiness
+would silently diverge from any server emulation. Referencing an array field in an expression is rejected at build
+time (§5). A future grammar addition (`contains(...)`, `length(...)`) will introduce array operations with explicitly
+defined cross-runtime semantics.
+
+**Division by zero is an evaluation error**, not `Decimal(0)` (today's misleading behavior). On the server it raises
+and the P7 fail-open fallback applies (logged). On the client, JS yields `Infinity`/`NaN`; because a divisor that can
+be zero is an authoring hazard, guard it in the expression (e.g. gate the computed with `visible_when`). Zero-divisor
+cases are excluded from the strict conformance fixture (§4) and documented as a preview caveat.
+
+**Decimal contract (preview vs authoritative).** `decimal` is a canonical **string** signal (JS numbers cannot hold
+arbitrary decimals exactly). For a computed field like `computed="$quantity * $unit_price"` where `unit_price` is a
+`ReactiveDecimalField`:
+
+- arithmetic operators **numerically coerce** decimal-string operands for a **preview-only** client result;
+- the server **recomputes the authoritative value** from Django `Decimal` operands during cleaning (§1) — it does not
+  trust the browser's float arithmetic;
+- the browser result is therefore preview-only and must not be presented as exact;
+- the conformance fixture (§4) compares **rounded/display** output for decimal arithmetic, not exact binary
+  intermediates.
 
 ### §4 — Client/server conformance tests (two levels)
 
@@ -202,9 +245,14 @@ class MyForm(ReactiveForm):
         external_signals = {"feature_enabled"}
 ```
 
-Genuinely unknown references, unsupported operators, and unsupported types are rejected. To ease adoption this can
-land first as a **warning**, graduating to an error in a later minor release. Runtime evaluation errors remain
-fail-open per the P7 matrix but are **logged**, never silently swallowed.
+**Reserved namespace.** The top-level signal `rgForms` is reserved for the library (ADR-0003 uses `$rgForms.<scope>.…`
+for per-form scoping, and ADR-0004 uses `$_rgForms.…` for pending indicators). `external_signals` may not declare it,
+and the check rejects author expressions that reference it directly.
+
+The system check rejects, at build time: genuinely unknown references, unsupported operators/types, **string operands
+to arithmetic** (§3), and **references to array-typed fields** (§3). To ease adoption this can land first as a
+**warning**, graduating to an error in a later minor release. Runtime evaluation errors remain fail-open per the P7
+matrix but are **logged**, never silently swallowed.
 
 ## Backward compatibility
 
@@ -228,17 +276,19 @@ fail-open per the P7 matrix but are **logged**, never silently swallowed.
 ## Scope boundaries (explicitly *not* in this ADR)
 
 - Rendering on Django's `widget.get_context()` and a semantic `control` object — separate, later ADR.
-- Scoped signals and reactive formsets (`role` / `form-0-role` / `form_0_role`) — ADR-0003.
+- Scoped signals and reactive formsets (`$rgForms.<scope>.<field>`) — ADR-0003.
 - Declarative incremental server validation (`validate_on="blur"`) — ADR-0004.
 - Accessibility contract (`aria-invalid`/`aria-describedby`, focus-first-invalid) — later ADR.
 
 ## Implementation notes (for the implementing agent)
 
-- Touch points: `src/rg/forms/expressions.py` (evaluator coercion in `_get_field_value`, `_compare_equal`,
-  `_binary_op`), `src/rg/forms/forms.py` (`_get_form_data` and `get_signals` → route through reactive normalization;
-  use `widget.value_from_datadict` for extraction and `getlist()` semantics for multi-value), a normalization helper
-  (new module or extend `expressions`) that is field-kind-aware per §2 and never calls `field.clean()`, a Django
-  system check for expression validity + `Meta.external_signals`, and tests under `tests/`.
+- Touch points: `src/rg/forms/expressions.py` (evaluator semantics per the §3 matrix in `_get_field_value`,
+  `_compare_equal`, `_binary_op`, plus a new **AST → JS expression serializer** — the compile target that emits the
+  `data-*` string, so client and server share one AST), `src/rg/forms/forms.py` (`_get_form_data` and `get_signals` →
+  route through reactive normalization; use `widget.value_from_datadict` for extraction and `getlist()` semantics for
+  multi-value), a normalization helper (new module or extend `expressions`) that is field-kind-aware per §2 and never
+  calls `field.clean()`, a Django system check for expression validity + `Meta.external_signals` + `rgForms`
+  reservation, and tests under `tests/`.
 - Add tests: (a) the level-1 expression fixture (Python vs JS) and the level-2 browser suite against the pinned
   Datastar bundle; (b) the P1–P6 divergence cases as regression tests, including `"001"` choice-code equality,
   multi-value arrays, and the per-field empty-value table; (c) normalization keeps in-progress input (`"-"`)
