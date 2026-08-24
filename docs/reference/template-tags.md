@@ -45,6 +45,25 @@ What changes when `action` is set:
 - The form is wrapped in `<div id="reactive-form-container">` (SSE patch target)
 - The form gets `data-on:submit__prevent="@post('...', {contentType: 'form'})"` — Datastar intercepts submit (both button click and Enter key) and sends via SSE instead of a native page-reloading POST
 
+### `validate_action` parameter
+
+Supplies the URL for [declarative incremental validation](../guide/incremental-validation.md)
+(fields declared with `validate_on`). The tag is context-aware and forwards the
+request's CSRF token to each field's validate handler.
+
+```html
+{% render_reactive_form form action="/submit/" validate_action="/validate/" %}
+```
+
+| `validate_action` | Meaning |
+|---|---|
+| omitted | inherit `action` |
+| `""` | validate against the **current URL** (intentional) |
+| a URL | validate against that URL |
+
+If a field declares `validate_on` but no validation action can be resolved, the
+tag raises a render-time configuration error rather than silently no-op'ing.
+
 ## `{% render_reactive_field bound_field %}`
 
 Renders a single field with its label, input, errors, and reactive attributes:
@@ -71,6 +90,17 @@ context passed to that template is a **supported, semver-relevant surface**:
 new keys may be added in minor releases, but existing keys will not be renamed,
 removed, or change meaning/type without a major version.
 
+!!! note "Expressions are compiled and scoped"
+    Every `*_when` / `computed` / `*_expr` value below is a **compiled
+    Datastar/JS expression** (ADR-0002), not the raw rg.forms DSL you wrote —
+    e.g. `$order_type == 'urgent'` is emitted as `($order_type === "urgent")`.
+    Inside a **prefixed form or formset row** field references are additionally
+    **scoped** to that row's signal namespace
+    (`$rgForms.<scope>.order_type`, ADR-0003). Drop these values straight into
+    `data-*` attributes; do not re-parse them. For two-way binding use
+    `bind_attr` (below) rather than hand-building `data-bind:{{ field_name }}`,
+    which is not scope-safe.
+
 | Key | Type | Meaning |
 |---|---|---|
 | `field` | `BoundField` | The bound field. Use `field.html_name`, `field.id_for_label` — these are formset-safe. |
@@ -87,7 +117,8 @@ removed, or change meaning/type without a major version.
 | `min_when` | `dict \| None` | `{expression: min_value}` for dynamic minimum. |
 | `max_when` | `dict \| None` | `{expression: max_value}` for dynamic maximum. |
 | `is_required` | `bool` | Static required flag. |
-| `field_name` | `str` | Unprefixed field name — use for Datastar **signal** names (`data-bind:{{ field_name }}`), **not** for the submitted `name`. |
+| `field_name` | `str` | Unprefixed logical field name. Use `bind_attr` for `data-bind` (it is scope-safe); use `field_name` only for introspection, **not** for the submitted `name`. |
+| `bind_attr` | `SafeString` | The ready-to-emit `data-bind` attribute for the control. Unprefixed forms emit the keyed form `data-bind:role`; prefixed forms/formset rows emit the scoped value form `data-bind="rgForms.<scope>.role"` (ADR-0003). |
 | `widget_type` | `str` | Lowercased widget class name (e.g. `"emailinput"`, `"select"`) — use for branching. |
 | `input_type` | `str` | HTML `<input type>` value (`"email"`, `"datetime-local"`, `"number"`, …; defaults to `"text"`). Put this on the element. |
 | `is_simple_input` | `bool` | True when the widget is a text-family input the reference template renders as a single `<input>` (text/number/email/url/date/time/datetime-local/password). False for select/checkbox/textarea and for widgets that should fall back to Django's native rendering (radio, multi-checkbox, file, multi-widget, custom). |
@@ -98,6 +129,15 @@ removed, or change meaning/type without a major version.
 | `errors` | `ErrorList` | Field errors. |
 | `html5_attrs` | `dict` | HTML5 validation attrs derived from the field (`required`, `min`, `max`, `maxlength`, `minlength`). |
 | `choices` | `list \| None` | Choices for `select`/choice widgets. |
+| `control_id` | `str` | Stable, formset-safe id for the control (`id_for_label`, with an injective fallback for incrementally-validated fields when `auto_id=False`). Empty for non-incremental fields with no `auto_id`. (ADR-0004 §6) |
+| `wrapper_id` | `str` | Id of the field wrapper — the **patch target** for incremental validation (`{control_id}_field`). |
+| `help_id` / `error_id` | `str` | Ids for the help / error elements (`{control_id}_help` / `_error`), used by `aria-describedby`. |
+| `control_attrs` | `SafeString` | Extra attributes for the control: the incremental-validation `data-on:*` handler + `data-indicator` pending signal (when `validate_on` is set), plus `aria-invalid` / `aria-describedby`. Spread onto the control element. (ADR-0004) |
+
+The `render_reactive_field` tag also accepts `validate_action` and `csrf_token`
+kwargs (normally threaded automatically by `render_reactive_form`) used to build
+the incremental-validation request — see
+[Incremental validation](../guide/incremental-validation.md).
 
 !!! warning "Use `field.html_name` / `field.id_for_label`, never `field_name` for `name`/`id`"
     Inside a Django formset the submitted name is prefixed (`form-0-role`).

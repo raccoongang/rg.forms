@@ -55,8 +55,10 @@ nav:
       - Conditional Attributes: guide/conditional-attrs.md
       - Cascading Dropdowns: guide/cascading.md
       - Field Groups: guide/field-groups.md
+      - Formsets & Scoped Signals: guide/formsets.md
       - Validation: guide/validation.md
       - SSE Validation: guide/sse-validation.md
+      - Incremental Validation: guide/incremental-validation.md
       - Custom Rendering: guide/custom-rendering.md
       - Datastar Integration: guide/datastar.md
   - Reference:

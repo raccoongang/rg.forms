@@ -608,3 +608,45 @@ class TeamMemberForm(ReactiveForm):
         # Owners/admins must provide an email; viewers may leave it blank.
         required_when="$role == 'owner' || $role == 'admin'",
     )
+
+
+# A tiny fake "database" of already-registered usernames for the incremental
+# validation example (ADR-0004). In a real app this is a DB uniqueness check.
+_TAKEN_USERNAMES = {"admin", "root", "alice", "bob"}
+_VALID_COUPONS = {"SAVE10", "WELCOME", "RG2026"}
+
+
+class IncrementalValidationForm(ReactiveForm):
+    """Declarative incremental (per-field) server validation — ADR-0004.
+
+    ``validate_on`` declares *when* the field is checked; the view supplies the
+    URL. Validation is ordinary Django server-side validation returned over SSE:
+    no client-side validation engine.
+    """
+
+    username = ReactiveCharField(
+        label="Username",
+        help_text="Checked for availability when you leave the field.",
+        placeholder="pick a username",
+        validate_on="blur",
+    )
+    coupon = ReactiveCharField(
+        label="Coupon code",
+        required=False,
+        help_text="Validated as you type (debounced).",
+        placeholder="e.g. SAVE10",
+        validate_on="change",
+        debounce=400,
+    )
+
+    def clean_username(self):
+        value = (self.cleaned_data.get("username") or "").strip()
+        if value and value.lower() in _TAKEN_USERNAMES:
+            raise ValidationError(f"'{value}' is already taken.")
+        return value
+
+    def clean_coupon(self):
+        value = (self.cleaned_data.get("coupon") or "").strip()
+        if value and value.upper() not in _VALID_COUPONS:
+            raise ValidationError("That coupon code is not valid.")
+        return value.upper()

@@ -112,9 +112,18 @@ class TestExpressionEvaluator:
         assert result == "test"
 
     def test_eval_field_number(self):
-        """Evaluate field reference to number."""
-        result = evaluate_expression("$qty", {"qty": "10"})
+        """Evaluate field reference to a canonical number (no coercion)."""
+        result = evaluate_expression("$qty", {"qty": 10})
         assert result == 10
+
+    def test_eval_string_not_numeric_coerced(self):
+        """ADR-0002 P1: a numeric-looking string stays a string.
+
+        A choice code like "001" must compare as the string "001" on both the
+        client and the server, not be coerced to the int 1.
+        """
+        assert evaluate_expression("$code == '001'", {"code": "001"}) is True
+        assert evaluate_expression("$code == 1", {"code": "001"}) is False
 
     def test_eval_equality_true(self):
         """Evaluate equality that is true."""
@@ -132,20 +141,26 @@ class TestExpressionEvaluator:
         assert result is True
 
     def test_eval_greater_than(self):
-        """Evaluate greater than."""
-        assert evaluate_expression("$qty > 10", {"qty": "15"}) is True
-        assert evaluate_expression("$qty > 10", {"qty": "5"}) is False
+        """Evaluate greater than (canonical numeric operands)."""
+        assert evaluate_expression("$qty > 10", {"qty": 15}) is True
+        assert evaluate_expression("$qty > 10", {"qty": 5}) is False
 
     def test_eval_less_than(self):
-        """Evaluate less than."""
-        assert evaluate_expression("$qty < 10", {"qty": "5"}) is True
-        assert evaluate_expression("$qty < 10", {"qty": "15"}) is False
+        """Evaluate less than (canonical numeric operands)."""
+        assert evaluate_expression("$qty < 10", {"qty": 5}) is True
+        assert evaluate_expression("$qty < 10", {"qty": 15}) is False
+
+    def test_eval_compare_null_is_false(self):
+        """A null/invalid comparison operand yields False (ADR-0002 §3)."""
+        assert evaluate_expression("$qty > 10", {"qty": None}) is False
+        # cross-type (string vs number) also yields False for ordering
+        assert evaluate_expression("$qty > 10", {"qty": "abc"}) is False
 
     def test_eval_and_true(self):
         """Evaluate AND that is true."""
         result = evaluate_expression(
             "$type == 'urgent' && $qty > 5",
-            {"type": "urgent", "qty": "10"},
+            {"type": "urgent", "qty": 10},
         )
         assert result is True
 
@@ -153,9 +168,14 @@ class TestExpressionEvaluator:
         """Evaluate AND that is false."""
         result = evaluate_expression(
             "$type == 'urgent' && $qty > 5",
-            {"type": "standard", "qty": "10"},
+            {"type": "standard", "qty": 10},
         )
         assert result is False
+
+    def test_eval_logical_returns_boolean(self):
+        """&&/|| are boolean-returning, never operand-returning (ADR-0002 §3)."""
+        assert evaluate_expression("$a && $b", {"a": "x", "b": "y"}) is True
+        assert evaluate_expression("$a || $b", {"a": "", "b": ""}) is False
 
     def test_eval_or_true(self):
         """Evaluate OR that is true."""
@@ -199,9 +219,14 @@ class TestExpressionEvaluator:
         assert result == Decimal("25")
 
     def test_eval_division_by_zero(self):
-        """Division by zero returns 0."""
-        result = evaluate_expression("$a / $b", {"a": "10", "b": "0"})
-        assert result == Decimal("0")
+        """Division by zero yields null on both sides (ADR-0002 §3)."""
+        result = evaluate_expression("$a / $b", {"a": 10, "b": 0})
+        assert result is None
+
+    def test_eval_arithmetic_invalid_operand_is_null(self):
+        """A temporarily-invalid numeric operand makes arithmetic null."""
+        assert evaluate_expression("$a * 2", {"a": "-"}) is None
+        assert evaluate_expression("$a + $b", {"a": 3, "b": None}) is None
 
     def test_eval_empty_field(self):
         """Empty field is treated as None for comparisons."""
@@ -224,11 +249,22 @@ class TestExpressionEvaluator:
         )
         assert result is True
 
-    def test_eval_computed_total(self):
-        """Evaluate computed total expression."""
-        # computed="$quantity * $unit_price"
+    def test_eval_computed_total_preview_is_float(self):
+        """Preview arithmetic is float (may carry binary rounding)."""
+        # computed="$quantity * $unit_price"; unit_price is a decimal string
         result = evaluate_expression(
             "$quantity * $unit_price",
-            {"quantity": "5", "unit_price": "19.99"},
+            {"quantity": 5, "unit_price": "19.99"},
+        )
+        assert isinstance(result, float)
+        assert result == pytest.approx(99.95)
+
+    def test_eval_computed_total_authoritative_is_exact_decimal(self):
+        """Authoritative (decimal) mode recomputes exactly (ADR-0002 §3)."""
+        result = evaluate_expression(
+            "$quantity * $unit_price",
+            {"quantity": 5, "unit_price": "19.99"},
+            decimal_mode=True,
         )
         assert result == Decimal("5") * Decimal("19.99")
+        assert isinstance(result, Decimal)

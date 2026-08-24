@@ -45,7 +45,10 @@
 {% endif %}
 
 <div class="box">
-    <form method="post">
+    {# ADR-0003: seed one scoped signal object per row so each row's reactive
+       rules (e.g. email required_when="$role == 'owner' || $role == 'admin'")
+       fire independently. #}
+    <form method="post" data-signals='{% reactive_formset_signals formset %}'>
         {% csrf_token %}
         {{ formset.management_form }}
         {% for f in formset.forms %}

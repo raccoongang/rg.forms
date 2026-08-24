@@ -1,9 +1,19 @@
 """ReactiveForm - Base class for reactive Django forms with Datastar integration."""
 
+import logging
+
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .expressions import ExpressionError, evaluate_expression
+from .expressions import ExpressionError, evaluate_expression, is_truthy
+from .normalization import normalize_field_value, normalize_from_datadict
+from .scoping import RESERVED_NAMESPACE, encode_scope
+
+logger = logging.getLogger("rg.forms")
+
+# Sentinel distinguishing a genuine evaluation error (fail-open) from an
+# expression that legitimately evaluated to None/falsy (ADR-0002 P7).
+EVAL_ERROR = object()
 
 
 class FieldGroup:
@@ -37,9 +47,13 @@ class ReactiveFormMeta:
 
     Attributes:
         field_groups: Dict of group_name -> FieldGroup for organizing fields
+        external_signals: Set of signal names an expression may reference that
+            are not form fields (intentional page-level signals). The reserved
+            ``rgForms`` namespace may not be declared here (ADR-0002 §5).
     """
 
     field_groups: dict[str, FieldGroup] | None = None
+    external_signals: set[str] | None = None
 
 
 class ReactiveForm(forms.Form):
@@ -104,6 +118,17 @@ class ReactiveForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._populate_cascading_fields()
+
+    @property
+    def reactive_scope(self) -> str | None:
+        """The Base32 signal scope for this form, or ``None`` when unprefixed.
+
+        A prefixed form (a standalone prefixed form, or each row of a formset)
+        gets its own nested ``rgForms.<scope>`` signal namespace (ADR-0003 §1).
+        """
+        if self.prefix:
+            return encode_scope(self.prefix)
+        return None
 
     def _get_field_value(self, field_name: str) -> str | None:
         """Get current value of a field from bound data or initial."""
@@ -217,6 +242,27 @@ class ReactiveForm(forms.Form):
 
             field.choices = choices
 
+    def get_external_signals(self) -> set[str]:
+        """Return the declared ``Meta.external_signals`` set (empty if none)."""
+        meta = getattr(self, "Meta", None)
+        if meta is None:
+            return set()
+        return set(getattr(meta, "external_signals", None) or set())
+
+    def get_external_signal_values(self) -> dict:
+        """Server-side values for the form's declared external signals.
+
+        ``Meta.external_signals`` only *authorizes* a reference; the server has
+        no value for it unless the application supplies one. Override this to
+        provide those values (e.g. from the request, session, or feature flags)
+        so an expression like ``$feature_enabled && $email`` evaluates the same
+        on the server as in the browser. Unprovided external signals default to
+        ``None`` (falsy) during server evaluation.
+
+        Returns an empty dict by default.
+        """
+        return {}
+
     def get_field_groups(self) -> dict[str, "FieldGroup"]:
         """Get field groups defined in Meta.
 
@@ -254,29 +300,52 @@ class ReactiveForm(forms.Form):
             return True
 
         result = self._evaluate_expression(group.visible_when)
-        if result is None:
-            return True
-        return bool(result)
+        if result is EVAL_ERROR:
+            return True  # fail-open only on error
+        return is_truthy(result)
 
     def get_signals(self) -> dict:
-        """Generate initial signals dict for Datastar.
+        """Generate the initial canonical signals dict for Datastar.
 
-        Returns signal values from form.data if bound, else from form.initial.
+        Every field is run through reactive normalization (ADR-0002 §1/§2), so
+        the seed the client receives is, by definition, what the server
+        normalizes to. Bound forms read the submitted value via the widget
+        (``getlist``/checkbox semantics); unbound forms read ``initial``. The
+        result holds only canonical types (string, number, boolean, null, array)
+        keyed by the logical field name.
         """
-        signals = {}
+        signals: dict = {}
+        files = getattr(self, "files", None) or {}
         for name, field in self.fields.items():
-            if self.is_bound and name in self.data:
-                signals[name] = self.data.get(name)
-            elif name in self.initial:
-                signals[name] = self.initial[name]
-            elif hasattr(field, "initial") and field.initial is not None:
-                signals[name] = field.initial
+            if self.is_bound:
+                html_name = self[name].html_name
+                signals[name] = normalize_from_datadict(field, self.data, files, html_name)
             else:
-                signals[name] = ""
+                raw = self.get_initial_for_field(field, name)
+                signals[name] = normalize_field_value(field, raw)
+        return signals
+
+    def get_seed_signals(self) -> dict:
+        """The client-facing seed structure for ``data-signals``.
+
+        For an unprefixed form this is the flat canonical dict. For a prefixed
+        form the values are nested under ``rgForms.<scope>`` so they line up with
+        the scoped ``data-bind`` paths and compiled ``$rgForms.<scope>.<field>``
+        expression references (ADR-0003). Server-side expression evaluation keeps
+        using the flat, logical-keyed :meth:`get_signals`.
+        """
+        signals = self.get_signals()
+        scope = self.reactive_scope
+        if scope:
+            return {RESERVED_NAMESPACE: {scope: signals}}
         return signals
 
     def get_signals_json(self) -> str:
-        """Return signals as JSON string for data-signals attribute."""
+        """Return signals as a JSON string for the ``data-signals`` attribute.
+
+        Normalization already reduces every value to a JSON-native canonical
+        type; the ``default`` hook is a defensive fallback only.
+        """
         import json
         from datetime import date, datetime, time
         from decimal import Decimal
@@ -285,6 +354,7 @@ class ReactiveForm(forms.Form):
         def default(obj):
             if isinstance(obj, datetime):
                 from django.utils.timezone import is_aware, localtime
+
                 if is_aware(obj):
                     obj = localtime(obj)
                 # datetime-local inputs require YYYY-MM-DDTHH:MM (no tz offset).
@@ -299,7 +369,10 @@ class ReactiveForm(forms.Form):
                 return str(obj)
             raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
-        return json.dumps(self.get_signals(), default=default)
+        # allow_nan=False is a defensive invariant: normalization already strips
+        # non-finite floats, so a NaN/Infinity here indicates a bug rather than
+        # emitting invalid JSON that would break Datastar's parser.
+        return json.dumps(self.get_seed_signals(), default=default, allow_nan=False)
 
     def get_field_reactive_attrs(self, field_name: str) -> dict:
         """Get reactive attributes for a specific field.
@@ -321,40 +394,53 @@ class ReactiveForm(forms.Form):
 
     def get_visible_fields(self) -> list[str]:
         """Get list of field names that have visibility rules."""
-        return [
-            name for name, field in self.fields.items()
-            if getattr(field, "visible_when", None)
-        ]
+        return [name for name, field in self.fields.items() if getattr(field, "visible_when", None)]
 
     def get_computed_fields(self) -> list[str]:
         """Get list of field names that are computed."""
-        return [
-            name for name, field in self.fields.items()
-            if getattr(field, "computed", None)
-        ]
+        return [name for name, field in self.fields.items() if getattr(field, "computed", None)]
 
     def _get_form_data(self) -> dict:
-        """Get current form data for expression evaluation.
+        """Canonical form data for expression evaluation (ADR-0002 §1).
 
-        Uses .get() to extract scalar values from QueryDict (which
-        stores values as lists internally).
+        This is the same normalized, canonical dict the client is seeded with
+        (``get_signals``), keyed by logical field name, plus any declared
+        external-signal values (``get_external_signal_values``). Using one source
+        for the seed and for server evaluation keeps the two evaluators in
+        lock-step and eliminates the bound/unbound type split (P3). Fields always
+        win over external values on a name clash.
         """
-        if self.is_bound:
-            return {key: self.data.get(key) for key in self.data}
-        return dict(self.initial)
+        data = dict(self.get_external_signal_values())
+        data.update(self.get_signals())
+        return data
 
-    def _evaluate_expression(self, expression: str) -> bool | None:
-        """Safely evaluate an expression, returning None on error."""
+    def _evaluate_expression(self, expression: str, *, decimal_mode: bool = False):
+        """Safely evaluate an expression against canonical data.
+
+        Returns the evaluated value (which may legitimately be ``None``/falsy),
+        or the ``EVAL_ERROR`` sentinel on a parse/eval error — so callers can
+        distinguish "the rule evaluated to false/null" from "the rule is broken"
+        and apply the fail-open policy only to genuine errors (ADR-0002 P7).
+        Errors are logged, never silently swallowed; the build-time system check
+        (§5) is meant to catch malformed/unknown expressions earlier.
+        """
         try:
-            return evaluate_expression(expression, self._get_form_data())
+            return evaluate_expression(expression, self._get_form_data(), decimal_mode=decimal_mode)
         except ExpressionError:
-            # Log error in debug mode, but don't break form
-            return None
+            logger.warning(
+                "rg.forms: failed to evaluate expression %r on %s",
+                expression,
+                type(self).__name__,
+                exc_info=True,
+            )
+            return EVAL_ERROR
 
     def is_field_visible(self, field_name: str, data: dict | None = None) -> bool:
         """Evaluate if a field should be visible based on current data.
 
-        Server-side evaluation of visible_when rules.
+        Server-side evaluation of visible_when rules. A rule that evaluates to a
+        falsy value hides the field (matching client truthiness); only a genuine
+        evaluation *error* fails open to visible.
         """
         field = self.fields.get(field_name)
         if not field:
@@ -365,10 +451,9 @@ class ReactiveForm(forms.Form):
             return True
 
         result = self._evaluate_expression(visible_when)
-        if result is None:
-            # On error, default to visible
-            return True
-        return bool(result)
+        if result is EVAL_ERROR:
+            return True  # fail-open only on error
+        return is_truthy(result)
 
     def is_field_required(self, field_name: str) -> bool:
         """Evaluate if a field is required based on required_when.
@@ -389,12 +474,17 @@ class ReactiveForm(forms.Form):
             return False
 
         result = self._evaluate_expression(required_when)
-        if result is None:
-            return False
-        return bool(result)
+        if result is EVAL_ERROR:
+            return False  # fail-open: not required on error
+        return is_truthy(result)
 
-    def get_computed_value(self, field_name: str):
-        """Compute a field's value from its expression."""
+    def get_computed_value(self, field_name: str, *, authoritative: bool = False):
+        """Compute a field's value from its ``computed`` expression.
+
+        With ``authoritative=True`` the arithmetic runs in exact ``Decimal``
+        mode (ADR-0002 §3) so the server never stores the browser's float
+        preview as the cleaned value.
+        """
         field = self.fields.get(field_name)
         if not field:
             return None
@@ -403,7 +493,8 @@ class ReactiveForm(forms.Form):
         if computed is None:
             return None
 
-        return self._evaluate_expression(computed)
+        result = self._evaluate_expression(computed, decimal_mode=authoritative)
+        return None if result is EVAL_ERROR else result
 
     def _clean_fields(self):
         """Override to skip hidden fields and enforce required_when."""
@@ -419,24 +510,28 @@ class ReactiveForm(forms.Form):
             # Get raw value
             value = bf.initial if field.disabled else bf.data
             try:
-                if isinstance(field, forms.FileField):
+                computed = getattr(field, "computed", None)
+                if computed is not None:
+                    # Computed fields have no editable input (the reference
+                    # template renders a display-only element), so the submitted
+                    # value is empty. Recompute authoritatively (exact Decimal)
+                    # and clean the *computed* result — never require a submitted
+                    # value first, so a computed field needs no `required=False`
+                    # boilerplate (ADR-0002 §3 / reviewer #5).
+                    computed_value = self.get_computed_value(name, authoritative=True)
+                    value = field.clean(computed_value)
+                elif isinstance(field, forms.FileField):
                     value = field.clean(value, bf.initial)
                 else:
                     value = field.clean(value)
-
-                # Handle computed fields - recalculate on server
-                computed = getattr(field, "computed", None)
-                if computed is not None:
-                    computed_value = self.get_computed_value(name)
-                    if computed_value is not None:
-                        value = computed_value
 
                 self.cleaned_data[name] = value
 
                 # Check required_when
                 required_when = getattr(field, "required_when", None)
                 if required_when is not None:
-                    is_required = self._evaluate_expression(required_when)
+                    result = self._evaluate_expression(required_when)
+                    is_required = result is not EVAL_ERROR and is_truthy(result)
                     if is_required and not value and value != 0:
                         raise ValidationError(
                             field.error_messages.get("required", "This field is required."),

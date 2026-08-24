@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Incremental Validation - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Incremental (per-field) server validation</h1>
+<p class="subtitle">Declarative <code>validate_on</code> — ADR-0004</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> type a username and click away (validate on
+        <em>blur</em>) — <code>admin</code>, <code>root</code>, <code>alice</code>,
+        <code>bob</code> are "taken". Then type a coupon (validate on
+        <em>change</em>, debounced) — valid codes are
+        <code>SAVE10</code>, <code>WELCOME</code>, <code>RG2026</code>.
+        <br>
+        Each field is checked by ordinary Django server-side validation returned
+        over SSE. No per-field wiring in the view — just <code>validate_on</code>
+        on the field and one <code>reactive_validate</code> endpoint.
+    </p>
+</div>
+
+<div class="box">
+    {# validate_action points the generated per-field handlers at the SSE
+       validation endpoint; action is the final (submit) URL. #}
+    {% render_reactive_form form "Create account" action="" validate_action="/incremental-validation/validate/" %}
+</div>
+
+<div class="box mt-5">
+    <h3 class="title is-5">The form (Python)</h3>
+    <pre><code>class IncrementalValidationForm(ReactiveForm):
+    username = ReactiveCharField(validate_on="blur")
+    coupon = ReactiveCharField(required=False, validate_on="change", debounce=400)
+
+    def clean_username(self):
+        value = self.cleaned_data["username"].strip()
+        if value.lower() in TAKEN_USERNAMES:
+            raise ValidationError(f"'{value}' is already taken.")
+        return value</code></pre>
+
+    <h3 class="title is-5 mt-4">The view (Python)</h3>
+    <pre><code>def validate(request):
+    return reactive_validate(request, IncrementalValidationForm)</code></pre>
+</div>
+{% endblock %}

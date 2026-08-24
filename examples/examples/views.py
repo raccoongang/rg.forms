@@ -13,7 +13,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
 
-from rg.forms import reactive_form_response
+from rg.forms import reactive_form_response, reactive_validate
 
 from .forms import (
     BackendValidationForm,
@@ -21,6 +21,7 @@ from .forms import (
     ConditionalAttributesForm,
     ContactForm,
     FieldGroupsForm,
+    IncrementalValidationForm,
     OrderForm,
     PriceCalculatorForm,
     SSEValidationForm,
@@ -283,3 +284,25 @@ def sse_validation(request: HttpRequest) -> HttpResponse | DatastarResponse:
         "examples/sse_validation.html",
         {"form": form, "action_url": action_url, "success": success},
     )
+
+
+def incremental_validation(request: HttpRequest) -> HttpResponse:
+    """Example: declarative incremental (per-field) validation — ADR-0004.
+
+    The form declares ``validate_on`` on its fields; the template supplies
+    ``validate_action``. There is no per-field wiring in the view.
+    """
+    return render(
+        request,
+        "examples/incremental_validation.html",
+        {"form": IncrementalValidationForm()},
+    )
+
+
+def incremental_validate(request: HttpRequest) -> DatastarResponse:
+    """Validation endpoint for the incremental-validation example.
+
+    One call runs the ADR-0004 flow: read signals -> adapt -> full is_valid()
+    -> patch only the triggered field.
+    """
+    return reactive_validate(request, IncrementalValidationForm)

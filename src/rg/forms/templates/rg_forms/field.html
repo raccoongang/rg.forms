@@ -7,12 +7,16 @@
 
    Widget coverage here is intentionally a controlled subset (text-family
    inputs, select, multi-select, checkbox, textarea). Any other widget falls
-   back to Django's native rendering rather than a wrong <input>. #}
+   back to Django's native rendering rather than a wrong <input>.
+
+   The wrapper carries a stable id (wrapper_id) so incremental validation can
+   patch just this field (ADR-0004 §6); control_attrs carries the validate
+   handler / pending indicator / aria-* contract. #}
 {% if field.is_hidden %}
 {{ field }}
 {% else %}
-<div class="field"{% if visible_when %} data-show="{{ visible_when }}"{% endif %}>
-    <label class="label" for="{{ field.id_for_label }}">
+<div class="field"{% if wrapper_id %} id="{{ wrapper_id }}"{% endif %}{% if visible_when %} data-show="{{ visible_when }}"{% endif %}>
+    <label class="label" for="{{ control_id }}">
         {{ label }}
         {% if required_when %}
         <span class="has-text-danger" data-show="{{ required_when }}">*</span>
@@ -24,8 +28,8 @@
     <div class="control{% if widget_type == 'select' or widget_type == 'selectmultiple' %} is-expanded{% endif %}">
         {% if widget_type == 'select' %}
         <div class="select is-fullwidth{% if errors %} is-danger{% endif %}">
-            <select name="{{ field.html_name }}" id="{{ field.id_for_label }}"
-                    data-bind:{{ field_name }}
+            <select name="{{ field.html_name }}" id="{{ control_id }}"
+                    {{ bind_attr }} {{ control_attrs }}
                     {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                     {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
                     {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}>
@@ -36,8 +40,8 @@
         </div>
         {% elif widget_type == 'selectmultiple' %}
         <div class="select is-multiple is-fullwidth{% if errors %} is-danger{% endif %}">
-            <select multiple name="{{ field.html_name }}" id="{{ field.id_for_label }}"
-                    data-bind:{{ field_name }}
+            <select multiple name="{{ field.html_name }}" id="{{ control_id }}"
+                    {{ bind_attr }} {{ control_attrs }}
                     {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                     {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
                     {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}>
@@ -48,8 +52,8 @@
         </div>
         {% elif widget_type == 'checkboxinput' %}
         <label class="checkbox">
-            <input type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
-                   data-bind:{{ field_name }}
+            <input type="checkbox" name="{{ field.html_name }}" id="{{ control_id }}"
+                   {{ bind_attr }} {{ control_attrs }}
                    {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                    {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
                    {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
@@ -58,8 +62,8 @@
         </label>
         {% elif widget_type == 'textarea' %}
         <textarea class="textarea{% if errors %} is-danger{% endif %}"
-                  name="{{ field.html_name }}" id="{{ field.id_for_label }}"
-                  data-bind:{{ field_name }}
+                  name="{{ field.html_name }}" id="{{ control_id }}"
+                  {{ bind_attr }} {{ control_attrs }}
                   {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                   {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
                   {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
@@ -74,8 +78,8 @@
         {# Text-family input: text/number/email/url/date/time/datetime-local/password #}
         <input class="input{% if errors %} is-danger{% endif %}"
                type="{{ input_type }}"
-               name="{{ field.html_name }}" id="{{ field.id_for_label }}"
-               data-bind:{{ field_name }}
+               name="{{ field.html_name }}" id="{{ control_id }}"
+               {{ bind_attr }} {{ control_attrs }}
                {% if disabled_when %}data-attr:disabled="{{ disabled_when }}"{% endif %}
                {% if read_only_when %}data-attr:readonly="{{ read_only_when }}"{% endif %}
                {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
@@ -96,14 +100,14 @@
     </div>
 
     {% if errors %}
-    <p class="help is-danger">{{ errors.0 }}</p>
+    <p class="help is-danger"{% if error_id %} id="{{ error_id }}"{% endif %}>{{ errors.0 }}</p>
     {% elif help_text_when %}
     {# Dynamic help text based on conditions #}
     {% for expr, text in help_text_when.items %}
-    <p class="help" data-show="{{ expr }}">{{ text }}</p>
+    <p class="help"{% if help_id %} id="{{ help_id }}"{% endif %} data-show="{{ expr }}">{{ text }}</p>
     {% endfor %}
     {% elif help_text %}
-    <p class="help">{{ help_text }}</p>
+    <p class="help"{% if help_id %} id="{{ help_id }}"{% endif %}>{{ help_text }}</p>
     {% endif %}
 </div>
 {% endif %}

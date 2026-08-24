@@ -175,6 +175,27 @@
     <div class="column is-one-third">
         <div class="card">
             <div class="card-content">
+                <p class="title is-4">Incremental Validation</p>
+                <p class="subtitle is-6">Validate on Blur / Change</p>
+                <div class="content">
+                    <p>Declarative per-field server validation (ADR-0004):</p>
+                    <ul>
+                        <li><code>validate_on="blur"</code> / <code>"change"</code></li>
+                        <li>JSON-signal request, single-field SSE patch</li>
+                        <li>CSRF header + pending <code>data-indicator</code></li>
+                        <li><code>reactive_validate()</code> helper</li>
+                    </ul>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <a href="{% url 'examples:incremental_validation' %}" class="card-footer-item">View Example</a>
+            </footer>
+        </div>
+    </div>
+
+    <div class="column is-one-third">
+        <div class="card">
+            <div class="card-content">
                 <p class="title is-4">Custom Rendering &amp; Formsets</p>
                 <p class="subtitle is-6">Bring Your Own Design System</p>
                 <div class="content">

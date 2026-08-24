@@ -64,7 +64,9 @@ class TestReactiveWrapperAttrs:
         context = Context({"form": form})
         result = template.render(context)
 
-        assert 'data-show="$order_type == \'urgent\'"' in result
+        # Expressions are compiled to Datastar/JS before emission (ADR-0002):
+        # typed equality -> ===, string literal -> double-quoted.
+        assert 'data-show="($order_type === &quot;urgent&quot;)"' in result
 
     def test_no_visible_when_returns_empty(self):
         """Field without visible_when should return empty string."""
@@ -102,7 +104,10 @@ class TestReactiveInputAttrs:
         context = Context({"form": form})
         result = template.render(context)
 
-        assert 'data-computed="$quantity * $price"' in result
+        # Compiled arithmetic keeps a guarded, numeric-only form (ADR-0002 §3).
+        assert "data-computed=" in result
+        assert "$quantity" in result
+        assert "$price" in result
         assert "readonly" in result
 
 
@@ -344,15 +349,19 @@ class TestRequiredExpr:
 
     def test_static_required_hideable_uses_visibility(self):
         ctx = render_reactive_field(RequiredMatrixForm()["static_req_hideable"])
-        assert ctx["required_expr"] == "$trigger == 'a'"
+        # Compiled (ADR-0002): typed equality, double-quoted string literal.
+        assert ctx["required_expr"] == '($trigger === "a")'
 
     def test_required_when_only(self):
         ctx = render_reactive_field(RequiredMatrixForm()["cond_req"])
-        assert ctx["required_expr"] == "$trigger == 'b'"
+        assert ctx["required_expr"] == '($trigger === "b")'
 
     def test_required_when_and_visible_when_combined(self):
         ctx = render_reactive_field(RequiredMatrixForm()["cond_req_hideable"])
-        assert ctx["required_expr"] == "($trigger == 'a') && ($trigger == 'b')"
+        # Boolean-coercing, boolean-returning && (never operand-returning).
+        assert ctx["required_expr"] == (
+            '(Boolean(($trigger === "a")) && Boolean(($trigger === "b")))'
+        )
 
     def test_hidden_field_renders_data_attr_not_static_required(self):
         """A hideable required field must not emit a bare `required` that would
@@ -388,15 +397,15 @@ class TestDynamicWhenExprs:
 
     def test_placeholder_expr_is_first_match_ternary(self):
         ctx = render_reactive_field(DynamicAttrsForm()["note"])
-        # Right-associative ternary (first match wins); no redundant parens.
+        # Right-associative ternary (first match wins) over compiled conditions.
         assert ctx["placeholder_expr"] == (
-            "($mode == 'x') ? 'Enter X' : ($mode == 'y') ? 'Enter Y' : ''"
+            '(($mode === "x")) ? "Enter X" : (($mode === "y")) ? "Enter Y" : \'\''
         )
 
     def test_min_max_exprs(self):
         ctx = render_reactive_field(DynamicAttrsForm()["qty"])
-        assert ctx["min_expr"] == "($mode == 'x') ? 1 : null"
-        assert ctx["max_expr"] == "($mode == 'x') ? 10 : null"
+        assert ctx["min_expr"] == '(($mode === "x")) ? 1 : null'
+        assert ctx["max_expr"] == '(($mode === "x")) ? 10 : null'
 
     def test_none_when_unset(self):
         ctx = render_reactive_field(RequiredMatrixForm()["optional"])

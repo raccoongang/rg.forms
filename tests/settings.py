@@ -10,6 +10,13 @@ INSTALLED_APPS = [
     "rg.forms",
 ]
 
+MIDDLEWARE = [
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+]
+
+ROOT_URLCONF = "tests.urls"
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",

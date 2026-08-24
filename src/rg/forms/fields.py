@@ -7,6 +7,8 @@ Each reactive field wraps a standard Django form field and adds:
 - depends_on: Fields that trigger re-evaluation
 """
 
+from collections.abc import Callable
+
 from django import forms
 
 
@@ -44,6 +46,9 @@ class ReactiveFieldMixin:
     placeholder_when: dict[str, str] | None = None
     min_when: dict[str, int | float] | None = None
     max_when: dict[str, int | float] | None = None
+    # Declarative incremental server validation (ADR-0004).
+    validate_on: str | None = None
+    debounce: int | None = None
 
     def __init__(
         self,
@@ -61,6 +66,8 @@ class ReactiveFieldMixin:
         placeholder: str | None = None,
         autocomplete: str | None = None,
         autofocus: bool = False,
+        validate_on: str | None = None,
+        debounce: int | None = None,
         **kwargs,
     ):
         self.visible_when = visible_when
@@ -73,6 +80,10 @@ class ReactiveFieldMixin:
         self.placeholder_when = placeholder_when
         self.min_when = min_when
         self.max_when = max_when
+        if validate_on is not None and validate_on not in ("blur", "change"):
+            raise ValueError(f"validate_on must be 'blur' or 'change', not {validate_on!r}")
+        self.validate_on = validate_on
+        self.debounce = debounce
         super().__init__(*args, **kwargs)
 
         # Merge first-class presentational kwargs into the widget's attrs.

@@ -16,9 +16,9 @@
     </div>
     {% endif %}
 
-    {# Render all fields #}
+    {# Render all fields; thread the incremental-validation wiring through. #}
     {% for field in form %}
-        {% render_reactive_field field %}
+        {% render_reactive_field field action=action validate_action=validate_action csrf_token=csrf_token %}
     {% endfor %}
 
     {# Submit button #}
