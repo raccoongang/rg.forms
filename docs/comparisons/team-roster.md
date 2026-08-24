@@ -50,10 +50,17 @@ but read them with that asymmetry in mind.
 
 ## Trade-offs
 
-If you need dynamic add/remove/reorder **today**, the client field arrays do it
-and rg.forms does not — reach for them (or a small client component) until the
-dynamic-formset ADR lands. For a fixed or server-sized set of rows, the static
-formset is dramatically less code.
+rg.forms's slice is static, so this is not an apples-to-apples feature match. But
+the answer to "I need dynamic rows today" is **not** a client framework:
+add / remove / reorder (drag-and-drop included) is a natural server-driven
+interaction — a small Datastar handler posts the action (or the new order) and
+the server re-renders the affected rows over SSE, the same mechanism Anders
+Murphy's [one-billion-checkboxes demo](https://news.ycombinator.com/item?id=43971164)
+uses to mutate cells in real time. What rg.forms lacks today is a *declarative*
+helper that generates that wiring (a planned ADR); until then you write the
+handler directly — still less code, and more performant, than introducing a
+client field array. For a fixed or server-sized set of rows you need none of
+that.
 
 ## Reproduce
 

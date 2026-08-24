@@ -81,7 +81,13 @@ class OrderConfiguratorForm(ReactiveForm):
             self.fields["unit_price"].initial = plan["unit_price"]
             if self.is_bound:
                 self.data = self.data.copy()
+                # Server-owned unit price (never trust the read-only client field).
                 self.data[self.add_prefix("unit_price")] = plan["unit_price"]
+                # Starter (001) is single-seat: disabled_when is client-only UX, so
+                # enforce the seat count on the server too — a crafted POST that
+                # bumps seats is corrected before the total is computed.
+                if code == "001":
+                    self.data[self.add_prefix("seats")] = "1"
 
     def clean_coupon(self):
         code = (self.cleaned_data.get("coupon") or "").strip()

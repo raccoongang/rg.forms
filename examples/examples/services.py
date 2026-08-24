@@ -107,3 +107,70 @@ def get_plan(code: str) -> dict | None:
         if plan["code"] == code:
             return plan
     return None
+
+
+# --- Geography (country -> region -> city cascading) ------------------------
+COUNTRIES = [{"id": "us", "name": "United States"}, {"id": "de", "name": "Germany"},
+             {"id": "ua", "name": "Ukraine"}]
+REGIONS = [
+    {"id": "us-ca", "country": "us", "name": "California"},
+    {"id": "us-ny", "country": "us", "name": "New York"},
+    {"id": "de-by", "country": "de", "name": "Bavaria"},
+    {"id": "de-be", "country": "de", "name": "Berlin"},
+    {"id": "ua-kh", "country": "ua", "name": "Kharkiv Oblast"},
+    {"id": "ua-lv", "country": "ua", "name": "Lviv Oblast"},
+]
+CITIES = [
+    {"id": "sf", "region": "us-ca", "name": "San Francisco"},
+    {"id": "la", "region": "us-ca", "name": "Los Angeles"},
+    {"id": "nyc", "region": "us-ny", "name": "New York City"},
+    {"id": "muc", "region": "de-by", "name": "Munich"},
+    {"id": "ber", "region": "de-be", "name": "Berlin"},
+    {"id": "khr", "region": "ua-kh", "name": "Kharkiv"},
+    {"id": "lviv", "region": "ua-lv", "name": "Lviv"},
+]
+
+
+def get_countries():
+    return COUNTRIES
+
+
+def get_regions(country_id):
+    return [r for r in REGIONS if r["country"] == country_id] if country_id else []
+
+
+def get_cities(region_id):
+    return [c for c in CITIES if c["region"] == region_id] if region_id else []
+
+
+def region_belongs_to(region_id, country_id) -> bool:
+    return any(r["id"] == region_id and r["country"] == country_id for r in REGIONS)
+
+
+def city_belongs_to(city_id, region_id) -> bool:
+    return any(c["id"] == city_id and c["region"] == region_id for c in CITIES)
+
+
+# --- In-memory account store (edit/CRUD workflow) --------------------------
+# A stand-in for a model row. Deterministic default; tests reset via reset_account().
+_DEFAULT_ACCOUNT = {
+    "display_name": "Ada Lovelace",
+    "email": "ada@example.com",
+    "plan": "010",
+    "marketing_opt_in": True,
+    "internal_notes": "VIP — founding customer.",
+}
+_ACCOUNT = dict(_DEFAULT_ACCOUNT)
+
+
+def get_account() -> dict:
+    return dict(_ACCOUNT)
+
+
+def save_account(values: dict) -> None:
+    _ACCOUNT.update(values)
+
+
+def reset_account() -> None:
+    _ACCOUNT.clear()
+    _ACCOUNT.update(_DEFAULT_ACCOUNT)

@@ -67,6 +67,18 @@ class OnboardingForm(ReactiveForm):
         choices=[("", "-- Select --"), ("us", "United States"), ("de", "Germany"), ("ua", "Ukraine")],
     )
 
+    # The per-seat price is a server-owned figure, never trusted from the client.
+    SERVER_PRICE_PER_SEAT = "29.00"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["price_per_seat"].initial = self.SERVER_PRICE_PER_SEAT
+        if self.is_bound:
+            # Overwrite any submitted price so the authoritative computed total
+            # (seats * price) cannot be inflated by a crafted POST.
+            self.data = self.data.copy()
+            self.data[self.add_prefix("price_per_seat")] = self.SERVER_PRICE_PER_SEAT
+
     class Meta:
         field_groups = {
             "personal": FieldGroup(

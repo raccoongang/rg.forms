@@ -38,13 +38,16 @@ side-by-side [comparison](comparison.md), and the limitations it exposes.
 | 6 | **Canonical values lab** | Educational tour of the value model | 0002 | string codes, number/decimal split, checkbox=`false`, array, per-field empty, `/0`→`null`, non-finite→`null` | (n/a — semantics reference) | — | arrays are not expression-addressable in v1 |
 | 7 | **Design-system override** | One form, two renderers | 0001 | `bind_attr`, `control_attrs`, `widget_attrs`, `control_id`/`wrapper_id`/`help_id`/`error_id`, widget fallback | a `<Field>` component library | ✅ | — |
 | 8 | **Business onboarding** | A larger multi-section form | 0001, 0002, 0004 | field groups + group `visible_when`, conditional attrs, cross-field `clean()`, one incremental field, exact computed limit | a multi-step wizard | — | non-field errors are submit-time in v1 |
+| 9 | **Edit an account** | A real edit/CRUD workflow | 0001, 0004 | `initial=` from the store, input preserved on error, server permission-gated field, email availability | edit form + async check | — | — |
+| 10 | **Multi-step wizard** | Server-held state across 3 steps | — | session state, validate-before-advance, conditional step skip, back nav | Formik/RHF/TanStack wizard patterns | — | wizard state kept server-side |
+| 11 | **Tampering lab** | Server-authority made tangible | 0002, 0003, 0004 | crafted hostile submissions → authoritative outcomes (total, seats, hidden, scope, external signal, CSRF) | (n/a) | — | — |
+| 12 | **Form-level errors** | Rules spanning fields | 0004 | non-field `clean()` errors (date range, budget split), live computed preview | schema cross-field refine | — | non-field errors are submit-time in v1 |
+| 13 | **Date / time & localization** | Temporal canonical values | 0002 | canonical `date`/`time`/`datetime` strings, lossless round-trip, server validation | (n/a — semantics) | — | — |
+| 14 | **Widget gallery** | Widget compatibility | 0001 | first-class reactive widgets vs. correct Django native fallback | a component library | — | radio/multi-checkbox/file are fallback-rendered |
+| 15 | **Cascading dropdowns** | country → region → city | — | `choices_from` + `depends_on`, server re-render, `data-indicator` pending, invalid-child reset | client fetch/cache/option-state | ✅ (architectural, [page](comparisons/cascading.md)) | large client-side-filtered lists |
 
-### Retained feature demos
+### Retained feature demo
 
-Two earlier examples cover features outside the matrix above and remain:
-
-- **Cascading dropdowns** — dependent selects via `choices_from` + `depends_on`
-  with server re-render (a distinct feature from the reactive expression model).
 - **Whole-form SSE submit** — `reactive_form_response()` patches the entire form
   fragment on submit (contrast with the *per-field* incremental validation in #1).
 

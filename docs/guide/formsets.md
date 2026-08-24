@@ -74,5 +74,9 @@ with validation and row binding handled by ordinary `formset.is_valid()`.
 
 The honest difference: **dynamic add/remove/reorder is not implemented in
 rg.forms yet** — this slice compares independent *static* rows against the
-competitors' dynamic arrays, and the [team-roster comparison](../comparison.md)
-states that gap explicitly.
+competitors' dynamic arrays. That gap is a missing rg.forms *helper*, **not** a
+reason to reach for a client framework: dynamic rows (drag-and-drop reordering
+included) are a natural server-driven interaction — a small Datastar handler
+posts the action and the server re-renders the affected rows over SSE. Until the
+declarative helper lands you write that handler yourself. The
+[team-roster comparison](../comparison.md) states the gap explicitly.

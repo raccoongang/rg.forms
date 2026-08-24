@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Wizard Complete - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">All done 🎉</h1>
+<p class="subtitle">Every step was validated in turn and held server-side</p>
+
+<div class="notification is-success">The wizard completed successfully.</div>
+
+<div class="box">
+    <h2 class="title is-5">Collected data</h2>
+    <table class="table is-fullwidth">
+        {% for key, value in state.items %}<tr><th>{{ key }}</th><td>{{ value }}</td></tr>{% endfor %}
+    </table>
+</div>
+
+<a class="button is-primary" href="{% url 'examples:wizard' %}">Start over</a>
+{% endblock %}

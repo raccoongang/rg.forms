@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Date/Time & Localization - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Date / time & localization</h1>
+<p class="subtitle">Temporal canonical values — ADR-0002</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> each temporal field is a canonical <em>string</em> signal — <code>YYYY-MM-DD</code>
+    for date, <code>HH:MM</code> for time, <code>YYYY-MM-DDTHH:MM</code> for datetime — seeded and round-tripped
+    losslessly. Watch the live signal JSON. The server validates that the event does not start in the past.</p>
+</div>
+
+{% if submitted %}
+<div class="notification is-success">Event saved: {{ submitted.title }} on {{ submitted.event_date }}.</div>
+{% endif %}
+
+<div class="columns">
+    <div class="column">
+        <div class="box">{% render_reactive_form form "Save event" action="" %}</div>
+    </div>
+    <div class="column">
+        <div class="box">
+            <h2 class="title is-5">Live signals (canonical strings)</h2>
+            <div data-signals='{{ form.get_signals_json }}'>
+                <pre data-text="JSON.stringify({event_date: $event_date, doors_open: $doors_open, starts_at: $starts_at}, null, 2)"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

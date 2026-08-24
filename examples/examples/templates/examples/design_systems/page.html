@@ -1,57 +1,38 @@
 {% extends "base.html" %}
-{% load reactive_forms %}
+{% load reactive_forms example_tags %}
 {% block title %}Design-System Override - rg.forms Examples{% endblock %}
 {% block content %}
 <h1 class="title">Design-system override</h1>
 <p class="subtitle">One form contract, two presentation adapters — ADR-0001</p>
 
 <div class="box">
-    <p><strong>Try it:</strong> both columns render the <em>same</em> <code>ProfileCardForm</code> with no form-class
-    changes. The left uses the shipped Bulma reference renderer; the right is a hand-authored minimal adapter built
-    from the documented low-level tags. Switching visibility to <em>Public</em> reveals the handle field in both.</p>
+    <p><strong>Try it:</strong> the same <code>ProfileCardForm</code> is rendered by two adapters with no form-class
+    change — the shipped Bulma reference renderer, and a hand-authored minimal adapter built from the documented
+    context contract. Switch adapters below; <em>both</em> carry the full contract (binding, visibility, the email
+    availability check on blur, and the aria wiring). Only one renders at a time, so element ids never collide.</p>
+    <div class="buttons">
+        <a class="button {% if style != 'minimal' %}is-primary{% endif %}" href="?style=bulma">Adapter A — Bulma</a>
+        <a class="button {% if style == 'minimal' %}is-primary{% endif %}" href="?style=minimal">Adapter B — minimal</a>
+    </div>
 </div>
 
 {% if submitted %}
 <div class="notification is-success">Saved profile for <strong>{{ submitted.display_name }}</strong>.</div>
 {% endif %}
 
-<div class="columns">
-    <div class="column">
-        <div class="box">
-            <h2 class="title is-5">Adapter A — shipped Bulma renderer</h2>
-            {% render_reactive_form form "Save" action="" validate_action="/design-systems/validate/" %}
-        </div>
-    </div>
-    <div class="column">
-        <div class="box">
-            <h2 class="title is-5">Adapter B — minimal utility markup</h2>
-            {# The same reactive contract (data-bind, data-show, data-computed)
-               drives entirely different markup, straight from the low-level tags. #}
-            <form method="post" data-signals='{{ form.get_signals_json }}' style="font-family: system-ui;">
-                {% csrf_token %}
-                {% for field in form %}
-                <div style="margin-bottom:.75rem" {% reactive_wrapper_attrs field %}>
-                    <label style="display:block;font-weight:600" for="min_{{ field.id_for_label }}">{{ field.label }}</label>
-                    {% if field.field.widget.input_type == 'select' or field.name == 'visibility' %}
-                    <select name="{{ field.html_name }}" id="min_{{ field.id_for_label }}"
-                            {% reactive_input_attrs field %}
-                            style="width:100%;padding:.4rem;border:1px solid #ccc;border-radius:4px">
-                        {% for value, label in field.field.choices %}
-                        <option value="{{ value }}"{% if value == field.value %} selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                    {% else %}
-                    <input name="{{ field.html_name }}" id="min_{{ field.id_for_label }}"
-                           {% reactive_input_attrs field %}
-                           value="{{ field.value|default:'' }}"
-                           style="width:100%;padding:.4rem;border:1px solid #ccc;border-radius:4px">
-                    {% endif %}
-                    {% for error in field.errors %}<p style="color:#c00;font-size:.85rem">{{ error }}</p>{% endfor %}
-                </div>
-                {% endfor %}
-                <button type="submit" style="padding:.5rem 1rem;background:#111;color:#fff;border:0;border-radius:4px">Save</button>
-            </form>
-        </div>
-    </div>
+<div class="box">
+    {% if style == 'minimal' %}
+    <h2 class="title is-5">Adapter B — minimal utility markup</h2>
+    <form method="post" data-signals='{{ form.get_signals_json }}' style="font-family: system-ui;">
+        {% csrf_token %}
+        {% for field in form %}
+            {% render_minimal_field field validate_action="/design-systems/validate/" csrf_token=csrf_token %}
+        {% endfor %}
+        <button type="submit" style="padding:.5rem 1rem;background:#111;color:#fff;border:0;border-radius:4px">Save</button>
+    </form>
+    {% else %}
+    <h2 class="title is-5">Adapter A — shipped Bulma renderer</h2>
+    {% render_reactive_form form "Save" action="" validate_action="/design-systems/validate/" %}
+    {% endif %}
 </div>
 {% endblock %}

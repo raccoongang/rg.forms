@@ -1,5 +1,7 @@
-{# Single-field fragment for incremental validation (ADR-0004).
+{% comment %}
+   Single-field fragment for incremental validation (ADR-0004).
    Renders exactly one field's wrapper (with its stable wrapper_id) so the SSE
    response patches only this field. Re-passing validate_action + csrf_token
-   keeps the field's validate handler alive after the patch. #}
+   keeps the field's validate handler alive after the patch.
+{% endcomment %}
 {% load reactive_forms %}{% render_reactive_field field validate_action=validate_action csrf_token=csrf_token %}

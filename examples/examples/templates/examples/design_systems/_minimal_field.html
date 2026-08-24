@@ -1,0 +1,43 @@
+{% comment %}
+   Adapter B — a minimal/utility field renderer built from the SAME documented
+   context contract the shipped Bulma template uses (ADR-0001). It carries the
+   full fidelity: stable ids, data-show visibility, the reactive required
+   expression, and control_attrs (which includes the incremental-validation
+   data-on handler, the data-indicator pending signal, and aria-invalid /
+   aria-describedby). Deliberately different markup, no form-class changes.
+{% endcomment %}
+{% if field.is_hidden %}
+{{ field }}
+{% else %}
+<div class="min-field" style="margin-bottom:.85rem"{% if wrapper_id %} id="{{ wrapper_id }}"{% endif %}{% if visible_when %} data-show="{{ visible_when }}"{% endif %}>
+    <label style="display:block;font-weight:600;margin-bottom:.2rem" for="{{ control_id }}">
+        {{ label }}{% if is_required %} <span style="color:#c0392b">*</span>{% endif %}
+    </label>
+    {% if widget_type == 'select' %}
+    <select name="{{ field.html_name }}" id="{{ control_id }}"
+            {{ bind_attr }} {{ control_attrs }}
+            {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
+            style="width:100%;padding:.4rem;border:1px solid #bbb;border-radius:4px">
+        {% for value, label_text in choices %}
+        <option value="{{ value }}"{% if value == field.value %} selected{% endif %}>{{ label_text }}</option>
+        {% endfor %}
+    </select>
+    {% elif is_simple_input %}
+    <input type="{{ input_type }}" name="{{ field.html_name }}" id="{{ control_id }}"
+           {{ bind_attr }} {{ control_attrs }}
+           {% for attr, val in widget_attrs.items %}{{ attr }}="{{ val }}" {% endfor %}
+           {% if placeholder_expr %}data-attr:placeholder="{{ placeholder_expr }}"{% endif %}
+           {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
+           value="{{ formatted_value|default:'' }}"
+           style="width:100%;padding:.4rem;border:1px solid #bbb;border-radius:4px">
+    {% else %}
+    {# other widgets fall back to Django's native rendering, same as the shipped adapter #}
+    {{ field }}
+    {% endif %}
+    {% if errors %}
+    <p class="min-error" style="color:#c0392b;font-size:.85rem;margin-top:.2rem"{% if error_id %} id="{{ error_id }}"{% endif %}>{{ errors.0 }}</p>
+    {% elif help_text %}
+    <p class="min-help" style="color:#666;font-size:.85rem;margin-top:.2rem"{% if help_id %} id="{{ help_id }}"{% endif %}>{{ help_text }}</p>
+    {% endif %}
+</div>
+{% endif %}

@@ -1,4 +1,4 @@
-"""Views for the retained cascading-dropdowns demo."""
+"""Views for the (modernized) cascading dropdowns demo — country/region/city."""
 
 from __future__ import annotations
 
@@ -11,36 +11,33 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 
 from .. import services
-from ..forms import CascadingForm
+from ..forms import GeoCascadingForm
 
 
 def cascading_form(request: HttpRequest) -> HttpResponse | DatastarResponse:
     is_datastar = request.headers.get("Datastar-Request") == "true"
 
+    if request.method == "POST" and is_datastar:
+        # Re-render the fragment with child options for the current parents,
+        # resetting any child selection that is no longer valid.
+        country = request.POST.get("country", "")
+        region = request.POST.get("region", "")
+        city = request.POST.get("city", "")
+        if region and not services.region_belongs_to(region, country):
+            region = ""
+        if city and not services.city_belongs_to(city, region):
+            city = ""
+        form = GeoCascadingForm(initial={"country": country, "region": region, "city": city})
+        html = render_to_string("examples/_cascading_form_fragment.html", {"form": form}, request)
+
+        def updates() -> Generator[DatastarEvent, None, None]:
+            yield ServerSentEventGenerator.patch_elements(html)
+
+        return DatastarResponse(updates())
+
     if request.method == "POST":
-        if is_datastar:
-            category_id = request.POST.get("category", "")
-            product_id = request.POST.get("product", "")
-            product = services.get_product_by_id(product_id) if product_id else None
-            product_valid = bool(product and category_id and str(product["category_id"]) == str(category_id))
-            initial = {
-                "category": category_id,
-                "product": product_id if product_valid else "",
-                "quantity": request.POST.get("quantity", 1),
-                "unit_price": product["price"] if product_valid else 0,
-            }
-            form = CascadingForm(initial=initial)
-            form_html = render_to_string("examples/_cascading_form_fragment.html", {"form": form}, request)
-
-            def updates() -> Generator[DatastarEvent, None, None]:
-                yield ServerSentEventGenerator.patch_elements(form_html)
-
-            return DatastarResponse(updates())
-
-        form = CascadingForm(request.POST)
-        if form.is_valid():
-            pass
+        form = GeoCascadingForm(request.POST)
+        form.is_valid()
     else:
-        form = CascadingForm()
-
+        form = GeoCascadingForm()
     return render(request, "examples/cascading_form.html", {"form": form})

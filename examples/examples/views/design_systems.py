@@ -11,8 +11,9 @@ from ..forms import ProfileCardForm
 
 
 def design_systems(request: HttpRequest) -> HttpResponse:
-    # The same form contract is rendered by two adapters on this page; the page
-    # template overrides rg_forms/field.html for the second (utility) renderer.
+    # One form contract, two adapters, chosen by ?style= (only one renders at a
+    # time, so ids never collide). Both adapters consume the same context.
+    style = "minimal" if request.GET.get("style") == "minimal" else "bulma"
     submitted = None
     if request.method == "POST":
         form = ProfileCardForm(request.POST)
@@ -20,7 +21,11 @@ def design_systems(request: HttpRequest) -> HttpResponse:
             submitted = form.cleaned_data
     else:
         form = ProfileCardForm()
-    return render(request, "examples/design_systems/page.html", {"form": form, "submitted": submitted})
+    return render(
+        request,
+        "examples/design_systems/page.html",
+        {"form": form, "submitted": submitted, "style": style},
+    )
 
 
 def design_systems_validate(request: HttpRequest) -> HttpResponse:

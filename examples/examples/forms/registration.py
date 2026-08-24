@@ -8,6 +8,7 @@ validation engine.
 
 from __future__ import annotations
 
+from django import forms
 from django.core.exceptions import ValidationError
 
 from rg.forms import (
@@ -37,8 +38,8 @@ class RegistrationForm(ReactiveForm):
         validate_on="blur",
         help_text="Try 'taken@example.com' to see the availability check.",
     )
-    password = ReactiveCharField(label="Password", min_length=8)
-    password_confirm = ReactiveCharField(label="Confirm password")
+    password = ReactiveCharField(label="Password", min_length=8, widget=forms.PasswordInput)
+    password_confirm = ReactiveCharField(label="Confirm password", widget=forms.PasswordInput)
 
     account_type = ReactiveChoiceField(
         label="Account type",

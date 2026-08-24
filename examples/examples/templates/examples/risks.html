@@ -21,7 +21,7 @@
             <p>Datastar Dependency</p>
         </div>
         <div class="message-body">
-            <p><strong>Risk:</strong> Datastar is v1.0-RC (not stable 1.0 yet) with a smaller community compared to HTMX (~25K stars) or Alpine (~29K stars). If Datastar API changes significantly or project becomes unmaintained, rg.forms is tightly coupled.</p>
+            <p><strong>Risk:</strong> Datastar reached stable 1.0 and rg.forms pins the exact signed tag <code>@v1.0.2</code>, but it still has a smaller community than HTMX or Alpine. If the Datastar API changes significantly or the project becomes unmaintained, rg.forms is tightly coupled.</p>
             <p class="mt-3"><strong>Mitigation:</strong></p>
             <ul>
                 <li>Expression evaluator is backend-only (Python) - not Datastar-dependent</li>
@@ -39,7 +39,7 @@
         <div class="message-body">
             <p><strong>Risk:</strong> Field attributes have grown significantly and more will likely be needed as real-world usage reveals gaps:</p>
             <ul>
-                <li>Current: <code>visible_when</code>, <code>required_when</code>, <code>computed</code>, <code>disabled_when</code>, <code>read_only_when</code>, <code>help_text_when</code>, <code>depends_on</code>, <code>choices_from</code>...</li>
+                <li>Current: <code>visible_when</code>, <code>required_when</code>, <code>computed</code>, <code>disabled_when</code>, <code>read_only_when</code>, <code>help_text_when</code>, <code>placeholder_when</code>, <code>min_when</code>, <code>max_when</code>, <code>validate_on</code>, <code>debounce</code>, <code>depends_on</code>, <code>choices_from</code>...</li>
                 <li>Potential: <code>error_message_when</code>, <code>css_class_when</code>, <code>choices_when</code></li>
             </ul>
             <p class="mt-3"><strong>Mitigation:</strong></p>
@@ -51,32 +51,6 @@
         </div>
     </article>
 
-    <article class="message is-danger">
-        <div class="message-header">
-            <p>Expression Language Limitations</p>
-        </div>
-        <div class="message-body">
-            <p><strong>Risk:</strong> Current expression parser supports only basic operations. Users may hit limits:</p>
-            <table class="table is-narrow mt-3">
-                <thead>
-                    <tr><th>Missing</th><th>Example</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>Functions</td><td><code>len($items)</code>, <code>$date.year</code></td></tr>
-                    <tr><td>Ternary</td><td><code>$a ? $b : $c</code></td></tr>
-                    <tr><td>Array access</td><td><code>$items[0]</code>, <code>$items.length</code></td></tr>
-                    <tr><td>String ops</td><td><code>startsWith</code>, <code>contains</code></td></tr>
-                    <tr><td>Nested fields</td><td><code>$address.city</code></td></tr>
-                </tbody>
-            </table>
-            <p class="mt-3"><strong>Mitigation:</strong></p>
-            <ul>
-                <li>Document supported expression subset clearly</li>
-                <li>Escape hatch: custom <code>clean_*</code> methods for complex logic</li>
-                <li>Expand parser based on most-requested features</li>
-            </ul>
-        </div>
-    </article>
 </div>
 
 <div class="box">
@@ -87,29 +61,30 @@
             <p>Missing Django Integrations</p>
         </div>
         <div class="message-body">
-            <p><strong>Risk:</strong> Common Django patterns not yet supported:</p>
+            <p><strong>Risk:</strong> Some common Django patterns are not yet supported:</p>
             <ul>
                 <li><code>ReactiveModelForm</code> - most common use case</li>
-                <li>Formsets / InlineFormsets</li>
+                <li><strong>Dynamic</strong> formset mutation (add/remove/reorder rows) — <em>static</em> formsets are supported and fully reactive per row (ADR-0003)</li>
                 <li>FileField with upload progress</li>
                 <li>crispy-forms integration</li>
             </ul>
-            <p class="mt-3"><strong>Mitigation:</strong> Prioritize <code>ReactiveModelForm</code> for next phase. Document workarounds.</p>
+            <p class="mt-3"><strong>Mitigation:</strong> Prioritize <code>ReactiveModelForm</code> next; dynamic-formset mutation is server-driven (a small Datastar handler) until a declarative helper lands. Document workarounds.</p>
         </div>
     </article>
 
     <article class="message is-warning">
         <div class="message-header">
-            <p>Expression Errors are Silent</p>
+            <p>Expression Errors (largely addressed — ADR-0002 §5)</p>
         </div>
         <div class="message-body">
-            <p><strong>Risk:</strong> Typos in expressions (<code>$ordertpye</code> instead of <code>$order_type</code>) fail silently, defaulting to visible. Debugging is difficult.</p>
-            <p class="mt-3"><strong>Mitigation:</strong></p>
+            <p><strong>Was:</strong> typos in expressions (<code>$ordertpye</code> instead of <code>$order_type</code>) failed silently, defaulting to visible.</p>
+            <p class="mt-3"><strong>Now:</strong></p>
             <ul>
-                <li>Add DEBUG mode that raises on expression errors</li>
-                <li>Add form validation at definition time</li>
-                <li>Provide <code>check_expressions()</code> method for testing</li>
+                <li>A Django <strong>system check</strong> (<code>rg_forms.W001</code>) validates every expression at build time — unknown references, string/boolean operands in arithmetic, and array-field references are flagged before runtime.</li>
+                <li>Runtime evaluation errors are <strong>logged</strong> (to the <code>rg.forms</code> logger), not silently swallowed, and remain fail-open so a broken rule never hides a field or drops a value.</li>
+                <li>A falsy result now correctly hides/de-requires a field (distinct from an evaluation error) — matching the client.</li>
             </ul>
+            <p class="mt-3"><strong>Residual:</strong> runtime errors are still fail-open by design; the build-time check lands as a warning to ease adoption (graduating to an error later).</p>
         </div>
     </article>
 
@@ -127,6 +102,25 @@
 <div class="box">
     <h2 class="title is-4 has-text-info">Lower Risk</h2>
 
+    <article class="message is-info">
+        <div class="message-header">
+            <p>Expression language is a small, stable subset (by design)</p>
+        </div>
+        <div class="message-body">
+            <p>The reactive DSL is intentionally small and portable. Since ADR-0002 it has rigorous,
+            conformance-tested semantics that are <strong>identical on the client and the server</strong>
+            (strict typed equality, numeric-only arithmetic, <code>/0</code>&nbsp;&rarr;&nbsp;<code>null</code>).
+            It covers the conditional visibility/requiredness and computed arithmetic that most business forms need.</p>
+            <p class="mt-2">Deliberately <em>out of scope</em> in v1 (for cross-runtime portability): functions
+            (<code>len(...)</code>), ternaries (<code>$a ? $b : $c</code>), array indexing/methods
+            (<code>$items[0]</code>, <code>.length</code>), string methods (<code>contains</code>), and
+            author-level nested paths (<code>$address.city</code>). This is a scoping decision, not instability.</p>
+            <p class="mt-2"><strong>Escape hatch:</strong> anything beyond the DSL goes in an ordinary
+            <code>clean_*()</code> / <code>clean()</code> method — full Python, server-authoritative. Array
+            operations may arrive later with explicitly defined cross-runtime semantics.</p>
+        </div>
+    </article>
+
     <div class="columns">
         <div class="column">
             <article class="message is-info">
@@ -134,7 +128,9 @@
                     <p>Single CSS Framework</p>
                 </div>
                 <div class="message-body">
-                    <p>Only Bulma templates. Bootstrap 5 planned. Template override mechanism available.</p>
+                    <p>Only Bulma reference templates ship. The rendering layer is design-system-agnostic
+                    (ADR-0001) — override <code>rg_forms/field.html</code> once for your design system; see the
+                    Design-System Override example.</p>
                 </div>
             </article>
         </div>
@@ -144,17 +140,8 @@
                     <p>Performance at Scale</p>
                 </div>
                 <div class="message-body">
-                    <p>Server round-trip for cascading. Mitigated by Datastar's debouncing and fast expression parsing.</p>
-                </div>
-            </article>
-        </div>
-        <div class="column">
-            <article class="message is-info">
-                <div class="message-header">
-                    <p>No Async Validation</p>
-                </div>
-                <div class="message-body">
-                    <p>No built-in "check availability" pattern. Custom <code>clean_*</code> methods can call external services.</p>
+                    <p>Reactive UX runs client-side; only cascading choices and incremental validation take a
+                    server round-trip, debounced and (for validation) per-field cancellable.</p>
                 </div>
             </article>
         </div>
@@ -164,13 +151,17 @@
 <div class="box">
     <h2 class="title is-4">When NOT to Use rg.forms</h2>
     <div class="content">
-        <p>Consider alternatives if you need:</p>
+        <p>rg.forms (and a Datastar-first architecture generally) fits most web forms. Reach for a client
+        framework when the screen is a genuinely <em>standalone client application</em>:</p>
         <ul>
-            <li><strong>Offline-first</strong> - Forms must work without network connectivity</li>
-            <li><strong>Complex client-side state</strong> - Multi-step wizards with heavy local manipulation</li>
-            <li><strong>React Native code sharing</strong> - Same form logic on web and mobile apps</li>
-            <li><strong>Existing SPA investment</strong> - Team already proficient in React/Vue ecosystem</li>
+            <li><strong>Offline / local-first</strong> - must work, and hold state, without the server</li>
+            <li><strong>Genuinely client-bound UI</strong> - canvas/WebGL, rich in-browser editors, high-frequency local animation</li>
+            <li><strong>React Native code sharing</strong> - the same form logic must run on web and native mobile</li>
+            <li><strong>Existing SPA ecosystem</strong> - you must integrate with an established React/Vue app and its components</li>
         </ul>
+        <p>Interactions often <em>assumed</em> to need a client framework — multi-step wizards, dependent
+        selects, live totals, and add/remove/reorder rows (drag-and-drop included) — are all doable
+        server-driven with Datastar, and usually the split is per-page, not per-app.</p>
     </div>
 </div>
 

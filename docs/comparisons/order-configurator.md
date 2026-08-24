@@ -19,15 +19,15 @@ refuses to accept from the client.
 
 | Layer | rg.forms | Formik | RHF | TanStack |
 |---|---:|---:|---:|---:|
-| Form schema + validation | 69¹ | 54 | 61 | 74 |
+| Form schema + validation | 71¹ | 54 | 61 | 74 |
 | Rendering + reactivity | 23 | 115 | 98 | 173 |
 | Client transport | —¹ | 67 | 54 | 39 |
 | Backend validation + endpoint | —¹ | 78 | 68 | 65 |
-| **Total** | **111** | **314** | **281** | **351** |
+| **Total** | **113** | **314** | **281** | **351** |
 
-¹ rg.forms's 69-line form holds the fields, the conditional rules, the coupon
-validation, **and** the authoritative Decimal recompute; the 19-line view just
-renders and echoes the result.
+¹ rg.forms's 71-line form holds the fields, the conditional rules, the coupon
+validation, the server-enforced Starter seat count, **and** the authoritative
+Decimal recompute; the 19-line view just renders and echoes the result.
 
 ## Where the code went
 

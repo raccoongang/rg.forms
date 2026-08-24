@@ -2,8 +2,11 @@
 
 A server-owned signal (here a plan tier and a beta flag) drives the *same*
 visibility/requiredness rule on the client and the server. The values come from
-``get_external_signal_values()`` — the client cannot forge them, and a form
-field always wins over an external value on a name collision.
+``get_external_signal_values()`` — they are *external* signals, so the server
+never reads them from the submitted form data (a crafted form POST cannot set
+them), and a form field always wins over an external value on a name collision.
+In this demo the values are chosen by a query parameter standing in for real
+server policy (``request.user`` / tenant / a flag service).
 """
 
 from __future__ import annotations

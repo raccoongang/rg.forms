@@ -1,44 +1,54 @@
-"""Retained feature demo — cascading / dependent dropdowns.
+"""Retained + modernized — cascading / dependent dropdowns.
 
-A distinct feature from the reactive-expression model: dependent selects via
-``choices_from`` + ``depends_on`` with server-side re-render.
+Country -> region -> city, each level's choices queried server-side. When a
+parent changes, the form re-renders via Datastar SSE with the child options
+repopulated and any now-invalid child selection reset. Authoritative validation
+(region belongs to country, city belongs to region) runs on the server.
 """
 
 from __future__ import annotations
 
-from django import forms
-
-from rg.forms import ReactiveChoiceField, ReactiveDecimalField, ReactiveForm, ReactiveIntegerField
+from rg.forms import ReactiveChoiceField, ReactiveForm
 
 from .. import services
 
 
-class CascadingForm(ReactiveForm):
-    category = ReactiveChoiceField(
-        label="Category",
-        choices_from=services.get_categories,
+class GeoCascadingForm(ReactiveForm):
+    country = ReactiveChoiceField(
+        label="Country",
+        choices_from=services.get_countries,
         value_field="id",
         label_field="name",
-        empty_choice="-- Select Category --",
+        empty_choice="-- Select country --",
     )
-    product = ReactiveChoiceField(
-        label="Product",
-        choices_from=services.get_products_for_category,
-        depends_on=["category"],
+    region = ReactiveChoiceField(
+        label="Region",
+        choices_from=services.get_regions,
+        depends_on=["country"],
         value_field="id",
-        label_template="{name} (${price})",
-        empty_choice="-- Select Product --",
-        empty_choice_no_parent="-- Select Category First --",
+        label_field="name",
+        empty_choice="-- Select region --",
+        empty_choice_no_parent="-- Select a country first --",
     )
-    quantity = ReactiveIntegerField(label="Quantity", min_value=1, initial=1)
-    unit_price = ReactiveDecimalField(widget=forms.HiddenInput(), required=False, initial=0)
+    city = ReactiveChoiceField(
+        label="City",
+        choices_from=services.get_cities,
+        depends_on=["region"],
+        value_field="id",
+        label_field="name",
+        empty_choice="-- Select city --",
+        empty_choice_no_parent="-- Select a region first --",
+    )
 
     def clean(self):
         cleaned = super().clean()
-        category_id = cleaned.get("category")
-        product_id = cleaned.get("product")
-        if product_id and category_id:
-            product = services.get_product_by_id(product_id)
-            if product and str(product["category_id"]) != str(category_id):
-                self.add_error("product", "This product does not belong to the selected category.")
+        country, region, city = cleaned.get("country"), cleaned.get("region"), cleaned.get("city")
+        if region and country and not services.region_belongs_to(region, country):
+            self.add_error("region", "This region does not belong to the selected country.")
+        if city and region and not services.city_belongs_to(city, region):
+            self.add_error("city", "This city does not belong to the selected region.")
         return cleaned
+
+
+# Back-compat alias (older references / tests).
+CascadingForm = GeoCascadingForm

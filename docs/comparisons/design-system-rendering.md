@@ -17,22 +17,27 @@ here is the **rendering layer**, not the rules.
 
 | Layer | rg.forms | Formik | RHF | TanStack |
 |---|---:|---:|---:|---:|
-| Form schema + validation | 26 | 30 | 36 | 40 |
-| Field components + rendering | 52 | 117 | 156 | 157 |
+| Form + server validation | 26¹ | 30 | 36 | 40 |
+| Rendering (page, both adapters) | 35 | 117 | 156 | 157 |
 | Client transport | — | 53 | 55 | 24 |
-| Backend validation + endpoint | — | 49 | 64 | 49 |
-| **Total** | **94** | **249** | **311** | **270** |
+| Backend endpoint | 21¹ | 49 | 64 | 49 |
+| **Total** | **82** | **249** | **311** | **270** |
+
+¹ rg.forms's server validation lives in the *form* row; the 21-line "view" is
+the page + validate endpoint (transport), not a re-declared server schema — the
+competitors' backend column is endpoint **plus** duplicated validation rules.
 
 The rendering row is the crux: the client stacks build a reusable field-component
 library (`TextField`, `SelectField` wrappers around `useField`/`useController`/
 field render-props) and wire each field through it. rg.forms fields go through the
 **one** project-wide `rg_forms/field.html` adapter — the example's page even shows
-the *same* form rendered by two adapters with no form-class change.
+the *same* form rendered by two adapters (style-switched so ids never collide)
+with no form-class change.
 
 ## Where the code went — and a fairness note
 
-The measured rg.forms rendering here (52 lines) is the demo page's *second,
-inline* adapter written out in full for illustration. In a real project the
+The measured rg.forms rendering here is the demo page plus its *second* minimal
+adapter, written out for illustration. In a real project the
 design-system adapter is written **once** and amortized across every form (it is
 excluded as shared infrastructure in all other scenarios, symmetrically with the
 client stacks' generic component libraries). The client stacks, by contrast, wire

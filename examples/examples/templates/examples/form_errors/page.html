@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Form-level Errors - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Form-level (non-field) errors</h1>
+<p class="subtitle">Rules that span several fields — ADR-0004 §2</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> set the end date before the start date, or make the three budget percentages add up
+    to something other than 100 — both are <em>non-field</em> errors (they belong to no single field), so they
+    appear on submit. The live "Total %" is a client preview; the server re-checks it. Field-attached errors can
+    appear incrementally, but non-field errors are submit-time in v1.</p>
+</div>
+
+{% if submitted %}
+<div class="notification is-success">Timeline saved.</div>
+{% endif %}
+
+<div class="box">
+    {% render_reactive_form form "Save timeline" action="" %}
+</div>
+{% endblock %}

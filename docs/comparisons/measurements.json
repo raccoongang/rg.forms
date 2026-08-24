@@ -44,11 +44,11 @@
           },
           "layers": {
             "form (schema + rules + reactivity + server validation)": 26,
-            "rendering (template)": 52,
-            "view (transport + endpoints)": 16
+            "rendering (template)": 35,
+            "view (transport + endpoints)": 21
           },
           "runnable": true,
-          "total_sloc": 94
+          "total_sloc": 82
         },
         "tanstack_form": {
           "architecture": {
@@ -111,12 +111,12 @@
             "transport_boundaries": 0
           },
           "layers": {
-            "form (schema + rules + reactivity + server validation)": 69,
+            "form (schema + rules + reactivity + server validation)": 71,
             "rendering (template)": 23,
             "view (transport + endpoints)": 19
           },
           "runnable": true,
-          "total_sloc": 111
+          "total_sloc": 113
         },
         "tanstack_form": {
           "architecture": {
@@ -179,12 +179,12 @@
             "transport_boundaries": 0
           },
           "layers": {
-            "form (schema + rules + reactivity + server validation)": 62,
+            "form (schema + rules + reactivity + server validation)": 63,
             "rendering (template)": 18,
             "view (transport + endpoints)": 15
           },
           "runnable": true,
-          "total_sloc": 95
+          "total_sloc": 96
         },
         "tanstack_form": {
           "architecture": {

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Tampering Lab - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Security / tampering laboratory</h1>
+<p class="subtitle">"The server decides" — made tangible</p>
+
+<div class="box">
+    <p>Each row below runs a <strong>crafted, hostile submission</strong> server-side and shows the authoritative
+    outcome. Reactive attributes are UX; server-side cleaning is the authority. (CSRF is enforced separately — a
+    JSON validate request without a valid <code>X-CSRFToken</code> is rejected with HTTP 403; see the example
+    test suite.)</p>
+</div>
+
+<div class="box">
+    <table class="table is-fullwidth">
+        <thead>
+            <tr><th></th><th>Scenario</th><th>Crafted attempt</th><th>Authoritative outcome</th></tr>
+        </thead>
+        <tbody>
+            {% for s in scenarios %}
+            <tr>
+                <td>{% if s.ok %}<span class="tag is-success">blocked</span>{% else %}<span class="tag is-danger">LEAK</span>{% endif %}</td>
+                <td><strong>{{ s.title }}</strong></td>
+                <td><code>{{ s.attempt }}</code></td>
+                <td>{{ s.result }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

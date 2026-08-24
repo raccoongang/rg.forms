@@ -1,4 +1,5 @@
-{# Reactive field template — REFERENCE EXAMPLE (Bulma CSS).
+{% comment %}
+   Reactive field template — REFERENCE EXAMPLE (Bulma CSS).
    This template is meant to be OVERRIDDEN per project so rg.forms adopts the
    host app's design system. It renders against the documented context contract
    (see docs/reference/template-tags.md). To bring your own design system,
@@ -11,7 +12,8 @@
 
    The wrapper carries a stable id (wrapper_id) so incremental validation can
    patch just this field (ADR-0004 §6); control_attrs carries the validate
-   handler / pending indicator / aria-* contract. #}
+   handler / pending indicator / aria-* contract.
+{% endcomment %}
 {% if field.is_hidden %}
 {{ field }}
 {% else %}
@@ -91,10 +93,12 @@
                {% if html5_attrs.minlength %}minlength="{{ html5_attrs.minlength }}"{% endif %}
                value="{{ formatted_value|default:"" }}">
         {% else %}
-        {# Unhandled widget (radio, checkbox-multiple, file, multi-widget, custom):
+        {% comment %}
+           Unhandled widget (radio, checkbox-multiple, file, multi-widget, custom):
            fall back to Django's native rendering so it is at least correct.
            Reactive attrs are not applied here — override this template to add
-           first-class support for your design system's version of the widget. #}
+           first-class support for your design system's version of the widget.
+        {% endcomment %}
         {{ field }}
         {% endif %}
     </div>

@@ -1,87 +1,70 @@
-{# Form fragment for Datastar partial updates #}
+{% comment %}Form fragment for Datastar partial updates (country → region → city).{% endcomment %}
 {% load reactive_forms %}
 
 <div id="cascading-form-container">
-    <form method="post"
-          data-signals='{% reactive_signals form %}'
-          id="cascading-form">
+    <form method="post" data-signals='{% reactive_signals form %}' id="cascading-form">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
         <div class="notification is-danger">
-            {% for error in form.non_field_errors %}
-            <p>{{ error }}</p>
-            {% endfor %}
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
         {% endif %}
 
-        {# Category field with @change to repopulate products #}
+        {% comment %}
+           Pending indicator: _cascading_loading is a local signal (leading _), set
+           automatically by data-indicator while the change request is in flight.
+        {% endcomment %}
+        <p class="has-text-grey" data-show="$_cascading_loading"><em>Loading options…</em></p>
+
         <div class="field">
-            <label class="label" for="id_category">
-                {{ form.category.label }}
-                <span class="has-text-danger">*</span>
-            </label>
+            <label class="label" for="id_country">{{ form.country.label }}</label>
             <div class="control is-expanded">
-                <div class="select is-fullwidth{% if form.category.errors %} is-danger{% endif %}">
-                    <select name="category" id="id_category"
-                            data-bind:category
+                <div class="select is-fullwidth{% if form.country.errors %} is-danger{% endif %}">
+                    <select name="country" id="id_country" data-bind:country
                             data-on:change="@post('{% url 'examples:cascading_form' %}', {contentType: 'form'})"
-                            required>
-                        {% for choice in form.category.field.choices %}
-                        <option value="{{ choice.0 }}"{% if choice.0 == form.category.value %} selected{% endif %}>{{ choice.1 }}</option>
+                            data-indicator="_cascading_loading">
+                        {% for c in form.country.field.choices %}
+                        <option value="{{ c.0 }}"{% if c.0 == form.country.value %} selected{% endif %}>{{ c.1 }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
-            {% if form.category.errors %}
-            <p class="help is-danger">{{ form.category.errors.0 }}</p>
-            {% endif %}
+            {% if form.country.errors %}<p class="help is-danger">{{ form.country.errors.0 }}</p>{% endif %}
         </div>
 
-        {# Product field - choices populated based on selected category #}
-        {# Note: no HTML5 required - would block category change POST. Backend validates. #}
-        {# POST on change to update unit_price for total calculation #}
         <div class="field">
-            <label class="label" for="id_product">
-                {{ form.product.label }}
-                <span class="has-text-danger">*</span>
-            </label>
+            <label class="label" for="id_region">{{ form.region.label }}</label>
             <div class="control is-expanded">
-                <div class="select is-fullwidth{% if form.product.errors %} is-danger{% endif %}">
-                    <select name="product" id="id_product"
-                            data-bind:product
-                            data-on:change="@post('{% url 'examples:cascading_form' %}', {contentType: 'form'})">
-                        {% for choice in form.product.field.choices %}
-                        <option value="{{ choice.0 }}"{% if choice.0 == form.product.value %} selected{% endif %}>{{ choice.1 }}</option>
+                <div class="select is-fullwidth{% if form.region.errors %} is-danger{% endif %}">
+                    <select name="region" id="id_region" data-bind:region
+                            data-on:change="@post('{% url 'examples:cascading_form' %}', {contentType: 'form'})"
+                            data-indicator="_cascading_loading">
+                        {% for c in form.region.field.choices %}
+                        <option value="{{ c.0 }}"{% if c.0 == form.region.value %} selected{% endif %}>{{ c.1 }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
-            {% if form.product.errors %}
-            <p class="help is-danger">{{ form.product.errors.0 }}</p>
-            {% endif %}
-        </div>
-
-        {# Quantity field - use the standard render #}
-        {% render_reactive_field form.quantity %}
-
-        {# Hidden unit_price field - stores selected product's price #}
-        <input type="hidden" name="unit_price" data-bind:unit_price value="{{ form.unit_price.value|default:0 }}">
-
-        {# Total display - computed client-side from unit_price * quantity #}
-        <div class="field">
-            <label class="label">Total</label>
-            <div class="control">
-                <p class="is-size-4 has-text-weight-bold has-text-primary">
-                    $<span data-text="($unit_price * $quantity).toFixed(2)">0.00</span>
-                </p>
-            </div>
+            {% if form.region.errors %}<p class="help is-danger">{{ form.region.errors.0 }}</p>{% endif %}
         </div>
 
         <div class="field">
-            <div class="control">
-                <button type="submit" class="button is-primary">Place Order</button>
+            <label class="label" for="id_city">{{ form.city.label }}</label>
+            <div class="control is-expanded">
+                <div class="select is-fullwidth{% if form.city.errors %} is-danger{% endif %}">
+                    <select name="city" id="id_city" data-bind:city>
+                        {% for c in form.city.field.choices %}
+                        <option value="{{ c.0 }}"{% if c.0 == form.city.value %} selected{% endif %}>{{ c.1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
+            {% if form.city.errors %}<p class="help is-danger">{{ form.city.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+            <div class="control"><button type="submit" class="button is-primary">Save location</button></div>
         </div>
     </form>
 </div>

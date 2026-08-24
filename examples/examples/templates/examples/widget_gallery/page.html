@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Widget Gallery - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Widget compatibility gallery</h1>
+<p class="subtitle">First-class reactive widgets vs. correct Django fallback — ADR-0001</p>
+
+<div class="box content">
+    <p>The shipped reference template renders a controlled subset as <strong>first-class reactive</strong> controls
+    (text-family inputs, select, multi-select, checkbox, textarea, date/time). Any other widget falls back to
+    <strong>Django's native rendering</strong> — correct and submittable, but without reactive <code>data-*</code>
+    attributes until you override the template for your design system. Inspect the fields below:</p>
+    <ul>
+        <li><strong>First-class:</strong> Text, Select, Multi-select, Checkbox, Textarea, Date — these carry
+        <code>data-bind</code> and reactive attributes.</li>
+        <li><strong>Fallback:</strong> Radio, Checkbox group, File — rendered by Django, no reactive attributes.</li>
+    </ul>
+</div>
+
+<div class="box">
+    {% render_reactive_form form "Submit" action="" %}
+</div>
+{% endblock %}

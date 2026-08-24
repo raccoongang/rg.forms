@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+{% block title %}Edit Account - rg.forms Examples{% endblock %}
+{% block content %}
+<h1 class="title">Edit an existing account</h1>
+<p class="subtitle">A real edit/CRUD workflow (not "create")</p>
+
+<div class="box">
+    <p><strong>Try it:</strong> the fields are pre-filled from the stored account. Change the email to
+    <code>taken@example.com</code> to see the availability check on blur; submit an invalid value to see your input
+    preserved. Switch the plan to <em>Enterprise</em> to reveal the account-manager field. Toggle the staff view to
+    show a field that only exists when the server permits it (authorization, not client visibility).</p>
+    <div class="buttons">
+        <a class="button {% if not can_see_internal %}is-primary{% endif %}" href="?">Normal user</a>
+        <a class="button {% if can_see_internal %}is-primary{% endif %}" href="?staff=1">Staff view</a>
+    </div>
+</div>
+
+{% if saved %}
+<div class="notification is-success">Account saved.</div>
+{% endif %}
+
+<div class="box">
+    {% render_reactive_form form "Save changes" action="" validate_action="/account/edit/validate/" %}
+</div>
+{% endblock %}
