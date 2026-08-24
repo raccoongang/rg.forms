@@ -78,7 +78,7 @@ Load Datastar and use the provided template tags:
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/@starfederation/datastar"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.2/bundles/datastar.js"></script>
 </head>
 <body>
     <form method="post" data-signals='{% reactive_signals form %}'>

@@ -7,7 +7,7 @@ rg.forms generates [Datastar](https://data-star.dev) attributes for reactive fro
 Add Datastar to your base template:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.2/bundles/datastar.js"></script>
 ```
 
 Please note that recommended way to add datastar is always use versioned URL, to avoid issues with internal API changes. When
