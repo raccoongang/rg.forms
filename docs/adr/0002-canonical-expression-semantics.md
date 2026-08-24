@@ -1,6 +1,6 @@
 # ADR 0002 — Canonical client/server expression semantics and reactive value normalization
 
-- Status: Proposed — Revision 3 (defines its own semantics via a compiled DSL; ready to implement on sign-off)
+- Status: Accepted (2026-08-24, review-approved) — implement first, ahead of ADR-0003/0004
 - Date: 2026-08-24
 - Deciders: Oleksii Koval (author of rg.forms)
 - Supersedes the "render on Django widget context" idea as the *next* ADR: that rendering refactor is still

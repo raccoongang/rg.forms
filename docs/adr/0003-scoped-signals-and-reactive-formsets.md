@@ -1,6 +1,6 @@
 # ADR 0003 — Scoped signals and reactive formsets
 
-- Status: Proposed — Revision 2 (resolves review blockers)
+- Status: Accepted (2026-08-24, review-approved) — implement after ADR-0002
 - Date: 2026-08-24
 - Deciders: Oleksii Koval (author of rg.forms)
 - Depends on: [ADR-0002](0002-canonical-expression-semantics.md) (the expression parser it introduces is reused here

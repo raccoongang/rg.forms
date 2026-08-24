@@ -1,6 +1,6 @@
 # ADR 0004 — Declarative incremental server validation
 
-- Status: Proposed — Revision 2 (redesigned around Datastar request behavior and Django validation boundaries)
+- Status: Accepted (2026-08-24, review-approved after event/non-field-error clarifications) — implement after ADR-0003
 - Date: 2026-08-24
 - Deciders: Oleksii Koval (author of rg.forms)
 - Relates to: [ADR-0002](0002-canonical-expression-semantics.md) (canonical JSON signals are the request payload) and
@@ -129,10 +129,20 @@ form.is_valid()                 # full, exactly like final submit
 # ... then patch ONLY the triggered field's fragment
 ```
 
-This gives exact final-submit semantics, no second validation API, and correct cross-field behavior for free. The
-cost — validators/DB checks on unrelated fields also run — is acceptable for v1 and controllable via `debounce`. An
-opt-in per-field incremental hook is possible later **only if measurement shows a need**; it is deliberately excluded
-now to avoid a second validation surface.
+This gives exact final-submit semantics, no second validation API, and runs cross-field rules for free. The cost —
+validators/DB checks on unrelated fields also run — is acceptable for v1 and controllable via `debounce`. An opt-in
+per-field incremental hook is possible later **only if measurement shows a need**; it is deliberately excluded now to
+avoid a second validation surface.
+
+**Non-field errors are submit-time in v1.** A `Form.clean()` failure can produce a *non-field* error rather than one
+attached to the triggering field. Since the incremental response patches only the triggering field's fragment,
+incremental validation **displays only errors attached to that field**; non-field errors are computed (the full form
+still runs) but **not shown incrementally** — they surface normally on full submit. So "runs cross-field rules" does
+not mean "shows every cross-field error mid-typing." (Patching a shared error-summary target is left to the later
+accessibility ADR.)
+
+> Incremental validation displays errors attached to the triggering field. Non-field errors remain submit-time
+> feedback in v1, even though full form validation runs during the incremental request.
 
 **"Preserve unrelated errors" needs no server state.** Because the SSE response patches only the triggered field's
 wrapper, every other field's DOM (including its current error) is untouched automatically. The server computes the
@@ -211,7 +221,7 @@ explicitly (so "unset" and "current URL" are never the same accident):
 | omitted | inherit `action` |
 | `""` | validate against the **current URL** (intentional) |
 | a URL | validate against that URL |
-| `None` (a field has `validate_on` but no resolvable action) | the field cannot render its handler → a system-check/config error, not a silent no-op |
+| `None` (a field has `validate_on` but no resolvable action) | the field cannot render its handler → a clear **render-time** configuration exception (a Django system check cannot see how a template invokes the tag), never a silent no-op |
 
 ### §5 — Trigger identity: header transport, treated as untrusted
 
@@ -223,11 +233,20 @@ X-RG-Validate-Field: username                    # ordinary form
 X-RG-Validate-Field: rgForms.<scope>.username     # scoped form / formset row
 ```
 
-The server resolves that path against the known form/formset structure. Because it is client-supplied, it must verify
-that the field **exists**, has `validate_on` **enabled**, the **event is permitted**, and the field **belongs to the
-submitted form/formset scope** — and only then act. Never dispatch to `clean_<name>()` or any method from an arbitrary
-client-provided name. The scope is derivable from the path, so no separate scope header is required. The server also
-**cross-checks the header against the `?__rg_field=` URL discriminator (§3)** and rejects a mismatch.
+The server resolves that path against the known form/formset structure and verifies four things — and only then acts:
+
+1. the field **exists**;
+2. the field has incremental validation **enabled** (`validate_on` set);
+3. the field's **scope belongs** to the supplied form/formset (decoding a scope is not authorizing it — §2a);
+4. the header and the `?__rg_field=` URL discriminator (§3) **agree**.
+
+Never dispatch to `clean_<name>()` or any method from an arbitrary client-provided name; the scope is derivable from
+the path, so no separate scope header is required.
+
+**The event is *not* part of authorization.** `validate_on` (`"blur"` vs `"change"`) is **renderer configuration**,
+not a server-enforced rule — the request does not carry which DOM event fired, and there is no security value in
+transmitting one. A client that triggers validation more often than configured neither bypasses validation nor
+mutates state; ordinary rate limiting covers abuse. (Hence no `X-RG-Validate-Event` header.)
 
 ### §6 — Patch-target contract and minimal error accessibility
 
@@ -302,3 +321,10 @@ scope here.
   an empty `id_for_label` still yields a unique wrapper id; forms without `validate_on` are unchanged.
 - Verify against **Datastar 1.0.2**: JSON-signal request contents, `data-indicator` on a nested `_`-prefixed path, and
   the method+URL cancellation behavior that the `?__rg_field=` discriminator relies on.
+- Precise specs to encode as tests:
+  - append `__rg_field` via real **URL parsing**, preserving any existing query string and fragment on `validate_action`;
+  - serialize the URL, CSRF token, and trigger header with proper **JS-string encoding** (no hand-built quoting);
+  - a required **file field** absent from the incremental JSON has its error computed but **ignored** unless it is the
+    triggering field (files validate on submit);
+  - the empty-`id_for_label` **fallback `control_id`** is an opt-in output change that appears only for incrementally
+    validated fields when `auto_id=False` — assert non-incremental output is unchanged.
