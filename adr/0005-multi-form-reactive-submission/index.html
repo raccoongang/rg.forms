@@ -1,0 +1,2263 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Reactive Django Forms with Datastar integration">
+      
+      
+      
+        <link rel="canonical" href="https://raccoongang.github.io/rg.forms/adr/0005-multi-form-reactive-submission/">
+      
+      
+        <link rel="prev" href="../0004-declarative-incremental-server-validation/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ADR-0005 Multi-form reactive submission - rg.forms</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-0005-multi-form-reactive-submission-reactive_forms_response" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="rg.forms" class="md-header__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            rg.forms
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-0005 Multi-form reactive submission
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="rg.forms" class="md-nav__button md-logo" aria-label="rg.forms" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    rg.forms
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/raccoongang/rg.forms" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    raccoongang/rg.forms
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from Formik / RHF
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Comparisons
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/registration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/order-configurator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Order configurator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/team-roster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team roster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/design-system-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design-system rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparisons/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visibility Rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/computed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Computed Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/conditional-attrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conditional Attributes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/cascading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cascading Dropdowns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/field-groups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Groups
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Formsets & Scoped Signals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/sse-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSE Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/multi-form-submission/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-form Submission
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/incremental-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Incremental Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/custom-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/datastar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datastar Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/fields/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fields
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/forms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ReactiveForm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/template-tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Template Tags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0001-design-system-agnostic-field-rendering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001 Design-system-agnostic rendering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0002-canonical-expression-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002 Canonical expression semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0003-scoped-signals-and-reactive-formsets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003 Scoped signals & reactive formsets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0004-declarative-incremental-server-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004 Declarative incremental validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0005 Multi-form reactive submission
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0005 Multi-form reactive submission
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#revision-2-decisions-resolved-after-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revision 2 — decisions resolved after review
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-no-reusable-n-form-submission-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — No reusable N-form submission contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-hand-rolled-multi-form-sse-drifts-from-the-single-form-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — Hand-rolled multi-form SSE drifts from the single-form contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-the-single-form-on_successform-shape-does-not-generalize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — The single-form on_success(form) shape does not generalize
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d1-validate-every-member-non-short-circuit-in-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1 — Validate every member, non-short-circuit, in order
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d1a-an-empty-forms-sequence-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1a — An empty forms sequence raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2-response-branching-mirrors-reactive_form_response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D2 — Response branching mirrors reactive_form_response
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3-on_success-takes-no-argument-the-caller-owns-atomicity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D3 — on_success takes no argument; the caller owns atomicity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d4-the-caller-supplies-the-fragment-context-it-is-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D4 — The caller supplies the fragment context; it is required
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d5-cross-form-validation-is-the-callers-attached-before-the-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D5 — Cross-form validation is the caller's, attached before the call
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d6-extract-_sse_patchhtml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D6 — Extract _sse_patch(html)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d7-public-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D7 — Public export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d8-reactive_form_response-is-unchanged-refactored-to-delegate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D8 — reactive_form_response is unchanged (refactored to delegate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-goals / boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation-plan-acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation plan (acceptance)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#revision-2-decisions-resolved-after-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revision 2 — decisions resolved after review
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Problems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#p1-no-reusable-n-form-submission-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — No reusable N-form submission contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p2-hand-rolled-multi-form-sse-drifts-from-the-single-form-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — Hand-rolled multi-form SSE drifts from the single-form contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p3-the-single-form-on_successform-shape-does-not-generalize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — The single-form on_success(form) shape does not generalize
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d1-validate-every-member-non-short-circuit-in-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1 — Validate every member, non-short-circuit, in order
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d1a-an-empty-forms-sequence-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1a — An empty forms sequence raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2-response-branching-mirrors-reactive_form_response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D2 — Response branching mirrors reactive_form_response
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3-on_success-takes-no-argument-the-caller-owns-atomicity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D3 — on_success takes no argument; the caller owns atomicity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d4-the-caller-supplies-the-fragment-context-it-is-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D4 — The caller supplies the fragment context; it is required
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d5-cross-form-validation-is-the-callers-attached-before-the-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D5 — Cross-form validation is the caller's, attached before the call
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d6-extract-_sse_patchhtml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D6 — Extract _sse_patch(html)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d7-public-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D7 — Public export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d8-reactive_form_response-is-unchanged-refactored-to-delegate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D8 — reactive_form_response is unchanged (refactored to delegate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-goals / boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation-plan-acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation plan (acceptance)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="adr-0005-multi-form-reactive-submission-reactive_forms_response">ADR 0005 — Multi-form reactive submission (<code>reactive_forms_response</code>)<a class="headerlink" href="#adr-0005-multi-form-reactive-submission-reactive_forms_response" title="Permanent link">&para;</a></h1>
+<ul>
+<li>Status: Accepted (2026-08-25) — revised after review (rev. 2); implemented</li>
+<li>Date: 2026-08-25</li>
+<li>Deciders: Oleksii Koval (author of rg.forms)</li>
+<li>Relates to: reuses the SSE machinery of <code>reactive_form_response</code>
+  (<code>src/rg/forms/views.py</code>); composes with
+  <a href="../0003-scoped-signals-and-reactive-formsets/">ADR-0003</a> (scoped signals so a formset renders inside the shared
+  fragment) and <a href="../0004-declarative-incremental-server-validation/">ADR-0004</a> (per-field validation, orthogonal).</li>
+<li>Motivating consumer: KSK-KI staff user create/edit (<code>StaffUserForm</code> + <code>UserProfileForm</code> + <code>WorkExperienceFormSet</code>
+  submitted together).</li>
+</ul>
+<h2 id="revision-2-decisions-resolved-after-review">Revision 2 — decisions resolved after review<a class="headerlink" href="#revision-2-decisions-resolved-after-review" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>The error branch reuses an extracted <code>_sse_patch(html)</code> helper</strong>, not a nonexistent <code>_patch_events</code> (D6). With the
+  D8 delegation implemented, <code>reactive_form_response</code> routes its error path through <code>_sse_patch</code> directly, so the old
+  <code>_sse_patch_form</code> was removed as dead code.</li>
+<li><strong>An empty <code>forms</code> sequence is a programming error and raises <code>ValueError</code></strong> — <code>all([])</code> is <code>True</code>, so silently
+  treating "no forms" as valid would run <code>on_success</code>/redirect without validating anything (D1a).</li>
+<li><strong>Cross-form validation contract is explicit</strong>: the caller attaches aggregate errors to a member <em>before</em> calling the
+  helper; <code>on_success</code> is not a validation hook (D5). A <code>validate_forms</code> callback was considered and rejected to keep
+  the surface minimal.</li>
+<li><strong><code>context</code> is required</strong> (keyword-only, no default) — there is no canonical single-form context to inject (D4).</li>
+<li><strong>Public export is part of the decision</strong>: <code>reactive_forms_response</code> is added to <code>src/rg/forms/__init__.py</code>
+  imports and <code>__all__</code> (D7).</li>
+<li><strong>The <code>on_success</code> return is typed <code>HttpResponseBase | None</code></strong> and its short-circuit/fall-through contract is stated
+  (D3). Because that result is returned as-is, the helper's own return type is <code>HttpResponseBase | None</code> (the concrete
+  results are still <code>HttpResponseRedirect</code> / <code>DatastarResponse</code>).</li>
+</ul>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p><code>reactive_form_response(request, form, fragment_template, *, success_url, on_success, context)</code> <strong>validates and handles
+the response for exactly one caller-bound form</strong> (it does not construct or bind the form — the caller does). On a
+Datastar request it patches the form's fragment on error or SSE-redirects on success; on a native request it redirects
+or returns <code>None</code> so the view renders the full page. It is the reason a single-form page can go reactive with one view
+call.</p>
+<p>Real applications routinely submit <strong>several forms and/or a formset together</strong> on one page, persisted atomically: a
+create/edit screen for an aggregate root and its related rows. The canonical shape — the Django docs' own "using
+multiple forms" pattern — is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span> <span class="n">a_form</span><span class="o">.</span><span class="n">is_valid</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">b_form</span><span class="o">.</span><span class="n">is_valid</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">formset</span><span class="o">.</span><span class="n">is_valid</span><span class="p">():</span>   <span class="c1"># non-short-circuit: collect all errors</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">with</span> <span class="n">transaction</span><span class="o">.</span><span class="n">atomic</span><span class="p">():</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="o">...</span> <span class="n">persist</span> <span class="nb">all</span> <span class="n">three</span> <span class="o">...</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">success_url</span><span class="p">)</span>
+</code></pre></div>
+<p>Such a view <strong>cannot</strong> use the reactive path: <code>reactive_form_response</code> is single-form by signature. A multi-form page
+therefore either stays a full-page reload (the regression the library exists to remove) or hand-rolls its own SSE
+(<code>is_datastar_request</code> + <code>render_to_string</code> + <code>ServerSentEventGenerator</code> + <code>DatastarResponse</code>), re-deriving — per page
+— plumbing the library already encapsulates.</p>
+<p>The aggregate save itself is small; what is missing is a <strong>reusable contract</strong> for it, so its absence reads as "the
+framework can't do multi-form." This ADR fixes the contract at the library level, independently of whether any
+particular multi-form page <em>should</em> be converted (see Non-goals).</p>
+<h2 id="problems">Problems<a class="headerlink" href="#problems" title="Permanent link">&para;</a></h2>
+<h3 id="p1-no-reusable-n-form-submission-contract">P1 — No reusable N-form submission contract<a class="headerlink" href="#p1-no-reusable-n-form-submission-contract" title="Permanent link">&para;</a></h3>
+<p><code>reactive_form_response</code> is single-form by signature. Nothing in rg.forms expresses "validate this ordered set of
+forms/formsets, patch the shared fragment on any error, redirect on all-valid." Every multi-form page re-derives it.</p>
+<h3 id="p2-hand-rolled-multi-form-sse-drifts-from-the-single-form-contract">P2 — Hand-rolled multi-form SSE drifts from the single-form contract<a class="headerlink" href="#p2-hand-rolled-multi-form-sse-drifts-from-the-single-form-contract" title="Permanent link">&para;</a></h3>
+<p>A page that hand-writes the multi-form SSE diverges from <code>reactive_form_response</code>: different native-vs-Datastar
+branching, different redirect encoding, or (a real bug) short-circuit validation that hides later forms' errors.</p>
+<h3 id="p3-the-single-form-on_successform-shape-does-not-generalize">P3 — The single-form <code>on_success(form)</code> shape does not generalize<a class="headerlink" href="#p3-the-single-form-on_successform-shape-does-not-generalize" title="Permanent link">&para;</a></h3>
+<p><code>reactive_form_response</code> passes the validated <code>form</code> to <code>on_success</code>. With N forms there is no single form to pass, and
+the library cannot know how to persist a heterogeneous set atomically (transaction boundaries, write ordering,
+cross-form invariants, audit consolidation). That is irreducibly the caller's domain.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Add a sibling helper, <strong><code>reactive_forms_response</code></strong> (plural), that owns only the request/response plumbing for the
+N-form case and leaves validation-of-aggregates and persistence to the caller.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">reactive_forms_response</span><span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">request</span><span class="p">:</span> <span class="n">HttpRequest</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">forms</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>                                  <span class="c1"># non-empty; members already bound, each with is_valid()</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">fragment_template</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">context</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>                            <span class="c1"># required — no canonical single-form default (D4)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">success_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">on_success</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">HttpResponseBase</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>   <span class="c1"># no form arg (D3)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponseBase</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>                              <span class="c1"># HttpResponseRedirect / DatastarResponse / on_success result</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="o">...</span>
+</code></pre></div>
+<h3 id="d1-validate-every-member-non-short-circuit-in-order">D1 — Validate every member, non-short-circuit, in order<a class="headerlink" href="#d1-validate-every-member-non-short-circuit-in-order" title="Permanent link">&para;</a></h3>
+<p><code>all_valid = all([f.is_valid() for f in forms])</code> — a <strong>list</strong>, not a generator, so every member is validated even when
+an earlier one fails, and in the supplied order. This guarantees the single error patch shows all errors at once.
+Formsets qualify: <code>FormSet.is_valid()</code> is part of the same contract, and their fields render in the shared fragment via
+ADR-0003 scoped signals.</p>
+<h3 id="d1a-an-empty-forms-sequence-raises">D1a — An empty <code>forms</code> sequence raises<a class="headerlink" href="#d1a-an-empty-forms-sequence-raises" title="Permanent link">&para;</a></h3>
+<p><code>all([])</code> is <code>True</code>. Passing <code>[]</code> would run <code>on_success</code>/redirect without validating anything — a silent footgun. The
+helper guards explicitly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">forms</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;forms must contain at least one bound form or formset&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="d2-response-branching-mirrors-reactive_form_response">D2 — Response branching mirrors <code>reactive_form_response</code><a class="headerlink" href="#d2-response-branching-mirrors-reactive_form_response" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>all valid</strong> → call <code>on_success()</code> if given; if it returns non-<code>None</code>, return that; else redirect to <code>success_url</code>
+  (<code>sse_redirect</code> under Datastar, <code>HttpResponseRedirect</code> otherwise). If neither is set, return <code>None</code>.</li>
+<li><strong>any invalid</strong> → Datastar: patch <code>fragment_template</code> (rendered with <code>context</code>); native: return <code>None</code> so the view
+  renders the full page with bound errors.</li>
+</ul>
+<p>This is the <strong>same response branching</strong> as the singular helper; the context handling (D4) and callback signature (D3)
+deliberately differ.</p>
+<h3 id="d3-on_success-takes-no-argument-the-caller-owns-atomicity">D3 — <code>on_success</code> takes no argument; the caller owns atomicity<a class="headerlink" href="#d3-on_success-takes-no-argument-the-caller-owns-atomicity" title="Permanent link">&para;</a></h3>
+<p><code>on_success()</code> receives nothing and closes over the forms it already holds. The caller runs its own
+<code>transaction.atomic()</code> (and any service/audit logic) inside it. Return contract: <strong>returning a Django response
+(<code>HttpResponseBase</code>) short-circuits</strong> normal redirect handling and is returned as-is; <strong>returning <code>None</code> falls
+through</strong> to the <code>success_url</code> redirect. Rationale: the helper must not own persistence — multi-model atomic writes,
+write ordering, and audit consolidation are application concerns. This is the load-bearing boundary of the ADR: the
+helper is submission <em>plumbing</em>, never a save engine.</p>
+<h3 id="d4-the-caller-supplies-the-fragment-context-it-is-required">D4 — The caller supplies the fragment context; it is required<a class="headerlink" href="#d4-the-caller-supplies-the-fragment-context-it-is-required" title="Permanent link">&para;</a></h3>
+<p>The singular helper injects <code>{"form": form}</code> before rendering. With N forms there is no canonical name, so
+<code>reactive_forms_response</code> renders the fragment with the <strong>caller's <code>context</code></strong> (e.g.
+<code>{"user_form": ..., "profile_form": ..., "formset": ...}</code>, matching the template). Because a wrong/empty context would
+render a broken fragment on the error path, <code>context</code> is <strong>keyword-only and required</strong> (no default).</p>
+<h3 id="d5-cross-form-validation-is-the-callers-attached-before-the-call">D5 — Cross-form validation is the caller's, attached <em>before</em> the call<a class="headerlink" href="#d5-cross-form-validation-is-the-callers-attached-before-the-call" title="Permanent link">&para;</a></h3>
+<p>Aggregate invariants that can only be checked by comparing multiple valid forms (e.g. "end date ≥ start date across
+two forms") are the caller's responsibility, and must be attached <strong>before</strong> <code>reactive_forms_response</code> runs its success
+branch — <strong>not</strong> inside <code>on_success</code> (which runs only when all members are individually valid, and whose added errors
+would arrive after the redirect decision). The idiom relies on Django caching validation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">forms</span> <span class="o">=</span> <span class="p">[</span><span class="n">user_form</span><span class="p">,</span> <span class="n">profile_form</span><span class="p">,</span> <span class="n">formset</span><span class="p">]</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">f</span><span class="o">.</span><span class="n">is_valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">forms</span><span class="p">]):</span>          <span class="c1"># populate cleaned_data + cache errors</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">if</span> <span class="n">profile_form</span><span class="o">.</span><span class="n">cleaned_data</span><span class="p">[</span><span class="s2">&quot;birth_date&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">some_other</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="n">profile_form</span><span class="o">.</span><span class="n">add_error</span><span class="p">(</span><span class="s2">&quot;birth_date&quot;</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s2">&quot;…&quot;</span><span class="p">))</span>   <span class="c1"># form is now bound-and-invalid</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># The helper re-checks is_valid() — cached, so no second full_clean; the attached error routes to the patch.</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">response</span> <span class="o">=</span> <span class="n">reactive_forms_response</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">forms</span><span class="p">,</span> <span class="s2">&quot;…/_form.html&quot;</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p><code>add_error</code> keeps a form bound-and-invalid and Django caches <code>full_clean</code>, so the helper's <code>all([...])</code> reflects the
+attached errors without re-running validation. A dedicated <code>validate_forms</code> callback was considered but rejected: it
+adds surface for something the caller can already express, and Option 1 keeps the helper minimal.</p>
+<h3 id="d6-extract-_sse_patchhtml">D6 — Extract <code>_sse_patch(html)</code><a class="headerlink" href="#d6-extract-_sse_patchhtml" title="Permanent link">&para;</a></h3>
+<p><code>_sse_patch_form</code> currently inlines the patch-events generator. Extract the generic part:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_sse_patch</span><span class="p">(</span><span class="n">html</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatastarResponse</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">events</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">DatastarEvent</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="k">yield</span> <span class="n">ServerSentEventGenerator</span><span class="o">.</span><span class="n">patch_elements</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="k">return</span> <span class="n">DatastarResponse</span><span class="p">(</span><span class="n">events</span><span class="p">())</span>
+</code></pre></div>
+<p><code>reactive_forms_response</code> uses <code>_sse_patch</code> directly. (This is the helper the previous draft mistakenly called
+<code>_patch_events</code>.) In the shipped implementation, since <code>reactive_form_response</code> also delegates through
+<code>reactive_forms_response</code> (D8), the intermediate <code>_sse_patch_form</code> is no longer referenced and was removed — both
+helpers share <code>_sse_patch</code>.</p>
+<h3 id="d7-public-export">D7 — Public export<a class="headerlink" href="#d7-public-export" title="Permanent link">&para;</a></h3>
+<p><code>reactive_forms_response</code> is imported in <code>src/rg/forms/__init__.py</code> and added to <code>__all__</code>, alongside
+<code>reactive_form_response</code>. It must be importable as <code>from rg.forms import reactive_forms_response</code>, not only from
+<code>rg.forms.views</code>.</p>
+<h3 id="d8-reactive_form_response-is-unchanged-refactored-to-delegate">D8 — <code>reactive_form_response</code> is unchanged (refactored to delegate)<a class="headerlink" href="#d8-reactive_form_response-is-unchanged-refactored-to-delegate" title="Permanent link">&para;</a></h3>
+<p>Purely additive. <code>reactive_form_response</code> keeps its signature and <code>on_success(form)</code> shape. <strong>As implemented, it
+delegates</strong> to the plural form with a context shim that injects <code>{"form": form}</code> and an <code>on_success</code> adapter
+(<code>lambda: on_success(form)</code>) — an internal cleanup, not a contract change. Because the delegation routes the single-form
+error path through <code>_sse_patch</code> directly, the previous <code>_sse_patch_form</code> helper became dead code and was removed; the
+generic <code>_sse_patch(html)</code> extraction of D6 is what both helpers now share.</p>
+<h2 id="input-contract">Input contract<a class="headerlink" href="#input-contract" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Every member of <code>forms</code> is <strong>already bound</strong> (constructed with <code>request.POST</code>/<code>request.FILES</code> by the caller). The
+  helper never inspects <code>request.POST</code>/<code>request.FILES</code> itself.</li>
+<li>The sequence is <strong>non-empty</strong> (D1a).</li>
+<li>Each member exposes <code>is_valid()</code> (Django <code>Form</code>/<code>ModelForm</code>/<code>BaseFormSet</code> all do). Typed <code>Sequence[Any]</code> for now; a
+  small <code>SupportsIsValid</code> protocol is a reasonable later refinement.</li>
+<li><strong>Order matters</strong> for validation order (D1), even though all members are always validated.</li>
+<li><code>context</code> is the exact template context for the error fragment (D4).</li>
+</ul>
+<h2 id="reference-implementation">Reference implementation<a class="headerlink" href="#reference-implementation" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">reactive_forms_response</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">forms</span><span class="p">,</span> <span class="n">fragment_template</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">success_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_success</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">forms</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;forms must contain at least one bound form or formset&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">datastar</span> <span class="o">=</span> <span class="n">is_datastar_request</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">all_valid</span> <span class="o">=</span> <span class="nb">all</span><span class="p">([</span><span class="n">f</span><span class="o">.</span><span class="n">is_valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">forms</span><span class="p">])</span>          <span class="c1"># list → validate every member, in order</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="k">if</span> <span class="n">all_valid</span><span class="p">:</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="k">if</span> <span class="n">on_success</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>            <span class="n">result</span> <span class="o">=</span> <span class="n">on_success</span><span class="p">()</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>            <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>                <span class="k">return</span> <span class="n">result</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>        <span class="k">if</span> <span class="n">success_url</span><span class="p">:</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>            <span class="k">return</span> <span class="n">sse_redirect</span><span class="p">(</span><span class="n">success_url</span><span class="p">)</span> <span class="k">if</span> <span class="n">datastar</span> <span class="k">else</span> <span class="n">HttpResponseRedirect</span><span class="p">(</span><span class="n">success_url</span><span class="p">)</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>        <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>    <span class="k">if</span> <span class="n">datastar</span><span class="p">:</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="k">return</span> <span class="n">_sse_patch</span><span class="p">(</span><span class="n">render_to_string</span><span class="p">(</span><span class="n">fragment_template</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">context</span><span class="p">),</span> <span class="n">request</span><span class="p">))</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+<p>(<code>is_datastar_request</code>, <code>sse_redirect</code>, <code>render_to_string</code>, <code>HttpResponseRedirect</code>, and — after D6 — <code>_sse_patch</code>
+already exist in <code>views.py</code>.)</p>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">user_create</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;POST&quot;</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>        <span class="n">user_form</span> <span class="o">=</span> <span class="n">StaffUserForm</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="n">profile_form</span> <span class="o">=</span> <span class="n">UserProfileForm</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="n">formset</span> <span class="o">=</span> <span class="n">WorkExperienceFormSet</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">)</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">_on_success</span><span class="p">():</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>            <span class="k">with</span> <span class="n">transaction</span><span class="o">.</span><span class="n">atomic</span><span class="p">():</span>          <span class="c1"># caller owns atomicity + audit</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>                <span class="n">create_staff_user</span><span class="p">(</span><span class="n">user_form</span><span class="p">,</span> <span class="n">profile_form</span><span class="p">,</span> <span class="n">formset</span><span class="p">,</span> <span class="n">actor</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>            <span class="n">messages</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s2">&quot;User created.&quot;</span><span class="p">))</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>            <span class="k">return</span> <span class="kc">None</span>                          <span class="c1"># fall through to the redirect</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>        <span class="n">response</span> <span class="o">=</span> <span class="n">reactive_forms_response</span><span class="p">(</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>            <span class="n">request</span><span class="p">,</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>            <span class="p">[</span><span class="n">user_form</span><span class="p">,</span> <span class="n">profile_form</span><span class="p">,</span> <span class="n">formset</span><span class="p">],</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>            <span class="s2">&quot;management/users/_user_form.html&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>            <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;form&quot;</span><span class="p">:</span> <span class="n">user_form</span><span class="p">,</span> <span class="s2">&quot;profile_form&quot;</span><span class="p">:</span> <span class="n">profile_form</span><span class="p">,</span> <span class="s2">&quot;formset&quot;</span><span class="p">:</span> <span class="n">formset</span><span class="p">},</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>            <span class="n">success_url</span><span class="o">=</span><span class="n">reverse</span><span class="p">(</span><span class="s2">&quot;user_list&quot;</span><span class="p">),</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>            <span class="n">on_success</span><span class="o">=</span><span class="n">_on_success</span><span class="p">,</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>        <span class="p">)</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>        <span class="k">if</span> <span class="n">response</span><span class="p">:</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>            <span class="k">return</span> <span class="n">response</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>        <span class="n">user_form</span><span class="p">,</span> <span class="n">profile_form</span><span class="p">,</span> <span class="n">formset</span> <span class="o">=</span> <span class="n">StaffUserForm</span><span class="p">(),</span> <span class="n">UserProfileForm</span><span class="p">(),</span> <span class="n">WorkExperienceFormSet</span><span class="p">()</span>
+<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>    <span class="k">return</span> <span class="n">render</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">&quot;management/users/user_form.html&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+</code></pre></div>
+<h2 id="non-goals-boundaries">Non-goals / boundaries<a class="headerlink" href="#non-goals-boundaries" title="Permanent link">&para;</a></h2>
+<p>This helper makes multi-form <em>submission plumbing</em> reusable. It explicitly does <strong>not</strong>:</p>
+<ul>
+<li><strong>Own persistence, transactions, or audit.</strong> D3 — the caller's <code>on_success()</code> runs the atomic write.</li>
+<li><strong>Perform cross-form validation.</strong> D5 — the caller attaches aggregate errors before the call.</li>
+<li><strong>Make every multi-form page convertible.</strong> A page may still be correctly left bespoke for reasons this helper does
+  not touch — e.g. a <em>deliberately consolidated single audit event</em> per aggregate write, or an <em>inherently atomic
+  creation</em> with no valid partial state. (The KSK-KI user form is exactly this: the helper removes the library-level
+  objection, but the form stays combined for audit-atomicity reasons — the ADR removes a perceived blocker, not that
+  team's design judgment.)</li>
+<li><strong>Solve error-path widget re-initialization.</strong> Keeping JS-enhanced widgets (rich selects, date pickers, dynamic
+  formsets) working across the error morph is the consumer's frontend concern — best solved by self-managing web
+  components, not this helper.</li>
+<li><strong>Decompose a form into independently-saved sections</strong>, or add per-field incremental validation across forms
+  (ADR-0004 territory; composes but is separate).</li>
+</ul>
+<h2 id="backward-compatibility">Backward compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">&para;</a></h2>
+<p>Additive only. No existing signature changes; <code>reactive_form_response</code> and all current consumers behave unchanged. The
+D6 extraction of <code>_sse_patch</code> and D8 delegation are internal refactors with no observable contract change.</p>
+<h2 id="validation-plan-acceptance">Validation plan (acceptance)<a class="headerlink" href="#validation-plan-acceptance" title="Permanent link">&para;</a></h2>
+<p>Not a compatibility claim, but the intended sign-off: after implementation, run the library's own suite plus at least
+one downstream consumer's full suite (e.g. KSK-KI) with <strong>zero consumer edits required</strong> for the additive change, then
+convert one real multi-form page (a non-outlier one) as an end-to-end check.</p>
+<h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Empty <code>forms</code> → <code>ValueError</code> (D1a).</li>
+<li>All-valid (Datastar) → SSE redirect to <code>success_url</code>; <code>on_success()</code> ran exactly once.</li>
+<li>Any-invalid (Datastar) → SSE <code>patch-elements</code> of the fragment; body carries <strong>every</strong> member's errors
+  (non-short-circuit); <code>on_success()</code> not called; nothing persisted.</li>
+<li>Every member's <code>is_valid()</code> runs even when the first member is invalid; validation happens in supplied order.</li>
+<li>Caller-attached cross-form error (D5) renders in the patched fragment and prevents success.</li>
+<li>The supplied <code>context</code> is passed through unchanged and contains all expected objects.</li>
+<li>All-valid / any-invalid (native, no Datastar header) → <code>HttpResponseRedirect</code> / <code>None</code> (full-page fallback intact).</li>
+<li><code>on_success()</code> returning a Django response short-circuits (both a native and a Datastar-context return); returning
+  <code>None</code> falls through to <code>success_url</code>.</li>
+<li>All-valid call with neither <code>on_success</code> nor <code>success_url</code> returns <code>None</code>.</li>
+<li>A formset among <code>forms</code> is validated and its errors surface in the same patch (ADR-0003 scoped signals).</li>
+<li>Importable as <code>from rg.forms import reactive_forms_response</code> (D7), not only from <code>rg.forms.views</code>.</li>
+<li><code>reactive_form_response</code> behavior remains unchanged after the D6/D8 refactor.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.annotate", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -848,6 +848,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../guide/multi-form-submission/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-form Submission
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../guide/incremental-validation/" class="md-nav__link">
         
   
@@ -1378,6 +1406,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0005-multi-form-reactive-submission/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0005 Multi-form reactive submission
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1495,7 +1551,7 @@
 <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
 <p>The <code>examples/</code> directory is a runnable Django project demonstrating the
 capabilities delivered by <a href="../adr/0001-design-system-agnostic-field-rendering/">ADR-0001</a>
-through <a href="../adr/0004-declarative-incremental-server-validation/">ADR-0004</a>. Every
+through <a href="../adr/0005-multi-form-reactive-submission/">ADR-0005</a>. Every
 example is a real, interactive form — not documentation pseudocode — with all
 validation and business rules <strong>server-authoritative</strong>.</p>
 <h2 id="running-the-example-project">Running the example project<a class="headerlink" href="#running-the-example-project" title="Permanent link">&para;</a></h2>
@@ -1677,6 +1733,16 @@ side-by-side <a href="../comparison/">comparison</a>, and the limitations it exp
 <td>client fetch/cache/option-state</td>
 <td style="text-align: center;">✅ (architectural, <a href="../comparisons/cascading/">page</a>)</td>
 <td>large client-side-filtered lists</td>
+</tr>
+<tr>
+<td>16</td>
+<td><strong>Multi-form submission</strong></td>
+<td>Two forms + a formset submitted together</td>
+<td>0003, 0005</td>
+<td><code>reactive_forms_response()</code>, non-short-circuit validation, one shared fragment patch, caller-owned atomic save + cross-form rule, merged scoped seeds</td>
+<td>one submit over multiple <code>useForm</code> instances</td>
+<td style="text-align: center;">—</td>
+<td>caller owns persistence &amp; cross-form validation</td>
 </tr>
 </tbody>
 </table>
