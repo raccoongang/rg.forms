@@ -3,17 +3,14 @@
 import json
 from datetime import date, datetime, time
 from decimal import Decimal
-from uuid import UUID
-
-import pytest
 
 from rg.forms import (
-    ReactiveForm,
     ReactiveCharField,
     ReactiveChoiceField,
     ReactiveDateField,
     ReactiveDateTimeField,
     ReactiveDecimalField,
+    ReactiveForm,
     ReactiveTimeField,
 )
 
@@ -119,12 +116,14 @@ class TestSignalsJsonSerialization:
             created_at = ReactiveDateTimeField(required=False)
             price = ReactiveDecimalField(decimal_places=2, required=False)
 
-        form = FullForm(initial={
-            "name": "Alice",
-            "birth_date": date(1990, 1, 15),
-            "created_at": datetime(2025, 3, 11, 10, 0),
-            "price": Decimal("42.50"),
-        })
+        form = FullForm(
+            initial={
+                "name": "Alice",
+                "birth_date": date(1990, 1, 15),
+                "created_at": datetime(2025, 3, 11, 10, 0),
+                "price": Decimal("42.50"),
+            }
+        )
         data = json.loads(form.get_signals_json())
         assert data["name"] == "Alice"
         assert data["birth_date"] == "1990-01-15"
@@ -440,12 +439,10 @@ class TestBackendValidation:
 
     def test_hidden_field_skipped(self):
         """Hidden field (visible_when=false) is skipped in validation."""
-        from rg.forms import ReactiveForm, ReactiveCharField, ReactiveChoiceField
+        from rg.forms import ReactiveCharField, ReactiveChoiceField, ReactiveForm
 
         class TestForm(ReactiveForm):
-            order_type = ReactiveChoiceField(
-                choices=[("standard", "Standard"), ("urgent", "Urgent")]
-            )
+            order_type = ReactiveChoiceField(choices=[("standard", "Standard"), ("urgent", "Urgent")])
             priority = ReactiveCharField(
                 visible_when="$order_type == 'urgent'",
                 required=True,  # Would fail if validated
@@ -458,12 +455,10 @@ class TestBackendValidation:
 
     def test_visible_field_validated(self):
         """Visible field (visible_when=true) is validated normally."""
-        from rg.forms import ReactiveForm, ReactiveCharField, ReactiveChoiceField
+        from rg.forms import ReactiveCharField, ReactiveChoiceField, ReactiveForm
 
         class TestForm(ReactiveForm):
-            order_type = ReactiveChoiceField(
-                choices=[("standard", "Standard"), ("urgent", "Urgent")]
-            )
+            order_type = ReactiveChoiceField(choices=[("standard", "Standard"), ("urgent", "Urgent")])
             priority = ReactiveCharField(
                 visible_when="$order_type == 'urgent'",
                 required=True,
@@ -476,12 +471,10 @@ class TestBackendValidation:
 
     def test_required_when_enforced(self):
         """required_when is enforced on backend."""
-        from rg.forms import ReactiveForm, ReactiveCharField, ReactiveChoiceField
+        from rg.forms import ReactiveCharField, ReactiveChoiceField, ReactiveForm
 
         class TestForm(ReactiveForm):
-            contact_method = ReactiveChoiceField(
-                choices=[("email", "Email"), ("phone", "Phone")]
-            )
+            contact_method = ReactiveChoiceField(choices=[("email", "Email"), ("phone", "Phone")])
             email = ReactiveCharField(
                 required=False,
                 required_when="$contact_method == 'email'",
@@ -494,12 +487,10 @@ class TestBackendValidation:
 
     def test_required_when_not_triggered(self):
         """required_when not triggered when condition is false."""
-        from rg.forms import ReactiveForm, ReactiveCharField, ReactiveChoiceField
+        from rg.forms import ReactiveCharField, ReactiveChoiceField, ReactiveForm
 
         class TestForm(ReactiveForm):
-            contact_method = ReactiveChoiceField(
-                choices=[("email", "Email"), ("phone", "Phone")]
-            )
+            contact_method = ReactiveChoiceField(choices=[("email", "Email"), ("phone", "Phone")])
             email = ReactiveCharField(
                 required=False,
                 required_when="$contact_method == 'email'",
@@ -511,7 +502,7 @@ class TestBackendValidation:
 
     def test_computed_field_recalculated(self):
         """Computed field value is recalculated on backend."""
-        from rg.forms import ReactiveForm, ReactiveIntegerField, ReactiveDecimalField
+        from rg.forms import ReactiveDecimalField, ReactiveForm, ReactiveIntegerField
 
         class TestForm(ReactiveForm):
             quantity = ReactiveIntegerField()
@@ -522,24 +513,25 @@ class TestBackendValidation:
             )
 
         # User submits with wrong total - backend recalculates
-        form = TestForm(data={
-            "quantity": "5",
-            "price": "10.00",
-            "total": "999.99",  # Wrong value
-        })
+        form = TestForm(
+            data={
+                "quantity": "5",
+                "price": "10.00",
+                "total": "999.99",  # Wrong value
+            }
+        )
         assert form.is_valid()
         # Backend recalculates to correct value
         from decimal import Decimal
+
         assert form.cleaned_data["total"] == Decimal("50.00")
 
     def test_is_field_visible_method(self):
         """is_field_visible returns correct result."""
-        from rg.forms import ReactiveForm, ReactiveCharField, ReactiveChoiceField
+        from rg.forms import ReactiveCharField, ReactiveChoiceField, ReactiveForm
 
         class TestForm(ReactiveForm):
-            order_type = ReactiveChoiceField(
-                choices=[("standard", "Standard"), ("urgent", "Urgent")]
-            )
+            order_type = ReactiveChoiceField(choices=[("standard", "Standard"), ("urgent", "Urgent")])
             priority = ReactiveCharField(
                 visible_when="$order_type == 'urgent'",
                 required=False,
@@ -553,12 +545,10 @@ class TestBackendValidation:
 
     def test_is_field_required_method(self):
         """is_field_required returns correct result."""
-        from rg.forms import ReactiveForm, ReactiveCharField, ReactiveChoiceField
+        from rg.forms import ReactiveCharField, ReactiveChoiceField, ReactiveForm
 
         class TestForm(ReactiveForm):
-            contact_method = ReactiveChoiceField(
-                choices=[("email", "Email"), ("phone", "Phone")]
-            )
+            contact_method = ReactiveChoiceField(choices=[("email", "Email"), ("phone", "Phone")])
             email = ReactiveCharField(
                 required=False,
                 required_when="$contact_method == 'email'",

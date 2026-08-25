@@ -18,8 +18,11 @@ from .. import services
 class ProfileCardForm(ReactiveForm):
     display_name = ReactiveCharField(label="Display name", placeholder="Ada Lovelace", autocomplete="name")
     email = ReactiveEmailField(
-        label="Email", placeholder="ada@example.com", autocomplete="email",
-        validate_on="blur", help_text="Availability is checked server-side.",
+        label="Email",
+        placeholder="ada@example.com",
+        autocomplete="email",
+        validate_on="blur",
+        help_text="Availability is checked server-side.",
     )
     visibility = ReactiveChoiceField(
         label="Profile visibility",

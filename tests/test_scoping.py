@@ -46,9 +46,7 @@ class TestCompileScoping:
 
     def test_unknown_or_external_reference_left_alone(self):
         scope = encode_scope("form-0")
-        out = compile_expression(
-            "$feature_enabled", scope=scope, field_names=self.FIELDS
-        )
+        out = compile_expression("$feature_enabled", scope=scope, field_names=self.FIELDS)
         assert out == "$feature_enabled"  # not a declared field -> unscoped
 
     def test_string_literal_not_rewritten(self):
@@ -61,9 +59,7 @@ class TestCompileScoping:
     def test_near_match_not_rewritten(self):
         """A different field ($role_id) is not a partial-match of $role."""
         scope = encode_scope("form-0")
-        out = compile_expression(
-            "$role_id == 'x'", scope=scope, field_names={"role"}
-        )
+        out = compile_expression("$role_id == 'x'", scope=scope, field_names={"role"})
         # role_id is not declared -> left unscoped; role is untouched.
         assert "$role_id" in out
         assert f"$rgForms.{scope}.role" not in out
@@ -105,10 +101,7 @@ class TestPerRowIndependence:
     def test_formset_seed_is_nested_per_row(self):
         formset_cls = formset_factory(RowForm, extra=2)
         formset = formset_cls()
-        template = Template(
-            "{% load reactive_forms %}"
-            "<form data-signals='{% reactive_formset_signals formset %}'>"
-        )
+        template = Template("{% load reactive_forms %}<form data-signals='{% reactive_formset_signals formset %}'>")
         result = template.render(Context({"formset": formset}))
 
         scope0 = encode_scope("form-0")
@@ -120,9 +113,7 @@ class TestPerRowIndependence:
 
 
 class GroupForm(ReactiveForm):
-    account_type = ReactiveChoiceField(
-        choices=[("personal", "Personal"), ("business", "Business")]
-    )
+    account_type = ReactiveChoiceField(choices=[("personal", "Personal"), ("business", "Business")])
     company = ReactiveCharField(required=False)
 
     class Meta:
@@ -140,9 +131,7 @@ class TestGroupScoping:
         form = GroupForm(prefix="form-0")
         ctx = render_field_group({}, form, "co")
         scope = encode_scope("form-0")
-        assert ctx["group_visible_when"] == (
-            f'($rgForms.{scope}.account_type === "business")'
-        )
+        assert ctx["group_visible_when"] == (f'($rgForms.{scope}.account_type === "business")')
 
     def test_group_visible_when_unscoped_without_prefix(self):
         form = GroupForm()

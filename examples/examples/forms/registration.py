@@ -29,8 +29,7 @@ class RegistrationForm(ReactiveForm):
         max_length=30,
         placeholder="pick a username",
         validate_on="blur",
-        help_text="Checked for availability when you leave the field. "
-        "Try 'admin' or 'alice'.",
+        help_text="Checked for availability when you leave the field. Try 'admin' or 'alice'.",
     )
     email = ReactiveEmailField(
         label="Email",

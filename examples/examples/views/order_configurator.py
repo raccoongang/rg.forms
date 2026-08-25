@@ -17,7 +17,7 @@ def order_configurator(request: HttpRequest) -> HttpResponse:
                 "plan": form.cleaned_data.get("plan"),
                 "seats": form.cleaned_data.get("seats"),
                 "unit_price": form.cleaned_data.get("unit_price"),
-                "total": form.cleaned_data.get("total"),          # authoritative Decimal
+                "total": form.cleaned_data.get("total"),  # authoritative Decimal
                 "discounted": form.discounted_total(),
             }
     else:

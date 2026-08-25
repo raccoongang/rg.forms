@@ -33,12 +33,8 @@ class WidgetGalleryForm(ReactiveForm):
     day = ReactiveDateField(label="Date (first-class)", required=False)
 
     # --- native fallback widgets (rendered by Django, no reactive attrs) ---
-    radio = ReactiveChoiceField(
-        label="Radio (fallback)", required=False, choices=_COLORS, widget=forms.RadioSelect
-    )
+    radio = ReactiveChoiceField(label="Radio (fallback)", required=False, choices=_COLORS, widget=forms.RadioSelect)
     checkboxes = ReactiveMultipleChoiceField(
         label="Checkbox group (fallback)", required=False, choices=_COLORS, widget=forms.CheckboxSelectMultiple
     )
-    attachment = ReactiveCharField(
-        label="File (fallback)", required=False, widget=forms.FileInput
-    )
+    attachment = ReactiveCharField(label="File (fallback)", required=False, widget=forms.FileInput)

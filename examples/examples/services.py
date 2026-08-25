@@ -110,8 +110,7 @@ def get_plan(code: str) -> dict | None:
 
 
 # --- Geography (country -> region -> city cascading) ------------------------
-COUNTRIES = [{"id": "us", "name": "United States"}, {"id": "de", "name": "Germany"},
-             {"id": "ua", "name": "Ukraine"}]
+COUNTRIES = [{"id": "us", "name": "United States"}, {"id": "de", "name": "Germany"}, {"id": "ua", "name": "Ukraine"}]
 REGIONS = [
     {"id": "us-ca", "country": "us", "name": "California"},
     {"id": "us-ny", "country": "us", "name": "New York"},

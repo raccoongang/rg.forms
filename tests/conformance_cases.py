@@ -63,8 +63,7 @@ CASES: list[tuple[str, dict, object]] = [
     ("$a + 1", {"a": "Infinity"}, NULL),
     ("$a + 1", {"a": "-Infinity"}, NULL),
     ("$a * $b", {"a": "1e308", "b": "1e10"}, NULL),  # overflow -> null both sides
-    ("$a == 5", {"a": "NaN"}, False),               # equality: string vs number
-
+    ("$a == 5", {"a": "NaN"}, False),  # equality: string vs number
     # Decimal-string preview coercion still works for finite values.
     ("$p * 2", {"p": "1.5"}, 3.0),
     # A boolean-valued subexpression in arithmetic is null on both sides (this

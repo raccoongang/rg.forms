@@ -23,7 +23,9 @@ from .. import services
 
 class SSEValidationForm(ReactiveForm):
     username = ReactiveCharField(
-        label="Username", max_length=30, min_length=3,
+        label="Username",
+        max_length=30,
+        min_length=3,
         help_text="Letters, numbers, underscores. Try 'admin' or 'test'.",
     )
     email = ReactiveEmailField(label="Email", help_text="Business accounts require a company email.")
@@ -31,12 +33,16 @@ class SSEValidationForm(ReactiveForm):
         label="Account Type", choices=[("personal", "Personal"), ("business", "Business")]
     )
     company_name = ReactiveCharField(
-        label="Company Name", required=False,
-        visible_when="$account_type == 'business'", required_when="$account_type == 'business'",
+        label="Company Name",
+        required=False,
+        visible_when="$account_type == 'business'",
+        required_when="$account_type == 'business'",
     )
     vat_number = ReactiveCharField(
-        label="VAT Number", required=False,
-        visible_when="$account_type == 'business'", required_when="$account_type == 'business'",
+        label="VAT Number",
+        required=False,
+        visible_when="$account_type == 'business'",
+        required_when="$account_type == 'business'",
         help_text="EU VAT number, e.g. DE123456789",
     )
     coupon_code = ReactiveCharField(label="Coupon Code", required=False, help_text="Try WELCOME10 or SAVE20.")

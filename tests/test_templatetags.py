@@ -22,9 +22,7 @@ from rg.forms.templatetags.reactive_forms import render_reactive_field
 class VisibilityForm(ReactiveForm):
     """Test form with visibility rules."""
 
-    order_type = ReactiveChoiceField(
-        choices=[("standard", "Standard"), ("urgent", "Urgent")]
-    )
+    order_type = ReactiveChoiceField(choices=[("standard", "Standard"), ("urgent", "Urgent")])
     priority = ReactiveCharField(
         visible_when="$order_type == 'urgent'",
         required=False,
@@ -58,9 +56,7 @@ class TestReactiveWrapperAttrs:
     def test_visible_when_generates_data_show(self):
         """visible_when should generate data-show attribute."""
         form = VisibilityForm()
-        template = Template(
-            "{% load reactive_forms %}{% reactive_wrapper_attrs form.priority %}"
-        )
+        template = Template("{% load reactive_forms %}{% reactive_wrapper_attrs form.priority %}")
         context = Context({"form": form})
         result = template.render(context)
 
@@ -71,9 +67,7 @@ class TestReactiveWrapperAttrs:
     def test_no_visible_when_returns_empty(self):
         """Field without visible_when should return empty string."""
         form = VisibilityForm()
-        template = Template(
-            "{% load reactive_forms %}{% reactive_wrapper_attrs form.order_type %}"
-        )
+        template = Template("{% load reactive_forms %}{% reactive_wrapper_attrs form.order_type %}")
         context = Context({"form": form})
         result = template.render(context)
 
@@ -86,9 +80,7 @@ class TestReactiveInputAttrs:
     def test_generates_data_bind(self):
         """Should generate data-bind for field signal (key-based syntax, no $ prefix)."""
         form = VisibilityForm()
-        template = Template(
-            "{% load reactive_forms %}{% reactive_input_attrs form.order_type %}"
-        )
+        template = Template("{% load reactive_forms %}{% reactive_input_attrs form.order_type %}")
         context = Context({"form": form})
         result = template.render(context)
 
@@ -98,9 +90,7 @@ class TestReactiveInputAttrs:
     def test_computed_generates_data_computed(self):
         """Computed field should generate data-computed and readonly."""
         form = ComputedForm()
-        template = Template(
-            "{% load reactive_forms %}{% reactive_input_attrs form.total %}"
-        )
+        template = Template("{% load reactive_forms %}{% reactive_input_attrs form.total %}")
         context = Context({"form": form})
         result = template.render(context)
 
@@ -118,9 +108,7 @@ class TestReactiveSignals:
         """Should generate JSON signals from form."""
         form = VisibilityForm(initial={"order_type": "urgent"})
         # Use single quotes for attribute since JSON uses double quotes
-        template = Template(
-            "{% load reactive_forms %}<form data-signals='{% reactive_signals form %}'>"
-        )
+        template = Template("{% load reactive_forms %}<form data-signals='{% reactive_signals form %}'>")
         context = Context({"form": form})
         result = template.render(context)
 
@@ -132,9 +120,7 @@ class TestSignalNameFilter:
 
     def test_converts_to_signal_reference(self):
         """Should convert field name to $-prefixed signal."""
-        template = Template(
-            '{% load reactive_forms %}{{ "my_field"|signal_name }}'
-        )
+        template = Template('{% load reactive_forms %}{{ "my_field"|signal_name }}')
         context = Context({})
         result = template.render(context)
 
@@ -147,9 +133,7 @@ class TestRequiredIndicator:
     def test_required_when_generates_data_show(self):
         """required_when should generate indicator with data-show."""
         form = RequiredWhenForm()
-        template = Template(
-            "{% load reactive_forms %}{% required_indicator form.email %}"
-        )
+        template = Template("{% load reactive_forms %}{% required_indicator form.email %}")
         context = Context({"form": form})
         result = template.render(context)
 
@@ -161,9 +145,7 @@ class TestRequiredIndicator:
     def test_static_required_no_data_show(self):
         """Static required should generate indicator without data-show."""
         form = RequiredWhenForm()
-        template = Template(
-            "{% load reactive_forms %}{% required_indicator form.contact_method %}"
-        )
+        template = Template("{% load reactive_forms %}{% required_indicator form.contact_method %}")
         context = Context({"form": form})
         result = template.render(context)
 
@@ -177,9 +159,7 @@ class TestRequiredIndicator:
             optional = ReactiveCharField(required=False)
 
         form = OptionalForm()
-        template = Template(
-            "{% load reactive_forms %}{% required_indicator form.optional %}"
-        )
+        template = Template("{% load reactive_forms %}{% required_indicator form.optional %}")
         context = Context({"form": form})
         result = template.render(context)
 
@@ -235,9 +215,7 @@ class TestInputType:
 
     def test_datetime_local_renders_in_template(self):
         form = InputTypeForm()
-        template = Template(
-            "{% load reactive_forms %}{% render_reactive_field form.starts_at %}"
-        )
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.starts_at %}")
         result = template.render(Context({"form": form}))
         assert 'type="datetime-local"' in result
 
@@ -259,9 +237,7 @@ class TestWidgetAttrs:
 
     def test_widget_attrs_render_in_template(self):
         form = PresentationalForm()
-        template = Template(
-            "{% load reactive_forms %}{% render_reactive_field form.plain %}"
-        )
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.plain %}")
         result = template.render(Context({"form": form}))
         assert 'placeholder="Type here"' in result
         assert 'autocomplete="name"' in result
@@ -287,8 +263,7 @@ class TestFormsetNaming:
         role_formset_cls = formset_factory(RoleForm, extra=2)
         formset = role_formset_cls()
         template = Template(
-            "{% load reactive_forms %}"
-            "{% for f in formset.forms %}{% render_reactive_field f.role %}{% endfor %}"
+            "{% load reactive_forms %}{% for f in formset.forms %}{% render_reactive_field f.role %}{% endfor %}"
         )
         result = template.render(Context({"formset": formset}))
 
@@ -320,9 +295,7 @@ class TestFormsetNaming:
 class RequiredMatrixForm(ReactiveForm):
     """Covers the required_expr matrix (static/conditional x hideable)."""
 
-    trigger = ReactiveChoiceField(
-        choices=[("a", "A"), ("b", "B")], required=False
-    )
+    trigger = ReactiveChoiceField(choices=[("a", "A"), ("b", "B")], required=False)
     static_req = ReactiveCharField()  # unconditionally required
     static_req_hideable = ReactiveCharField(visible_when="$trigger == 'a'")
     cond_req = ReactiveCharField(required=False, required_when="$trigger == 'b'")
@@ -359,17 +332,13 @@ class TestRequiredExpr:
     def test_required_when_and_visible_when_combined(self):
         ctx = render_reactive_field(RequiredMatrixForm()["cond_req_hideable"])
         # Boolean-coercing, boolean-returning && (never operand-returning).
-        assert ctx["required_expr"] == (
-            '(Boolean(($trigger === "a")) && Boolean(($trigger === "b")))'
-        )
+        assert ctx["required_expr"] == ('(Boolean(($trigger === "a")) && Boolean(($trigger === "b")))')
 
     def test_hidden_field_renders_data_attr_not_static_required(self):
         """A hideable required field must not emit a bare `required` that would
         block native submission while hidden."""
         form = RequiredMatrixForm()
-        template = Template(
-            "{% load reactive_forms %}{% render_reactive_field form.static_req_hideable %}"
-        )
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.static_req_hideable %}")
         result = template.render(Context({"form": form}))
         assert "data-attr:required=" in result
         # "required" appears exactly once (in data-attr:required) — no extra
@@ -398,9 +367,7 @@ class TestDynamicWhenExprs:
     def test_placeholder_expr_is_first_match_ternary(self):
         ctx = render_reactive_field(DynamicAttrsForm()["note"])
         # Right-associative ternary (first match wins) over compiled conditions.
-        assert ctx["placeholder_expr"] == (
-            '(($mode === "x")) ? "Enter X" : (($mode === "y")) ? "Enter Y" : \'\''
-        )
+        assert ctx["placeholder_expr"] == ('(($mode === "x")) ? "Enter X" : (($mode === "y")) ? "Enter Y" : \'\'')
 
     def test_min_max_exprs(self):
         ctx = render_reactive_field(DynamicAttrsForm()["qty"])
@@ -415,17 +382,13 @@ class TestDynamicWhenExprs:
 
     def test_placeholder_expr_renders_as_data_attr(self):
         form = DynamicAttrsForm()
-        template = Template(
-            "{% load reactive_forms %}{% render_reactive_field form.note %}"
-        )
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.note %}")
         result = template.render(Context({"form": form}))
         assert "data-attr:placeholder=" in result
 
 
 class MultiChoiceForm(ReactiveForm):
-    tags = ReactiveMultipleChoiceField(
-        choices=[("a", "A"), ("b", "B"), ("c", "C")], required=False
-    )
+    tags = ReactiveMultipleChoiceField(choices=[("a", "A"), ("b", "B"), ("c", "C")], required=False)
 
 
 class RadioForm(ReactiveForm):
@@ -445,9 +408,7 @@ class TestWidgetCoverage:
 
     def test_selectmultiple_renders_multiple_select(self):
         form = MultiChoiceForm()
-        template = Template(
-            "{% load reactive_forms %}{% render_reactive_field form.tags %}"
-        )
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.tags %}")
         result = template.render(Context({"form": form}))
         assert "<select multiple" in result
         assert "data-bind:tags" in result
@@ -463,9 +424,7 @@ class TestWidgetCoverage:
         ctx = render_reactive_field(form["color"])
         assert ctx["is_simple_input"] is False
 
-        template = Template(
-            "{% load reactive_forms %}{% render_reactive_field form.color %}"
-        )
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.color %}")
         result = template.render(Context({"form": form}))
         # Django's native radio rendering, not our generic text input.
         assert 'type="radio"' in result
@@ -484,9 +443,7 @@ class TestFormattedValue:
         ctx = render_reactive_field(form["d"])
         assert ctx["formatted_value"] == "2025-06-15"
 
-        template = Template(
-            "{% load reactive_forms %}{% render_reactive_field form.d %}"
-        )
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.d %}")
         result = template.render(Context({"form": form}))
         assert 'value="2025-06-15"' in result
 

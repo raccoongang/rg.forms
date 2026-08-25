@@ -34,9 +34,7 @@ class OnboardingForm(ReactiveForm):
     email = ReactiveEmailField(label="Email")
 
     # Business (shown only for business accounts)
-    company_name = ReactiveCharField(
-        label="Company name", required=False, required_when="$account_type == 'business'"
-    )
+    company_name = ReactiveCharField(label="Company name", required=False, required_when="$account_type == 'business'")
     workspace = ReactiveCharField(
         label="Workspace subdomain",
         required=False,
@@ -45,11 +43,17 @@ class OnboardingForm(ReactiveForm):
         help_text="Checked for availability. Try 'admin' or 'demo'.",
     )
     seats = ReactiveIntegerField(
-        label="Seats", required=False, min_value=1, initial=1,
+        label="Seats",
+        required=False,
+        min_value=1,
+        initial=1,
         help_text_when={"$account_type == 'business'": "Billed per seat."},
     )
     price_per_seat = ReactiveDecimalField(
-        label="Price per seat", required=False, decimal_places=2, initial="29.00",
+        label="Price per seat",
+        required=False,
+        decimal_places=2,
+        initial="29.00",
         read_only_when="true",
     )
     monthly_total = ReactiveDecimalField(

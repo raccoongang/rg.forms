@@ -1,7 +1,8 @@
 """Tests for expression parser and evaluator."""
 
-import pytest
 from decimal import Decimal
+
+import pytest
 
 from rg.forms.expressions import (
     ExpressionError,

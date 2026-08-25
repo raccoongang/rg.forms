@@ -41,12 +41,12 @@ class CanonicalValuesForm(ReactiveForm):
 
     # empty is field-specific (see the page for the per-kind table).
     note = ReactiveCharField(label="Note", required=False)
-    picked = ReactiveChoiceField(
-        label="Pick", required=False, choices=[("", "--"), ("x", "X"), ("y", "Y")]
-    )
+    picked = ReactiveChoiceField(label="Pick", required=False, choices=[("", "--"), ("x", "X"), ("y", "Y")])
 
     # computed: exact decimal * number; a division demonstrates /0 -> null.
     line_total = ReactiveDecimalField(
-        label="Line total (computed)", required=False, decimal_places=2,
+        label="Line total (computed)",
+        required=False,
+        decimal_places=2,
         computed="$quantity * $unit_price",
     )
