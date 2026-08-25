@@ -5,6 +5,35 @@ All notable changes to rg.forms are documented here. This project adheres to
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-25
+
+Implements ADR-0005 (multi-form reactive submission). Additive — no existing
+signature changes; `reactive_form_response` and all current consumers behave
+unchanged.
+
+### Added
+
+- **Multi-form reactive submission (ADR-0005).** New `reactive_forms_response()`
+  validates an ordered set of forms and/or a formset together (non-short-circuit,
+  so one error patch shows every member's errors), patches a single shared
+  fragment on any error, and SSE-redirects on all-valid. Validation-of-aggregates
+  and persistence stay with the caller: `on_success()` takes no argument and owns
+  atomicity/audit; cross-form invariants are attached before the call. An empty
+  `forms` sequence raises `ValueError`. Exported from the package root.
+- **Public `sse_redirect()` and `is_datastar_request()`.** Promoted to the public
+  API (previously `rg.forms.views._sse_redirect` was private) for returning a
+  Datastar SSE redirect from an `on_success` callback when the target is only
+  known after the save.
+
+### Changed
+
+- **`reactive_form_response` now delegates to `reactive_forms_response`
+  (ADR-0005 D8).** Internal refactor with no contract change; the single-form
+  `on_success(form)` shape and return behavior are preserved. Both helpers now
+  share the extracted `_sse_patch` generator, and their return type is annotated
+  `HttpResponseBase | None` (the concrete results are still `HttpResponseRedirect`
+  / `DatastarResponse`).
+
 ## [0.2.0] - 2026-08-24
 
 Implements ADR-0002 (canonical expression semantics), ADR-0003 (scoped signals /
