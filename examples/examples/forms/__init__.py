@@ -7,14 +7,20 @@ from .design_systems import ProfileCardForm
 from .edit_crud import AccountEditForm
 from .external_signals import FeatureFlaggedForm
 from .form_errors import ProjectTimelineForm
+from .multi_form import (
+    StaffUserForm,
+    UserProfileForm,
+    WorkExperienceForm,
+    WorkExperienceFormSet,
+)
 from .onboarding import OnboardingForm
 from .order_configurator import OrderConfiguratorForm
 from .registration import RegistrationForm
 from .settings_dashboard import NotificationsForm, ProfileForm
 from .sse import SSEValidationForm
 from .team_formset import TeamMemberForm
-from .wizard import WizardAccountForm, WizardOrgForm
 from .widget_gallery import WidgetGalleryForm
+from .wizard import WizardAccountForm, WizardOrgForm
 
 __all__ = [
     "AccountEditForm",
@@ -31,8 +37,12 @@ __all__ = [
     "ProjectTimelineForm",
     "RegistrationForm",
     "SSEValidationForm",
+    "StaffUserForm",
     "TeamMemberForm",
+    "UserProfileForm",
     "WidgetGalleryForm",
     "WizardAccountForm",
     "WizardOrgForm",
+    "WorkExperienceForm",
+    "WorkExperienceFormSet",
 ]

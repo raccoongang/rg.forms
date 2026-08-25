@@ -25,6 +25,7 @@ urlpatterns = [
     # Additional examples.
     path("account/edit/", views.account_edit, name="account_edit"),
     path("account/edit/validate/", views.account_edit_validate, name="account_edit_validate"),
+    path("users/create/", views.user_create, name="user_create"),
     path("wizard/", views.wizard, name="wizard"),
     path("tampering/", views.tampering_lab, name="tampering_lab"),
     path("form-errors/", views.form_errors, name="form_errors"),

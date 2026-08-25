@@ -8,6 +8,7 @@ from .edit_crud import account_edit, account_edit_validate
 from .external_signals import feature_flags
 from .form_errors import form_errors
 from .misc import index, risks
+from .multi_form import user_create
 from .onboarding import onboarding, onboarding_validate
 from .order_configurator import order_configurator
 from .registration import registration, registration_validate
@@ -39,6 +40,7 @@ __all__ = [
     "settings_dashboard",
     "sse_validation",
     "tampering_lab",
+    "user_create",
     "team_roster",
     "widget_gallery",
     "wizard",

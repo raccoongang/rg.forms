@@ -2,7 +2,7 @@
 
 The `examples/` directory is a runnable Django project demonstrating the
 capabilities delivered by [ADR-0001](adr/0001-design-system-agnostic-field-rendering.md)
-through [ADR-0004](adr/0004-declarative-incremental-server-validation.md). Every
+through [ADR-0005](adr/0005-multi-form-reactive-submission.md). Every
 example is a real, interactive form — not documentation pseudocode — with all
 validation and business rules **server-authoritative**.
 
@@ -45,6 +45,7 @@ side-by-side [comparison](comparison.md), and the limitations it exposes.
 | 13 | **Date / time & localization** | Temporal canonical values | 0002 | canonical `date`/`time`/`datetime` strings, lossless round-trip, server validation | (n/a — semantics) | — | — |
 | 14 | **Widget gallery** | Widget compatibility | 0001 | first-class reactive widgets vs. correct Django native fallback | a component library | — | radio/multi-checkbox/file are fallback-rendered |
 | 15 | **Cascading dropdowns** | country → region → city | — | `choices_from` + `depends_on`, server re-render, `data-indicator` pending, invalid-child reset | client fetch/cache/option-state | ✅ (architectural, [page](comparisons/cascading.md)) | large client-side-filtered lists |
+| 16 | **Multi-form submission** | Two forms + a formset submitted together | 0003, 0005 | `reactive_forms_response()`, non-short-circuit validation, one shared fragment patch, caller-owned atomic save + cross-form rule, merged scoped seeds | one submit over multiple `useForm` instances | — | caller owns persistence & cross-form validation |
 
 ### Retained feature demo
 

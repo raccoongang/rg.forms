@@ -1,5 +1,9 @@
 """Django settings for rg.forms tests."""
 
+from pathlib import Path
+
+_BASE_DIR = Path(__file__).resolve().parent
+
 SECRET_KEY = "test-secret-key-not-for-production"
 
 DEBUG = True
@@ -20,7 +24,7 @@ ROOT_URLCONF = "tests.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [_BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

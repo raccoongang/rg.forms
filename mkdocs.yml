@@ -65,6 +65,7 @@ nav:
       - Formsets & Scoped Signals: guide/formsets.md
       - Validation: guide/validation.md
       - SSE Validation: guide/sse-validation.md
+      - Multi-form Submission: guide/multi-form-submission.md
       - Incremental Validation: guide/incremental-validation.md
       - Custom Rendering: guide/custom-rendering.md
       - Datastar Integration: guide/datastar.md
@@ -78,3 +79,4 @@ nav:
       - ADR-0002 Canonical expression semantics: adr/0002-canonical-expression-semantics.md
       - ADR-0003 Scoped signals & reactive formsets: adr/0003-scoped-signals-and-reactive-formsets.md
       - ADR-0004 Declarative incremental validation: adr/0004-declarative-incremental-server-validation.md
+      - ADR-0005 Multi-form reactive submission: adr/0005-multi-form-reactive-submission.md

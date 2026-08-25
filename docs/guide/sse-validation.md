@@ -135,15 +135,16 @@ reactive_form_response(
     ```
 
     !!! note
-        When using `on_success` with Datastar requests, return an SSE redirect from the callback:
+        When using `on_success` with Datastar requests, return an SSE redirect from the callback with the public
+        `sse_redirect()` helper:
 
         ```python
-        from rg.forms.views import _sse_redirect
+        from rg.forms import is_datastar_request, sse_redirect
 
         def handle_success(form):
             order = Order.objects.create(**form.cleaned_data)
             if is_datastar_request(request):
-                return _sse_redirect(f"/orders/{order.pk}/")
+                return sse_redirect(f"/orders/{order.pk}/")
             return redirect("order_detail", pk=order.pk)
         ```
 

@@ -1,0 +1,19 @@
+{# Test-only shared fragment for reactive_forms_response (ADR-0005). #}
+<div id="multi-form-container">
+  <p class="ctx-marker">{{ marker }}</p>
+  <ul class="alpha-errors">
+    {% for err in alpha_form.errors.name %}<li>alpha:{{ err }}</li>{% endfor %}
+  </ul>
+  <ul class="beta-errors">
+    {% for err in beta_form.errors.code %}<li>beta:{{ err }}</li>{% endfor %}
+  </ul>
+  {% if work_formset %}
+  <ul class="formset-errors">
+    {% for form_errors in work_formset.errors %}
+      {% for field, errs in form_errors.items %}
+        {% for err in errs %}<li>formset:{{ field }}:{{ err }}</li>{% endfor %}
+      {% endfor %}
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>

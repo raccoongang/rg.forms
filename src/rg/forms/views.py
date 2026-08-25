@@ -6,12 +6,17 @@ full-page reloads on validation errors.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Mapping, Sequence
 from typing import Any
 
 from datastar_py.django import DatastarResponse, read_signals
 from datastar_py.sse import DatastarEvent, ServerSentEventGenerator
-from django.http import HttpRequest, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import (
+    HttpRequest,
+    HttpResponseBadRequest,
+    HttpResponseBase,
+    HttpResponseRedirect,
+)
 from django.template.loader import render_to_string
 
 from .adapters import signals_to_querydict
@@ -143,7 +148,7 @@ def reactive_form_response(
     success_url: str | None = None,
     on_success: Callable[[Any], Any] | None = None,
     context: dict[str, Any] | None = None,
-) -> HttpResponseRedirect | DatastarResponse | None:
+) -> HttpResponseBase | None:
     """Handle form POST with SSE support for Datastar.
 
     For Datastar requests:
@@ -183,40 +188,114 @@ def reactive_form_response(
                 form = MyForm()
             return render(request, "myapp/form.html", {"form": form})
     """
-    datastar = is_datastar_request(request)
+    # Delegate to the N-form helper (ADR-0005 D8): the single-form contract is a
+    # one-member sequence with a ``{"form": form}`` context shim and an
+    # ``on_success`` adapter that re-supplies the validated form.
+    return reactive_forms_response(
+        request,
+        [form],
+        fragment_template,
+        context={"form": form, **(context or {})},
+        success_url=success_url,
+        on_success=(lambda: on_success(form)) if on_success is not None else None,
+    )
 
-    if form.is_valid():
-        if on_success:
-            result = on_success(form)
+
+def reactive_forms_response(
+    request: HttpRequest,
+    forms: Sequence[Any],
+    fragment_template: str,
+    *,
+    context: Mapping[str, Any],
+    success_url: str | None = None,
+    on_success: Callable[[], HttpResponseBase | None] | None = None,
+) -> HttpResponseBase | None:
+    """Handle an N-form/formset POST with SSE support for Datastar (ADR-0005).
+
+    Owns only the request/response plumbing for submitting **several forms
+    and/or a formset together** on one page. Validation-of-aggregates and
+    persistence stay with the caller (D3/D5).
+
+    Every member of ``forms`` is validated (non-short-circuit, in order) so a
+    single error patch shows all errors at once. On any error the shared
+    ``fragment_template`` is patched (Datastar) or ``None`` is returned (native,
+    full-page fallback). On all-valid, ``on_success()`` runs (it closes over the
+    forms it already holds), then the ``success_url`` redirect.
+
+    Args:
+        request: The Django HttpRequest.
+        forms: A **non-empty** ordered sequence of already-bound members, each
+            exposing ``is_valid()`` (Django ``Form``/``ModelForm``/``BaseFormSet``
+            all qualify). The helper never inspects ``request.POST``/``FILES``.
+        fragment_template: Template path for the shared fragment (SSE patch).
+        context: The exact template context for the error fragment. Required and
+            keyword-only — with N forms there is no canonical single-form name to
+            inject, and a wrong/empty context would render a broken fragment (D4).
+        success_url: URL to redirect to when every member is valid.
+        on_success: Callback taking no argument (D3). Returning an
+            ``HttpResponseBase`` short-circuits and is returned as-is; returning
+            ``None`` falls through to the ``success_url`` redirect. The caller
+            owns atomicity/audit inside it.
+
+    Returns:
+        A response object, or ``None`` if the view should handle rendering.
+
+    Raises:
+        ValueError: If ``forms`` is empty (``all([])`` is ``True``, so silently
+            treating "no forms" as valid would run ``on_success``/redirect
+            without validating anything — D1a).
+
+    Usage::
+
+        def user_create(request):
+            if request.method == "POST":
+                user_form = StaffUserForm(request.POST)
+                profile_form = UserProfileForm(request.POST)
+                formset = WorkExperienceFormSet(request.POST)
+
+                def _on_success():
+                    with transaction.atomic():        # caller owns atomicity
+                        create_staff_user(user_form, profile_form, formset)
+                    return None                        # fall through to redirect
+
+                response = reactive_forms_response(
+                    request,
+                    [user_form, profile_form, formset],
+                    "users/_user_form.html",
+                    context={"form": user_form, "profile_form": profile_form,
+                             "formset": formset},
+                    success_url=reverse("user_list"),
+                    on_success=_on_success,
+                )
+                if response:
+                    return response
+            else:
+                ...
+            return render(request, "users/user_form.html", {...})
+    """
+    if not forms:
+        raise ValueError("forms must contain at least one bound form or formset")
+
+    datastar = is_datastar_request(request)
+    all_valid = all([f.is_valid() for f in forms])  # list → validate every member, in order
+
+    if all_valid:
+        if on_success is not None:
+            result = on_success()
             if result is not None:
                 return result
-
         if success_url:
-            if datastar:
-                return _sse_redirect(success_url)
-            return HttpResponseRedirect(success_url)
-
+            return sse_redirect(success_url) if datastar else HttpResponseRedirect(success_url)
         return None
 
-    # Form is invalid
+    # At least one member is invalid.
     if datastar:
-        return _sse_patch_form(request, form, fragment_template, context)
-
+        return _sse_patch(render_to_string(fragment_template, dict(context), request))
     return None
 
 
-def _sse_patch_form(
-    request: HttpRequest,
-    form: Any,
-    fragment_template: str,
-    context: dict[str, Any] | None = None,
-) -> DatastarResponse:
-    """Render form fragment and return as SSE patch."""
-    ctx: dict[str, Any] = {"form": form}
-    if context:
-        ctx.update(context)
-
-    html = render_to_string(fragment_template, ctx, request)
+def _sse_patch(html: str) -> DatastarResponse:
+    """Wrap pre-rendered HTML in a single SSE ``patch-elements`` event."""
 
     def events() -> Generator[DatastarEvent, None, None]:
         yield ServerSentEventGenerator.patch_elements(html)
@@ -224,8 +303,24 @@ def _sse_patch_form(
     return DatastarResponse(events())
 
 
-def _sse_redirect(url: str) -> DatastarResponse:
-    """Return an SSE redirect response."""
+def sse_redirect(url: str) -> DatastarResponse:
+    """Return a Datastar SSE redirect that navigates the client to ``url``.
+
+    Use this from an ``on_success`` callback when the redirect target is only
+    known after the save (e.g. a freshly-created object's detail page) and the
+    request is a Datastar request. For a static target, prefer returning ``None``
+    and passing ``success_url`` — :func:`reactive_form_response` /
+    :func:`reactive_forms_response` then encode the redirect correctly for both
+    native and Datastar requests. Under a native (non-Datastar) request, return a
+    plain :class:`~django.http.HttpResponseRedirect` instead.
+
+    Usage::
+
+        def on_success():
+            obj = save_everything(...)
+            url = reverse("thing_detail", args=[obj.pk])
+            return sse_redirect(url) if is_datastar_request(request) else redirect(url)
+    """
 
     def events() -> Generator[DatastarEvent, None, None]:
         yield ServerSentEventGenerator.redirect(url)

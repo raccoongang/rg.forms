@@ -1,0 +1,41 @@
+{# Shared fragment for multi-form submission — patched via SSE on any error (ADR-0005). #}
+{% load reactive_forms %}
+
+<div id="multi-form-container">
+<form method="post" data-signals='{{ signals_json }}'
+      data-on:submit__prevent="@post('{{ action }}', {contentType: 'form'})">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <fieldset class="box">
+        <legend class="label">Account</legend>
+        {% render_reactive_field user_form.username %}
+        {% render_reactive_field user_form.email %}
+        {% render_reactive_field user_form.role %}
+    </fieldset>
+
+    <fieldset class="box">
+        <legend class="label">Profile</legend>
+        {% render_reactive_field profile_form.full_name %}
+        {% render_reactive_field profile_form.birth_year %}
+        {% render_reactive_field profile_form.bio %}
+    </fieldset>
+
+    <fieldset class="box">
+        <legend class="label">Work experience</legend>
+        <p class="help mb-4">Optional. Leave a row blank to skip it.</p>
+        {% for row in formset.forms %}
+        <div class="box">
+            <p class="heading">Experience #{{ forloop.counter }}</p>
+            <div class="columns">
+                <div class="column">{% render_reactive_field row.company %}</div>
+                <div class="column">{% render_reactive_field row.title %}</div>
+                <div class="column">{% render_reactive_field row.start_year %}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </fieldset>
+
+    <button type="submit" class="button is-primary">Create user</button>
+</form>
+</div>

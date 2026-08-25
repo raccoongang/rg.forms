@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load reactive_forms %}
+
+{% block title %}Multi-form Submission - rg.forms Examples{% endblock %}
+
+{% block content %}
+<h1 class="title">Multi-form submission</h1>
+<p class="subtitle">Two forms and a formset submitted together &mdash; ADR-0005</p>
+
+<div class="box">
+    <p class="mb-4">
+        <strong>Try it:</strong> submit with a blank <em>username</em> and a blank <em>birth year</em> &mdash;
+        both members' errors appear at once in a single SSE patch (non-short-circuit validation). Then set
+        <em>birth year</em> to <code>2010</code> and any work-experience <em>start year</em> to <code>2015</code>
+        to trip the cross-form rule (work history before age 16).
+    </p>
+    <p>
+        One <code>reactive_forms_response()</code> call validates all three members, patches this one shared
+        fragment on any error, and SSE-redirects on all-valid. Persistence and the cross-form check stay in the
+        view &mdash; the helper is submission <em>plumbing</em>, not a save engine.
+    </p>
+</div>
+
+{% if created %}
+<div class="notification is-success">
+    <button class="delete" onclick="this.parentElement.remove()"></button>
+    <strong>User created.</strong> All three members validated server-side and the redirect happened via SSE.
+</div>
+{% endif %}
+
+<div class="box">
+    {% include "examples/multi_form/_form.html" %}
+</div>
+{% endblock %}

@@ -40,6 +40,7 @@ PAGE_URLS = [
     "examples:widget_gallery",
     "examples:cascading_form",
     "examples:sse_validation",
+    "examples:user_create",
     "examples:risks",
 ]
 
@@ -395,6 +396,71 @@ class TestWidgetGallery:
         body = Client().get(reverse("examples:widget_gallery")).content.decode()
         assert "data-bind:text" in body       # first-class reactive control
         assert 'type="radio"' in body          # fallback rendered natively by Django
+
+
+# --- Example 9: multi-form submission (ADR-0005) -----------------------------
+class TestMultiForm:
+    URL = "examples:user_create"
+
+    def _management(self, n=2):
+        return {
+            "work-TOTAL_FORMS": str(n), "work-INITIAL_FORMS": "0",
+            "work-MIN_NUM_FORMS": "0", "work-MAX_NUM_FORMS": "1000",
+        }
+
+    def _valid_payload(self):
+        data = {
+            "user-username": "janedoe", "user-email": "jane@acme.co", "user-role": "staff",
+            "profile-full_name": "Jane Doe", "profile-birth_year": "1990", "profile-bio": "",
+        }
+        data.update(self._management())
+        return data
+
+    def _sse_body(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def test_all_members_errors_in_one_patch(self):
+        # First member (username) AND a later member (birth_year) invalid: a single
+        # SSE patch must carry both — proof of non-short-circuit validation (D1).
+        data = self._valid_payload()
+        data["user-username"] = ""
+        data["profile-birth_year"] = ""
+        r = Client().post(reverse(self.URL), data, HTTP_DATASTAR_REQUEST="true")
+        body = self._sse_body(r)
+        assert "multi-form-container" in body
+        assert body.count('aria-invalid="true"') >= 2  # both members flagged in one patch
+
+    def test_all_valid_datastar_redirects(self):
+        r = Client().post(reverse(self.URL), self._valid_payload(), HTTP_DATASTAR_REQUEST="true")
+        assert "created=1" in self._sse_body(r)  # SSE redirect on all-valid
+
+    def test_cross_form_rule_blocks_success(self):
+        # All three individually valid, but the work history predates a plausible
+        # working age — the caller-attached aggregate error blocks the redirect (D5).
+        data = self._valid_payload()
+        data["profile-birth_year"] = "2010"
+        data.update({"work-0-company": "Acme", "work-0-title": "Intern", "work-0-start_year": "2015"})
+        r = Client().post(reverse(self.URL), data, HTTP_DATASTAR_REQUEST="true")
+        body = self._sse_body(r)
+        assert "before age 16" in body
+        assert "created=1" not in body
+
+    def test_native_invalid_returns_full_page(self):
+        data = self._valid_payload()
+        data["user-username"] = ""
+        r = Client().post(reverse(self.URL), data)  # no Datastar header
+        assert r.status_code == 200  # full-page fallback with bound errors
+        assert "multi-form-container" in r.content.decode()
+
+    def test_native_valid_redirects(self):
+        r = Client().post(reverse(self.URL), self._valid_payload())
+        assert r.status_code == 302 and "created=1" in r["Location"]
+
+    def test_seed_merges_all_scopes(self):
+        body = Client().get(reverse(self.URL)).content.decode()
+        # One data-signals seed carries every member's scope (user, profile, work rows).
+        scopes = set(re.findall(r"rgForms\.(p[a-z0-9]+)\.", body))
+        assert len(scopes) >= 3  # user + profile + at least one work row
 
 
 # --- Additional example: cascading (country -> region -> city) ---------------

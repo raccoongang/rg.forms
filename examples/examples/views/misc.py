@@ -119,6 +119,14 @@ EXAMPLES = [
         "tags": ["SSE", "reactive_form_response"],
         "url": "examples:sse_validation",
     },
+    {
+        "title": "Multi-form submission",
+        "subtitle": "Two forms + a formset, submitted together",
+        "blurb": "reactive_forms_response() validates all members (non-short-circuit), patches one shared "
+        "fragment, and redirects on all-valid; the caller owns the atomic save and a cross-form rule.",
+        "tags": ["ADR-0005", "reactive_forms_response", "formset"],
+        "url": "examples:user_create",
+    },
 ]
 
 
