@@ -76,10 +76,8 @@ class TestNormalizeValue:
         assert normalize_field_value(ReactiveFloatField(), "1e9999") == "1e9999"
 
     def test_non_finite_decimal_maps_to_empty(self):
-        from decimal import Decimal as D
-
-        assert normalize_field_value(ReactiveIntegerField(), D("NaN")) is None
-        assert normalize_field_value(ReactiveIntegerField(), D("Infinity")) is None
+        assert normalize_field_value(ReactiveIntegerField(), Decimal("NaN")) is None
+        assert normalize_field_value(ReactiveIntegerField(), Decimal("Infinity")) is None
 
     def test_decimal_is_canonical_string(self):
         assert normalize_field_value(ReactiveDecimalField(), Decimal("19.99")) == "19.99"

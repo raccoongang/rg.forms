@@ -539,8 +539,8 @@ class ReactiveForm(forms.Form):
                         )
 
                 # Call clean_<fieldname> if exists
-                if hasattr(self, "clean_%s" % name):
-                    value = getattr(self, "clean_%s" % name)()
+                if hasattr(self, f"clean_{name}"):
+                    value = getattr(self, f"clean_{name}")()
                     self.cleaned_data[name] = value
 
             except ValidationError as e:

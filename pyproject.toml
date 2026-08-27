@@ -62,6 +62,12 @@ python_version = "3.12"
 plugins = ["mypy_django_plugin.main"]
 strict = true
 exclude = ["examples/"]
+# src-layout + PEP 420 namespace package: without these, `mypy src/` aborts with
+# "Source file found twice under different module names" (src/rg has no
+# __init__.py, so mypy cannot infer that src/ is the package root) and checks
+# nothing at all.
+mypy_path = "src"
+explicit_package_bases = true
 
 [project.urls]
 Homepage = "https://github.com/raccoongang/rg.forms"
