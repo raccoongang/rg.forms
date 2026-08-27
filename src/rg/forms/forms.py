@@ -1,15 +1,31 @@
 """ReactiveForm - Base class for reactive Django forms with Datastar integration."""
 
 import logging
+from collections.abc import Iterable
+from typing import Any
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms import BoundField
+from django.http import QueryDict
 
 from .expressions import ExpressionError, evaluate_expression, is_truthy
 from .normalization import normalize_field_value, normalize_from_datadict
 from .scoping import RESERVED_NAMESPACE, encode_scope
 
 logger = logging.getLogger("rg.forms")
+
+
+def _set_choices(field: forms.Field, choices: list[tuple[str, str]]) -> None:
+    """Assign ``choices`` to a field that carries them.
+
+    ``choices`` is declared on ``ChoiceField``, not on ``Field``, while
+    ``self.fields`` is typed as a mapping of plain ``Field``. The assignment is
+    kept unguarded (rather than behind an ``isinstance``) so a custom field that
+    merely implements the choices interface keeps working.
+    """
+    field.choices = choices  # type: ignore[attr-defined]
+
 
 # Sentinel distinguishing a genuine evaluation error (fail-open) from an
 # expression that legitimately evaluated to None/falsy (ADR-0002 P7).
@@ -115,7 +131,7 @@ class ReactiveForm(forms.Form):
                 }
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._populate_cascading_fields()
 
@@ -140,8 +156,8 @@ class ReactiveForm(forms.Form):
 
     def _build_choices_from_data(
         self,
-        data,
-        field,
+        data: Iterable[Any],
+        field: forms.Field,
     ) -> list[tuple[str, str]]:
         """Build choices list from data using field's configuration.
 
@@ -201,7 +217,7 @@ class ReactiveForm(forms.Form):
             empty_choice_no_parent = getattr(field, "empty_choice_no_parent", None)
 
             # Build choices list
-            choices = []
+            choices: list[tuple[str, str]] = []
 
             if depends_on:
                 # Dependent field - get parent value first
@@ -226,9 +242,14 @@ class ReactiveForm(forms.Form):
                         if current_value:
                             valid_values = [c[0] for c in choices]
                             if current_value not in valid_values:
-                                # Reset invalid value
-                                self.data = self.data.copy()
-                                self.data[field_name] = ""
+                                # Reset invalid value. A bound form's ``data``
+                                # is an immutable QueryDict; copy() returns a
+                                # mutable one. A plain dict is copied as a dict.
+                                mutable: QueryDict | dict[str, Any] = (
+                                    self.data.copy() if isinstance(self.data, QueryDict) else dict(self.data)
+                                )
+                                mutable[field_name] = ""
+                                self.data = mutable
                 else:
                     # No parent value - show placeholder
                     placeholder = empty_choice_no_parent or empty_choice or "-- Select --"
@@ -240,7 +261,7 @@ class ReactiveForm(forms.Form):
                 data = choices_from()
                 choices.extend(self._build_choices_from_data(data, field))
 
-            field.choices = choices
+            _set_choices(field, choices)
 
     def get_external_signals(self) -> set[str]:
         """Return the declared ``Meta.external_signals`` set (empty if none)."""
@@ -249,7 +270,7 @@ class ReactiveForm(forms.Form):
             return set()
         return set(getattr(meta, "external_signals", None) or set())
 
-    def get_external_signal_values(self) -> dict:
+    def get_external_signal_values(self) -> dict[str, Any]:
         """Server-side values for the form's declared external signals.
 
         ``Meta.external_signals`` only *authorizes* a reference; the server has
@@ -277,7 +298,7 @@ class ReactiveForm(forms.Form):
         """Get a specific field group by name."""
         return self.get_field_groups().get(group_name)
 
-    def get_fields_in_group(self, group_name: str) -> list:
+    def get_fields_in_group(self, group_name: str) -> list[tuple[str, BoundField]]:
         """Get BoundField objects for fields in a group.
 
         Returns list of (field_name, bound_field) tuples.
@@ -304,7 +325,7 @@ class ReactiveForm(forms.Form):
             return True  # fail-open only on error
         return is_truthy(result)
 
-    def get_signals(self) -> dict:
+    def get_signals(self) -> dict[str, Any]:
         """Generate the initial canonical signals dict for Datastar.
 
         Every field is run through reactive normalization (ADR-0002 §1/§2), so
@@ -314,7 +335,7 @@ class ReactiveForm(forms.Form):
         result holds only canonical types (string, number, boolean, null, array)
         keyed by the logical field name.
         """
-        signals: dict = {}
+        signals: dict[str, Any] = {}
         files = getattr(self, "files", None) or {}
         for name, field in self.fields.items():
             if self.is_bound:
@@ -325,7 +346,7 @@ class ReactiveForm(forms.Form):
                 signals[name] = normalize_field_value(field, raw)
         return signals
 
-    def get_seed_signals(self) -> dict:
+    def get_seed_signals(self) -> dict[str, Any]:
         """The client-facing seed structure for ``data-signals``.
 
         For an unprefixed form this is the flat canonical dict. For a prefixed
@@ -351,14 +372,15 @@ class ReactiveForm(forms.Form):
         from decimal import Decimal
         from uuid import UUID
 
-        def default(obj):
+        def default(obj: Any) -> str:
             if isinstance(obj, datetime):
                 from django.utils.timezone import is_aware, localtime
 
-                if is_aware(obj):
-                    obj = localtime(obj)
+                # A separate name keeps the datetime narrowing (rebinding the
+                # Any-typed parameter would discard it).
+                stamp = localtime(obj) if is_aware(obj) else obj
                 # datetime-local inputs require YYYY-MM-DDTHH:MM (no tz offset).
-                return obj.strftime("%Y-%m-%dT%H:%M")
+                return stamp.strftime("%Y-%m-%dT%H:%M")
             if isinstance(obj, date):
                 return obj.isoformat()
             if isinstance(obj, time):
@@ -374,7 +396,7 @@ class ReactiveForm(forms.Form):
         # emitting invalid JSON that would break Datastar's parser.
         return json.dumps(self.get_seed_signals(), default=default, allow_nan=False)
 
-    def get_field_reactive_attrs(self, field_name: str) -> dict:
+    def get_field_reactive_attrs(self, field_name: str) -> dict[str, Any]:
         """Get reactive attributes for a specific field.
 
         Returns a dict with keys like 'visible_when', 'required_when', 'computed'.
@@ -400,7 +422,7 @@ class ReactiveForm(forms.Form):
         """Get list of field names that are computed."""
         return [name for name, field in self.fields.items() if getattr(field, "computed", None)]
 
-    def _get_form_data(self) -> dict:
+    def _get_form_data(self) -> dict[str, Any]:
         """Canonical form data for expression evaluation (ADR-0002 §1).
 
         This is the same normalized, canonical dict the client is seeded with
@@ -414,7 +436,7 @@ class ReactiveForm(forms.Form):
         data.update(self.get_signals())
         return data
 
-    def _evaluate_expression(self, expression: str, *, decimal_mode: bool = False):
+    def _evaluate_expression(self, expression: str, *, decimal_mode: bool = False) -> Any:
         """Safely evaluate an expression against canonical data.
 
         Returns the evaluated value (which may legitimately be ``None``/falsy),
@@ -435,7 +457,7 @@ class ReactiveForm(forms.Form):
             )
             return EVAL_ERROR
 
-    def is_field_visible(self, field_name: str, data: dict | None = None) -> bool:
+    def is_field_visible(self, field_name: str, data: dict[str, Any] | None = None) -> bool:
         """Evaluate if a field should be visible based on current data.
 
         Server-side evaluation of visible_when rules. A rule that evaluates to a
@@ -478,7 +500,7 @@ class ReactiveForm(forms.Form):
             return False  # fail-open: not required on error
         return is_truthy(result)
 
-    def get_computed_value(self, field_name: str, *, authoritative: bool = False):
+    def get_computed_value(self, field_name: str, *, authoritative: bool = False) -> Any:
         """Compute a field's value from its ``computed`` expression.
 
         With ``authoritative=True`` the arithmetic runs in exact ``Decimal``
@@ -496,9 +518,11 @@ class ReactiveForm(forms.Form):
         result = self._evaluate_expression(computed, decimal_mode=authoritative)
         return None if result is EVAL_ERROR else result
 
-    def _clean_fields(self):
+    def _clean_fields(self) -> None:
         """Override to skip hidden fields and enforce required_when."""
-        for name, bf in self._bound_items():
+        # ``_bound_items`` is Django-internal (BaseForm, 5.0+) and absent from
+        # django-stubs; it is the supported iteration order for _clean_fields.
+        for name, bf in self._bound_items():  # type: ignore[attr-defined]
             field = bf.field
 
             # Skip hidden fields (visible_when=false)
@@ -549,7 +573,7 @@ class ReactiveForm(forms.Form):
     def populate(
         self,
         field_name: str,
-        queryset,
+        queryset: Iterable[Any],
         label_field: str | None = None,
         value_field: str = "pk",
         add_empty: bool = False,
@@ -581,7 +605,7 @@ class ReactiveForm(forms.Form):
         if field is None:
             raise ValueError(f"Field '{field_name}' not found in form")
 
-        choices = []
+        choices: list[tuple[str, str]] = []
         if add_empty:
             choices.append((empty_value, empty_label))
 
@@ -601,4 +625,4 @@ class ReactiveForm(forms.Form):
 
             choices.append((str(value), label))
 
-        field.choices = choices
+        _set_choices(field, choices)

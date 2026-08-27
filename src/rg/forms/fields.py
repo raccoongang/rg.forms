@@ -8,6 +8,7 @@ Each reactive field wraps a standard Django form field and adds:
 """
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from django import forms
 
@@ -50,9 +51,15 @@ class ReactiveFieldMixin:
     validate_on: str | None = None
     debounce: int | None = None
 
+    if TYPE_CHECKING:
+        # Supplied by the concrete ``forms.Field`` this mixin is combined with;
+        # declared for the type checker only so the mixin can read them.
+        widget: forms.Widget
+        required: bool
+
     def __init__(
         self,
-        *args,
+        *args: Any,
         visible_when: str | None = None,
         required_when: str | None = None,
         computed: str | None = None,
@@ -68,8 +75,8 @@ class ReactiveFieldMixin:
         autofocus: bool = False,
         validate_on: str | None = None,
         debounce: int | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         self.visible_when = visible_when
         self.required_when = required_when
         self.computed = computed
@@ -141,7 +148,7 @@ class ReactiveChoiceField(ReactiveFieldMixin, forms.ChoiceField):
         empty_choice_no_parent: Label when parent not selected (for dependent fields)
     """
 
-    choices_from: "Callable | None" = None
+    choices_from: "Callable[..., Any] | None" = None
     value_field: str = "pk"
     label_field: str | None = None
     label_template: str | None = None
@@ -150,15 +157,15 @@ class ReactiveChoiceField(ReactiveFieldMixin, forms.ChoiceField):
 
     def __init__(
         self,
-        *args,
-        choices_from: "Callable | None" = None,
+        *args: Any,
+        choices_from: "Callable[..., Any] | None" = None,
         value_field: str = "pk",
         label_field: str | None = None,
         label_template: str | None = None,
         empty_choice: str | None = None,
         empty_choice_no_parent: str | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         self.choices_from = choices_from
         self.value_field = value_field
         self.label_field = label_field
@@ -203,13 +210,16 @@ class ReactiveDateTimeField(ReactiveFieldMixin, forms.DateTimeField):
     # ISO format that datetime-local inputs expect.
     _HTML5_FORMAT = "%Y-%m-%dT%H:%M"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         html5_formats = [self._HTML5_FORMAT, "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"]
         self.input_formats = html5_formats + list(self.input_formats or [])
         # Ensure the widget renders values in the format the browser expects.
+        # ``format`` is declared on DateTimeBaseInput rather than Widget, and the
+        # check stays attribute-based (not isinstance) so a custom widget that
+        # merely mimics the interface is handled the same way.
         if not getattr(self.widget, "format", None):
-            self.widget.format = self._HTML5_FORMAT
+            self.widget.format = self._HTML5_FORMAT  # type: ignore[attr-defined]
 
 
 class ReactiveTimeField(ReactiveFieldMixin, forms.TimeField):

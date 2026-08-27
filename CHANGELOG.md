@@ -47,6 +47,19 @@ are fixed here.
   `rg_forms/field.html` did not help. Override the new template instead; its
   context is `required_when` (a compiled expression, or `None`) and `is_required`.
 
+### Internal
+
+- **`mypy --strict` passes and is now enforceable.** `mypy src/` previously aborted
+  on module resolution ("Source file found twice under different module names")
+  because a src layout plus a PEP 420 namespace package (`src/rg` has no
+  `__init__.py`) left mypy unable to infer the package root — so `strict = true`
+  had never actually checked anything. `mypy_path` + `explicit_package_bases` fix
+  the invocation, and the 46 annotation gaps it exposed in `fields.py`,
+  `forms.py` and `templatetags/reactive_forms.py` are now closed. Public
+  signatures are unchanged; three duck-typed Django attributes
+  (`Widget.format`, `ChoiceField.choices` via `Field`, `BaseForm._bound_items`)
+  carry a narrow `type: ignore` with the reason recorded inline.
+
 ### Removed
 
 - **`ReactiveFieldMixin.is_visible()` and `ReactiveFieldMixin.is_required_dynamic()`.**

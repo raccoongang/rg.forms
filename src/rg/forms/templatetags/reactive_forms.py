@@ -13,11 +13,13 @@ from __future__ import annotations
 import base64
 import json
 from collections.abc import Callable
+from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django import template
 from django.core.exceptions import ImproperlyConfigured
-from django.forms import BoundField
+from django.forms import BoundField, Field
+from django.template.context import Context
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
@@ -91,7 +93,7 @@ def _make_compiler(bound_field: BoundField) -> Callable[[str], str]:
     return compile_expr
 
 
-def _js_string(value) -> str:
+def _js_string(value: object) -> str:
     """Render ``value`` as a JS string literal for an expression."""
     return json.dumps(str(value))
 
@@ -118,7 +120,7 @@ def _required_expr(
     return None
 
 
-def _string_when_expr(when: dict | None, compile_expr: Callable[[str], str]) -> str | None:
+def _string_when_expr(when: dict[str, str] | None, compile_expr: Callable[[str], str]) -> str | None:
     """First-match ternary yielding a string (placeholder_when), conditions compiled."""
     if not when:
         return None
@@ -128,7 +130,7 @@ def _string_when_expr(when: dict | None, compile_expr: Callable[[str], str]) -> 
     return expr
 
 
-def _number_when_expr(when: dict | None, compile_expr: Callable[[str], str]) -> str | None:
+def _number_when_expr(when: dict[str, int | float] | None, compile_expr: Callable[[str], str]) -> str | None:
     """First-match ternary yielding a number (min_when/max_when), conditions compiled."""
     if not when:
         return None
@@ -203,18 +205,19 @@ def append_field_discriminator(url: str, field_path: str) -> str:
     return urlunsplit(parts._replace(query=urlencode(query)))
 
 
-def _resolve_validate_action(kwargs: dict):
+def _resolve_validate_action(kwargs: dict[str, Any]) -> str | None:
     """Resolve the validation URL per the ADR-0004 §4 unset/empty/inherit rules."""
-    action = kwargs.get("action", "")
+    action: str | None = kwargs.get("action", "")
     if "validate_action" not in kwargs or kwargs["validate_action"] is _UNSET:
         return action  # omitted -> inherit action (which may be "" = current URL)
-    return kwargs["validate_action"]  # "" (current URL) | a URL | None (unresolvable)
+    validate_action: str | None = kwargs["validate_action"]
+    return validate_action  # "" (current URL) | a URL | None (unresolvable)
 
 
 def _validate_attr(
     bound_field: BoundField,
     scope: str | None,
-    kwargs: dict,
+    kwargs: dict[str, Any],
 ) -> str:
     """Build the ``data-on:*`` validate handler + ``data-indicator`` for a field.
 
@@ -262,7 +265,7 @@ def _validate_attr(
 # --------------------------------------------------------------------------- #
 # Public helpers
 # --------------------------------------------------------------------------- #
-def get_reactive_field(bound_field: BoundField):
+def get_reactive_field(bound_field: BoundField) -> Field:
     """Get the underlying reactive field from a BoundField."""
     return bound_field.field
 
@@ -317,7 +320,7 @@ def _safe_signals_value(json_text: str) -> str:
 
 
 @register.simple_tag
-def reactive_signals(form) -> str:
+def reactive_signals(form: Any) -> str:
     """Generate data-signals attribute value for a form."""
     if hasattr(form, "get_signals_json"):
         return _safe_signals_value(form.get_signals_json())
@@ -325,7 +328,7 @@ def reactive_signals(form) -> str:
 
 
 @register.simple_tag
-def reactive_formset_signals(formset) -> str:
+def reactive_formset_signals(formset: Any) -> str:
     """Generate the combined ``data-signals`` seed for a whole formset.
 
     A single form cannot see its siblings, so this tag owns the merge: it emits
@@ -337,8 +340,8 @@ def reactive_formset_signals(formset) -> str:
 
         <form data-signals='{% reactive_formset_signals formset %}'>
     """
-    combined: dict = {}
-    flat: dict = {}
+    combined: dict[str, Any] = {}
+    flat: dict[str, Any] = {}
     for form in formset:
         signals = form.get_signals() if hasattr(form, "get_signals") else {}
         scope = getattr(form, "reactive_scope", None)
@@ -349,7 +352,7 @@ def reactive_formset_signals(formset) -> str:
         else:
             flat.update(signals)
 
-    seed: dict = dict(flat)
+    seed: dict[str, Any] = dict(flat)
     if combined:
         seed[RESERVED_NAMESPACE] = combined
     # allow_nan=False: never emit invalid JSON (NaN/Infinity) — normalization
@@ -358,7 +361,7 @@ def reactive_formset_signals(formset) -> str:
 
 
 @register.inclusion_tag("rg_forms/field.html")
-def render_reactive_field(bound_field: BoundField, **kwargs):
+def render_reactive_field(bound_field: BoundField, **kwargs: Any) -> dict[str, Any]:
     """Render a complete reactive field with wrapper and input.
 
     Usage:
@@ -482,7 +485,13 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
 
 
 @register.inclusion_tag("rg_forms/form.html", takes_context=True)
-def render_reactive_form(context, form, submit_label="Submit", action="", validate_action=_UNSET):
+def render_reactive_form(
+    context: Context,
+    form: Any,
+    submit_label: str = "Submit",
+    action: str = "",
+    validate_action: Any = _UNSET,
+) -> dict[str, Any]:
     """Render a complete reactive form with all fields.
 
     When ``action`` is provided, the form submits via Datastar ``@post``
@@ -514,7 +523,12 @@ def render_reactive_form(context, form, submit_label="Submit", action="", valida
 
 
 @register.inclusion_tag("rg_forms/field_group.html", takes_context=True)
-def render_field_group(context, form, group_name: str, validate_action=_UNSET):
+def render_field_group(
+    context: Context,
+    form: Any,
+    group_name: str,
+    validate_action: Any = _UNSET,
+) -> dict[str, Any]:
     """Render a field group with its fields.
 
     Context-aware (like ``render_reactive_form``): it forwards the request's CSRF
@@ -562,7 +576,7 @@ def signal_name(field_name: str) -> str:
 
 
 @register.inclusion_tag("rg_forms/_required_indicator.html")
-def required_indicator(bound_field: BoundField):
+def required_indicator(bound_field: BoundField) -> dict[str, Any]:
     """Render a required indicator that respects ``required_when`` (compiled).
 
     The markup lives in ``rg_forms/_required_indicator.html`` so a consumer on a
