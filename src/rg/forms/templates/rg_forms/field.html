@@ -13,12 +13,26 @@
    The wrapper carries a stable id (wrapper_id) so incremental validation can
    patch just this field (ADR-0004 §6); control_attrs carries the validate
    handler / pending indicator / aria-* contract.
+
+   Branch ORDER is load-bearing: `computed` is tested before any widget type,
+   because a computed field keeps whatever widget it was declared with. If you
+   reorder the chain in an override, keep the computed arm first.
+
+   Django's {% templatetag openblock %} if {% templatetag closeblock %} binds
+   `and` tighter than `or` and supports no parentheses, so express a guard as a
+   single operand (`widget_type in "a,b,c"`) rather than chaining `or` behind a
+   `not` — `not computed and A or B` parses as `(not computed and A) or B`.
 {% endcomment %}
 {% if field.is_hidden %}
 {{ field }}
 {% else %}
 <div class="field"{% if wrapper_id %} id="{{ wrapper_id }}"{% endif %}{% if visible_when %} data-show="{{ visible_when }}"{% endif %}>
-    <label class="label" for="{{ control_id }}">
+    {% if widget_type != 'checkboxinput' %}
+    {% comment %}
+       The checkbox branch wraps the control in its own <label>; emitting this
+       one too would repeat the text and point two labels at one control.
+    {% endcomment %}
+    <label class="label"{% if not computed %} for="{{ control_id }}"{% endif %}>
         {{ label }}
         {% if required_when %}
         <span class="has-text-danger" data-show="{{ required_when }}">*</span>
@@ -26,9 +40,20 @@
         <span class="has-text-danger">*</span>
         {% endif %}
     </label>
+    {% endif %}
 
     <div class="control{% if widget_type == 'select' or widget_type == 'selectmultiple' %} is-expanded{% endif %}">
-        {% if widget_type == 'select' %}
+        {% if computed %}
+        {% comment %}
+           Computed field: display only, whatever widget the field carries. This
+           arm is FIRST because a computed field keeps its widget — a
+           ReactiveChoiceField(computed=…) still has a Select — so any
+           widget-type arm placed above it would swallow the field and drop the
+           expression silently.
+        {% endcomment %}
+        <span class="input" style="display: inline-block; background-color: #f5f5f5;"
+              data-text="{{ computed }}"></span>
+        {% elif widget_type == 'select' %}
         <div class="select is-fullwidth{% if errors %} is-danger{% endif %}">
             <select name="{{ field.html_name }}" id="{{ control_id }}"
                     {{ bind_attr }} {{ control_attrs }}
@@ -61,6 +86,11 @@
                    {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
                    {% if field.value %}checked{% endif %}>
             {{ label }}
+            {% if required_when %}
+            <span class="has-text-danger" data-show="{{ required_when }}">*</span>
+            {% elif is_required %}
+            <span class="has-text-danger">*</span>
+            {% endif %}
         </label>
         {% elif widget_type == 'textarea' %}
         <textarea class="textarea{% if errors %} is-danger{% endif %}"
@@ -72,10 +102,6 @@
                   {% if placeholder_expr %}data-attr:placeholder="{{ placeholder_expr }}"{% endif %}
                   {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
                   {% if html5_attrs.maxlength %}maxlength="{{ html5_attrs.maxlength }}"{% endif %}>{{ formatted_value|default:"" }}</textarea>
-        {% elif computed %}
-        {# Computed field - display only, no input #}
-        <span class="input" style="display: inline-block; background-color: #f5f5f5;"
-              data-text="{{ computed }}"></span>
         {% elif is_simple_input %}
         {# Text-family input: text/number/email/url/date/time/datetime-local/password #}
         <input class="input{% if errors %} is-danger{% endif %}"

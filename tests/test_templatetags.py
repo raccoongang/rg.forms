@@ -6,6 +6,7 @@ from django.forms import formset_factory
 from django.template import Context, Template
 
 from rg.forms import (
+    ReactiveBooleanField,
     ReactiveCharField,
     ReactiveChoiceField,
     ReactiveDateField,
@@ -473,3 +474,98 @@ class TestFormMethods:
 
         assert "total" in computed_fields
         assert "quantity" not in computed_fields
+
+
+class ComputedWidgetForm(ReactiveForm):
+    """Computed fields keep the widget they were declared with."""
+
+    a = ReactiveCharField(required=False)
+    b = ReactiveCharField(required=False)
+    computed_select = ReactiveChoiceField(
+        choices=[("x", "X"), ("y", "Y")],
+        required=False,
+        computed="$a * $b",
+    )
+    computed_textarea = ReactiveCharField(
+        required=False,
+        computed="$a * $b",
+        widget=forms.Textarea(),
+    )
+    computed_checkbox = ReactiveBooleanField(required=False, computed="$a * $b")
+    computed_text = ReactiveCharField(required=False, computed="$a * $b")
+
+
+def _render_field(form, field_name):
+    return Template("{% load reactive_forms %}{% render_reactive_field form." + field_name + " %}").render(
+        Context({"form": form})
+    )
+
+
+class TestComputedBranchWinsOverWidgetType:
+    """A computed field is display-only whatever widget it carries."""
+
+    @pytest.mark.parametrize(
+        "field_name,widget_tag",
+        [
+            ("computed_select", "<select"),
+            ("computed_textarea", "<textarea"),
+            ("computed_checkbox", 'type="checkbox"'),
+            ("computed_text", 'type="text"'),
+        ],
+    )
+    def test_computed_renders_a_data_text_span_not_the_widget(self, field_name, widget_tag):
+        rendered = _render_field(ComputedWidgetForm(), field_name)
+
+        assert "data-text=" in rendered
+        assert widget_tag not in rendered
+
+    def test_computed_span_carries_no_data_bind(self):
+        """A display-only span must not also be a writer for the signal."""
+        rendered = _render_field(ComputedWidgetForm(), "computed_select")
+
+        assert "data-bind" not in rendered
+
+    def test_computed_label_has_no_dangling_for(self):
+        """A <span> is not labelable, so the label must not point at it."""
+        rendered = _render_field(ComputedWidgetForm(), "computed_text")
+
+        assert "<label" in rendered
+        assert "for=" not in rendered
+
+
+class CheckboxForm(ReactiveForm):
+    mode = ReactiveCharField(required=False)
+    agree = ReactiveBooleanField(label="I agree to the terms")
+    subscribe = ReactiveBooleanField(
+        label="Subscribe",
+        required=False,
+        required_when="$mode == 'newsletter'",
+    )
+
+
+class TestCheckboxLabelIsNotDuplicated:
+    """The checkbox branch wraps its own label; the outer one must be skipped."""
+
+    def test_label_text_appears_once(self):
+        rendered = _render_field(CheckboxForm(), "agree")
+
+        assert rendered.count("I agree to the terms") == 1
+        assert rendered.count("<label") == 1
+
+    def test_static_required_indicator_survives_on_the_wrapping_label(self):
+        rendered = _render_field(CheckboxForm(), "agree")
+
+        assert "has-text-danger" in rendered
+        assert "data-show=" not in rendered
+
+    def test_required_when_indicator_survives_on_the_wrapping_label(self):
+        rendered = _render_field(CheckboxForm(), "subscribe")
+
+        assert rendered.count("Subscribe") == 1
+        assert 'class="has-text-danger" data-show=' in rendered
+
+    def test_non_checkbox_widgets_keep_their_outer_label(self):
+        rendered = _render_field(CheckboxForm(), "mode")
+
+        assert rendered.count("<label") == 1
+        assert 'for="id_mode"' in rendered
