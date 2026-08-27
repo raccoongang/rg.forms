@@ -397,6 +397,13 @@ def render_reactive_field(bound_field: BoundField, **kwargs):
     # Use widget.format_value() so HTML5 inputs (date, datetime-local, time)
     # get values in the format the browser expects (e.g. YYYY-MM-DDTHH:MM).
     raw_value = bound_field.value()
+    # Widgets that opt out of round-tripping their value — PasswordInput, whose
+    # ``render_value`` defaults to False — must not have it echoed back into the
+    # markup. Django enforces this in ``Widget.get_context``, which the shipped
+    # templates bypass by rendering the value themselves, so the flag is honored
+    # here: every override that reads ``formatted_value`` inherits the fix.
+    if getattr(widget, "render_value", True) is False:
+        raw_value = None
     formatted_value = widget.format_value(raw_value)
 
     widget_type = widget.__class__.__name__.lower()

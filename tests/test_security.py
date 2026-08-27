@@ -4,14 +4,18 @@ import html
 import json
 import re
 
+from django import forms
 from django.forms import formset_factory
 from django.template import Context, Template
 
 from rg.forms import ReactiveCharField, ReactiveForm
+from rg.forms.templatetags.reactive_forms import render_reactive_field
 
 # Values that would break out of a single-quoted attribute or inject markup.
 _HOSTILE = "x' onfocus='alert(1)"
 _HOSTILE_TAG = '</script><b>&"'
+# A password value distinctive enough that a substring check is unambiguous.
+_SECRET = "hunter2-SUPERSECRET"
 
 
 class InjectForm(ReactiveForm):
@@ -66,3 +70,41 @@ class TestFormsetSignalsInjection:
         parsed = json.loads(decoded)
         # The hostile value is nested under the row scope but preserved verbatim.
         assert _HOSTILE in json.dumps(parsed)
+
+
+class PasswordForm(ReactiveForm):
+    secret = ReactiveCharField(label="Secret", widget=forms.PasswordInput())
+
+
+class RenderValuePasswordForm(ReactiveForm):
+    """PasswordInput with the opt-in that makes the round-trip explicit."""
+
+    secret = ReactiveCharField(label="Secret", widget=forms.PasswordInput(render_value=True))
+
+
+class TestPasswordValueNotEchoed:
+    """A PasswordInput must not round-trip the submitted value into the HTML."""
+
+    def test_submitted_password_absent_from_rendered_field(self):
+        form = PasswordForm(data={"secret": _SECRET})
+        rendered = Template("{% load reactive_forms %}{% render_reactive_field form.secret %}").render(
+            Context({"form": form})
+        )
+
+        assert 'type="password"' in rendered
+        assert _SECRET not in rendered
+        assert 'value=""' in rendered
+
+    def test_formatted_value_is_suppressed_in_the_context(self):
+        """The suppression lives in the context, so template overrides inherit it."""
+        form = PasswordForm(data={"secret": _SECRET})
+        context = render_reactive_field(form["secret"])
+
+        assert context["formatted_value"] in (None, "")
+
+    def test_render_value_true_still_round_trips(self):
+        """Explicit ``render_value=True`` keeps Django's documented opt-in behavior."""
+        form = RenderValuePasswordForm(data={"secret": _SECRET})
+        context = render_reactive_field(form["secret"])
+
+        assert context["formatted_value"] == _SECRET
