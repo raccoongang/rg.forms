@@ -29,8 +29,25 @@ class PriceCalculatorForm(ReactiveForm):
 
 ## How it works
 
-- **Frontend**: the field gets `data-computed="$quantity * $unit_price"` and `readonly` — Datastar evaluates the expression and updates the field value in real time
-- **Backend**: on form submission, the server **recalculates** the computed value from the expression, ignoring whatever the client submitted. This prevents tampering
+- **Frontend**: the field renders as a display-only `<span data-text="$quantity * $unit_price">` — Datastar evaluates the
+  expression and updates the text in real time
+- **Backend**: on form submission, the server **recalculates** the computed value from the expression, ignoring whatever
+  the client submitted. This prevents tampering
+
+## Rendering a computed field
+
+A computed field is **not an input**. `data-computed` declares a derived *signal*; it never writes an element's value, so
+putting it on an `<input>` does nothing useful — and the key-less form (`data-computed="expr"`, no `:name`) is a silent
+no-op in Datastar, which is why `{% reactive_input_attrs %}` does not emit it.
+
+The shipped `rg_forms/field.html` handles this: its `computed` branch is tested **before** any widget type, because a
+computed field keeps whatever widget it was declared with — a `ReactiveChoiceField(computed=…)` still carries a `Select`.
+If you override the template, keep the computed arm first, or the field renders as an editable control and the expression
+is dropped silently.
+
+If you genuinely want a computed *signal* rather than a rendered value, declare it with a key on a non-input element —
+see [Display-only computed values](#display-only-computed-values) below. Note that a keyed `data-computed:total` and a
+`data-bind:total` are two writers for one signal, so a field cannot be both bound and computed.
 
 ## Expression syntax
 

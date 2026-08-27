@@ -34,11 +34,7 @@
     {% endcomment %}
     <label class="label"{% if not computed %} for="{{ control_id }}"{% endif %}>
         {{ label }}
-        {% if required_when %}
-        <span class="has-text-danger" data-show="{{ required_when }}">*</span>
-        {% elif is_required %}
-        <span class="has-text-danger">*</span>
-        {% endif %}
+        {% include "rg_forms/_required_indicator.html" with required_when=required_when is_required=is_required only %}
     </label>
     {% endif %}
 
@@ -86,11 +82,7 @@
                    {% if required_expr %}data-attr:required="{{ required_expr }}"{% elif is_required %}required{% endif %}
                    {% if field.value %}checked{% endif %}>
             {{ label }}
-            {% if required_when %}
-            <span class="has-text-danger" data-show="{{ required_when }}">*</span>
-            {% elif is_required %}
-            <span class="has-text-danger">*</span>
-            {% endif %}
+            {% include "rg_forms/_required_indicator.html" with required_when=required_when is_required=is_required only %}
         </label>
         {% elif widget_type == 'textarea' %}
         <textarea class="textarea{% if errors %} is-danger{% endif %}"

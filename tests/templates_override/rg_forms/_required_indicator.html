@@ -1,0 +1,6 @@
+{% comment %}
+   A consumer's override, used by TestRequiredIndicatorIsOverridable to prove the
+   indicator's presentation is not baked into Python. Deliberately carries no
+   Bulma class.
+{% endcomment %}
+{% if required_when %}<em class="my-ds-required" data-show="{{ required_when }}">required</em>{% elif is_required %}<em class="my-ds-required">required</em>{% endif %}

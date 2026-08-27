@@ -21,7 +21,7 @@ rg.forms maps reactive field properties to Datastar attributes:
 |----------------|-------------------------------------|---------------------------------------|
 | (all fields)   | `data-bind:fieldname`               | `data-bind:order_type`                |
 | `visible_when` | `data-show="expr"`                  | `data-show="$order_type == 'urgent'"` |
-| `computed`     | `data-computed="expr"` + `readonly` | `data-computed="$quantity * $price"`  |
+| `computed`     | `data-text="expr"` on a span        | `data-text="$quantity * $price"`      |
 
 ## Signals
 

@@ -267,17 +267,6 @@ def get_reactive_field(bound_field: BoundField):
     return bound_field.field
 
 
-def has_reactive_attrs(field) -> bool:
-    """Check if a field has any reactive attributes."""
-    return any(
-        [
-            getattr(field, "visible_when", None),
-            getattr(field, "required_when", None),
-            getattr(field, "computed", None),
-        ]
-    )
-
-
 @register.simple_tag
 def reactive_wrapper_attrs(bound_field: BoundField) -> str:
     """Generate wrapper div attributes (compiled ``data-show``) for a field."""
@@ -294,18 +283,21 @@ def reactive_wrapper_attrs(bound_field: BoundField) -> str:
 
 @register.simple_tag
 def reactive_input_attrs(bound_field: BoundField) -> str:
-    """Generate input element attributes (scoped ``data-bind``, compiled ``data-computed``)."""
-    field = get_reactive_field(bound_field)
+    """Generate input element attributes (the scoped ``data-bind``) for a field.
+
+    Computed fields deliberately get **nothing** here. ``data-computed`` declares
+    a derived *signal*; it never writes an element's value, so it is the wrong
+    attribute for an input even in its keyed form
+    (``data-computed:total="$a * $b"``) — and the key-less form this tag used to
+    emit is a silent no-op: Datastar's computed plugin falls into its object
+    branch, ``Object.assign({}, <scalar>)`` is ``{}``, and nothing is created or
+    logged. It would also fight the ``data-bind`` above it for the same signal.
+
+    Render a computed field as display-only markup instead — the shipped
+    ``rg_forms/field.html`` uses ``<span data-text="{{ computed }}">``.
+    """
     scope, _ = _field_scope(bound_field)
-    compile_expr = _make_compiler(bound_field)
-    attrs = [str(_bind_attr(bound_field, scope))]
-
-    computed = getattr(field, "computed", None)
-    if computed:
-        attrs.append(format_html('data-computed="{}"', compile_expr(computed)))
-        attrs.append("readonly")
-
-    return mark_safe(" ".join(attrs))
+    return mark_safe(str(_bind_attr(bound_field, scope)))
 
 
 def _safe_signals_value(json_text: str) -> str:
@@ -569,19 +561,19 @@ def signal_name(field_name: str) -> str:
     return f"${field_name}"
 
 
-@register.simple_tag
-def required_indicator(bound_field: BoundField) -> str:
-    """Generate a required indicator that respects required_when (compiled)."""
+@register.inclusion_tag("rg_forms/_required_indicator.html")
+def required_indicator(bound_field: BoundField):
+    """Render a required indicator that respects ``required_when`` (compiled).
+
+    The markup lives in ``rg_forms/_required_indicator.html`` so a consumer on a
+    different design system can override the presentation. Emitting the class
+    from Python made the tag unusable outside Bulma — overriding
+    ``rg_forms/field.html`` did not help, because the class was not in a template.
+    """
     field = get_reactive_field(bound_field)
     required_when = getattr(field, "required_when", None)
 
-    if required_when:
-        compile_expr = _make_compiler(bound_field)
-        return format_html(
-            '<span class="has-text-danger" data-show="{}">*</span>',
-            compile_expr(required_when),
-        )
-    elif bound_field.field.required:
-        return mark_safe('<span class="has-text-danger">*</span>')
-
-    return ""
+    return {
+        "required_when": _make_compiler(bound_field)(required_when) if required_when else None,
+        "is_required": bound_field.field.required,
+    }

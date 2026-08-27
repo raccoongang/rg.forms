@@ -96,26 +96,6 @@ class ReactiveFieldMixin:
         if autofocus:
             self.widget.attrs["autofocus"] = True
 
-    def is_visible(self, form_data: dict) -> bool:
-        """Evaluate visibility on server side.
-
-        For now, returns True. Full AST-based evaluation will be implemented.
-        """
-        if self.visible_when is None:
-            return True
-        # TODO: Implement AST-based rule evaluation
-        return True
-
-    def is_required_dynamic(self, form_data: dict) -> bool:
-        """Evaluate dynamic requirement on server side.
-
-        For now, returns the static required value. Full AST-based evaluation will be implemented.
-        """
-        if self.required_when is None:
-            return getattr(self, "required", False)
-        # TODO: Implement AST-based rule evaluation
-        return getattr(self, "required", False)
-
 
 class ReactiveCharField(ReactiveFieldMixin, forms.CharField):
     """Reactive version of CharField."""

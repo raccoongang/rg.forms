@@ -49,6 +49,8 @@ context to your own components:
 {# templates/rg_forms/field.html — dispatches to host design-system components #}
 {% if field.is_hidden %}
 {{ field }}
+{% elif computed %}
+    {% include "myui/fields/computed.html" %}
 {% elif widget_type == 'select' %}
     {% include "myui/fields/select.html" %}
 {% elif widget_type == 'checkboxinput' %}
@@ -59,6 +61,16 @@ context to your own components:
     {% include "myui/fields/input.html" %}
 {% endif %}
 ```
+
+Two ordering rules for that chain:
+
+- **Test `computed` before any `widget_type`.** A computed field keeps whatever widget it was declared with — a
+  `ReactiveChoiceField(computed=…)` still carries a `Select` — so a widget arm placed above swallows the field and drops
+  the expression silently. A computed field is display-only (`<span data-text="{{ computed }}">`); see
+  [Computed fields](computed.md#rendering-a-computed-field).
+- **Express a guard as a single operand.** Django's `{% if %}` binds `and` tighter than `or` and supports no
+  parentheses, so `not computed and A or B` parses as `(not computed and A) or B`. Write
+  `widget_type in "textinput,emailinput,urlinput"` rather than chaining `or` behind a `not`.
 
 A host input component then reads the contract keys directly:
 
@@ -117,7 +129,7 @@ submit.
 | `visible_when` | — | `data-show` | yes — hidden fields skipped in `clean` |
 | static `required` | yes (reactive w/ visibility) | via `required_expr` when hideable | yes |
 | `required_when` | — | `data-attr:required` | yes — enforced in `clean` |
-| `computed` | — | `data-text` / `data-computed` | yes — recomputed in `clean` |
+| `computed` | — | `data-text` (display only) | yes — recomputed in `clean` |
 | `disabled_when` | — | `data-attr:disabled` | **no** dynamic parity |
 | `read_only_when` | — | `data-attr:readonly` | **no** dynamic parity |
 | `placeholder_when` | — | `data-attr:placeholder` | n/a (presentational) |

@@ -77,7 +77,7 @@ Uses the `rg_forms/field.html` template. Generates:
 
 - Wrapper `<div>` with `data-show` if `visible_when` is set
 - `<label>` with required indicator
-- Input with `data-bind`, `data-computed` as needed
+- Input with `data-bind`, or a `data-text` span for a computed field
 - Error messages
 - Help text (static and dynamic `help_text_when`)
 
@@ -191,11 +191,8 @@ Output:
 <input type="text" data-bind:quantity>
 ```
 
-For computed fields:
-
-```html
-<input type="text" data-bind:total data-computed="$quantity * $price" readonly>
-```
+Computed fields get nothing beyond the binding, and should not be rendered as an
+input at all — see [Computed fields](../guide/computed.md#rendering-a-computed-field).
 
 ## `{% required_indicator bound_field %}`
 
@@ -207,7 +204,11 @@ Generates a required indicator (`*`) that respects `required_when`:
 
 - Static required: `<span class="has-text-danger">*</span>`
 - Dynamic required: `<span class="has-text-danger" data-show="$method == 'email'">*</span>`
-- Not required: empty string
+- Not required: empty output
+
+The markup comes from `rg_forms/_required_indicator.html`, so override that
+template to render the indicator in your own design system. Its context is
+`required_when` (a compiled expression, or `None`) and `is_required` (a bool).
 
 ## `{{ field_name|signal_name }}`
 

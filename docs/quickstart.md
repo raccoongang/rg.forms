@@ -94,7 +94,7 @@ That's it. The `priority` field appears only when "Urgent" is selected. The `qua
 ## What happened?
 
 - **`{% reactive_signals form %}`** generates initial signal values as JSON for Datastar
-- **`{% render_reactive_form form %}`** renders all fields with proper `data-bind`, `data-show`, and `data-computed` attributes
+- **`{% render_reactive_form form %}`** renders all fields with proper `data-bind`, `data-show` and `data-text` attributes
 - **`visible_when="$order_type == 'urgent'"`** becomes `data-show="$order_type == 'urgent'"` on the field wrapper
 - On the backend, `ReactiveForm._clean_fields()` evaluates `visible_when` and skips hidden fields
 

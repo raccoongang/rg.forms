@@ -19,7 +19,7 @@ rg.forms lets you build dynamic Django forms where fields react to each other â€
 ## How it works
 
 1. You define reactive rules in Python on your form fields
-2. rg.forms generates [Datastar](https://data-star.dev) attributes (`data-show`, `data-bind`, `data-computed`, etc.)
+2. rg.forms generates [Datastar](https://data-star.dev) attributes (`data-show`, `data-bind`, `data-text`, etc.)
 3. The frontend reacts instantly â€” no page reloads
 4. On submit, the backend re-evaluates all rules for security
 

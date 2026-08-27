@@ -1,9 +1,13 @@
 """Tests for reactive_forms template tags."""
 
+from pathlib import Path
+
 import pytest
 from django import forms
+from django.conf import settings
 from django.forms import formset_factory
 from django.template import Context, Template
+from django.test import override_settings
 
 from rg.forms import (
     ReactiveBooleanField,
@@ -18,6 +22,14 @@ from rg.forms import (
     ReactiveURLField,
 )
 from rg.forms.templatetags.reactive_forms import render_reactive_field
+
+_OVERRIDE_DIR = Path(__file__).resolve().parent / "templates_override"
+
+
+def _override_indicator_template():
+    """Put a consumer's template dir ahead of the app loader for one block."""
+    engine = settings.TEMPLATES[0]
+    return override_settings(TEMPLATES=[{**engine, "DIRS": [_OVERRIDE_DIR, *engine["DIRS"]]}])
 
 
 class VisibilityForm(ReactiveForm):
@@ -88,18 +100,21 @@ class TestReactiveInputAttrs:
         # Datastar uses data-bind:fieldname syntax (no $ prefix)
         assert "data-bind:order_type" in result
 
-    def test_computed_generates_data_computed(self):
-        """Computed field should generate data-computed and readonly."""
+    def test_computed_field_emits_no_data_computed(self):
+        """A key-less data-computed is a silent no-op, and fights data-bind.
+
+        ``data-computed`` declares a derived signal; it never writes an element
+        value. The tag must not emit it — computed fields are rendered as
+        display-only markup (``data-text``) by field.html instead.
+        """
         form = ComputedForm()
         template = Template("{% load reactive_forms %}{% reactive_input_attrs form.total %}")
         context = Context({"form": form})
         result = template.render(context)
 
-        # Compiled arithmetic keeps a guarded, numeric-only form (ADR-0002 §3).
-        assert "data-computed=" in result
-        assert "$quantity" in result
-        assert "$price" in result
-        assert "readonly" in result
+        assert result.strip() == "data-bind:total"
+        assert "data-computed" not in result
+        assert "readonly" not in result
 
 
 class TestReactiveSignals:
@@ -569,3 +584,34 @@ class TestCheckboxLabelIsNotDuplicated:
 
         assert rendered.count("<label") == 1
         assert 'for="id_mode"' in rendered
+
+
+class TestRequiredIndicatorIsOverridable:
+    """The indicator markup lives in a template, not in Python."""
+
+    @pytest.mark.parametrize(
+        "field_name,expects_data_show",
+        [("contact_method", False), ("email", True)],
+    )
+    def test_a_consumer_override_replaces_the_markup(self, field_name, expects_data_show):
+        """Both the static and the required_when arm come from the template."""
+        form = RequiredWhenForm()
+        source = "{% load reactive_forms %}{% required_indicator form." + field_name + " %}"
+
+        # The Template must be built inside the override: an inclusion tag
+        # resolves its template through the engine that compiled the caller.
+        with _override_indicator_template():
+            result = Template(source).render(Context({"form": form}))
+
+        assert "my-ds-required" in result
+        assert "has-text-danger" not in result
+        assert ("data-show=" in result) is expects_data_show
+
+    def test_no_presentation_class_is_hardcoded_in_python(self):
+        import inspect
+
+        from rg.forms.templatetags import reactive_forms
+
+        source = inspect.getsource(reactive_forms)
+
+        assert "has-text-danger" not in source

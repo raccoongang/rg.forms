@@ -5,6 +5,59 @@ All notable changes to rg.forms are documented here. This project adheres to
 
 ## [Unreleased]
 
+Addresses the nine findings raised in the ksk-ki upstream brief; four had already
+been fixed by the ADR-0001 rendering work and the Wave 0 correctness pass, five
+are fixed here.
+
+### Security
+
+- **A `PasswordInput` value is no longer echoed into the rendered field.**
+  `render_reactive_field` built `formatted_value` from `widget.format_value()`,
+  but Django suppresses the password round-trip in `Widget.get_context` — which
+  the shipped templates bypass by rendering the value themselves. A re-rendered
+  reactive login or registration form therefore put the submitted password in
+  cleartext in the page source. `widget.render_value` is now honored in the render
+  context, so consumer template overrides inherit the fix.
+  `PasswordInput(render_value=True)` keeps Django's documented opt-in.
+
+### Fixed
+
+- **A computed field is rendered display-only whatever its widget.** The
+  `computed` arm of `rg_forms/field.html` sat after the widget-type arms, so a
+  field whose widget matched one of them — `ReactiveChoiceField(computed=…)` keeps
+  its `Select` — rendered as an editable control with the expression dropped
+  silently. The arm is now first.
+- **No duplicate label on a checkbox field.** The outer `<label for=…>` was
+  emitted for every widget while the `checkboxinput` arm emits its own wrapping
+  label, so the text appeared twice and two labels pointed at one control. The
+  outer label is skipped for checkboxes, with the required indicator moved onto
+  the wrapping label. A computed field's label also no longer carries `for=`,
+  since its control is a `<span>` and not a labelable element.
+- **`{% reactive_input_attrs %}` no longer emits `data-computed`.** Without a key
+  Datastar's computed plugin takes its object branch, `Object.assign({}, scalar)`
+  is `{}`, and nothing is created or logged — a silent no-op. Even keyed it would
+  be wrong on an input (`data-computed` declares a signal, it never writes an
+  element value) and would fight the `data-bind` beside it for the same signal.
+
+### Changed
+
+- **`{% required_indicator %}` renders through `rg_forms/_required_indicator.html`.**
+  The Bulma `has-text-danger` class was emitted from Python, so a consumer on
+  another design system could not use the tag and overriding
+  `rg_forms/field.html` did not help. Override the new template instead; its
+  context is `required_when` (a compiled expression, or `None`) and `is_required`.
+
+### Removed
+
+- **`ReactiveFieldMixin.is_visible()` and `ReactiveFieldMixin.is_required_dynamic()`.**
+  `# TODO: Implement AST-based rule evaluation` stubs that ignored their argument
+  and returned a constant, with no callers. Reading `fields.py` in isolation
+  suggested conditional requirement was unimplemented, when
+  `ReactiveForm.is_field_visible` / `is_field_required` / `_clean_fields` do
+  evaluate the expressions. Use those.
+- **`has_reactive_attrs()`** from `rg.forms.templatetags.reactive_forms` — no
+  callers, never registered as a tag or filter.
+
 ## [0.2.1] - 2026-08-25
 
 Implements ADR-0005 (multi-form reactive submission). Additive — no existing

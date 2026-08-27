@@ -1,0 +1,9 @@
+{% comment %}
+   Required indicator — REFERENCE EXAMPLE (Bulma CSS).
+   Override this template to change the presentation for your design system.
+
+   Context: required_when (compiled expression or None), is_required (bool).
+   A required_when field is optional until the expression holds, so the
+   indicator is emitted with data-show rather than unconditionally.
+{% endcomment %}
+{% if required_when %}<span class="has-text-danger" data-show="{{ required_when }}">*</span>{% elif is_required %}<span class="has-text-danger">*</span>{% endif %}
