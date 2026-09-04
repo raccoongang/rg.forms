@@ -3,9 +3,11 @@
 Normalization is the *loss-minimizing* layer that maps a field's raw source
 (a ``QueryDict`` value, a widget-extracted value, or a native ``initial``
 object) to its **canonical reactive value**. The same function feeds both the
-client seed (``get_signals``) and server-side expression evaluation, so the two
-sides evaluate identical values — the canonical value is anchored to
-``get_signals_json``.
+client seed (``get_client_signals``) and server-side expression evaluation
+(``get_signals``), so the two sides evaluate identical values — the canonical
+value is anchored to ``get_signals_json``. The one deliberate exception is a
+write-only widget (see :func:`is_write_only`), whose value the client seed
+replaces with :func:`canonical_empty` while the server keeps the real one.
 
 Normalization is **not** validation: it never calls ``field.clean()`` (which
 would reject *temporarily-invalid* in-progress input such as ``"-"`` or
@@ -100,6 +102,24 @@ def canonical_empty(field: forms.Field) -> Any:
     if kind == "file":
         return None
     return ""  # string / choice / decimal / date / time / datetime / uuid
+
+
+def is_write_only(widget: forms.Widget) -> bool:
+    """Whether a widget opts out of round-tripping its value back to the client.
+
+    ``PasswordInput`` sets ``render_value = False`` by default; Django honors it
+    in ``Widget.get_context``, which the reactive render path bypasses on both
+    sides (the client seed builds values from the field, and the shipped
+    templates write the ``value`` attribute themselves). The predicate lives
+    beside :func:`canonical_empty` because the two are always used together —
+    a write-only field is seeded with its canonical empty value — and because
+    both the form (seed) and the template tag (rendered value) must agree on
+    what counts as write-only or the suppression would apply on one side only.
+
+    Duck-typed rather than ``isinstance(widget, forms.PasswordInput)`` so a
+    custom widget can opt out with the same flag.
+    """
+    return getattr(widget, "render_value", True) is False
 
 
 # --------------------------------------------------------------------------- #
@@ -243,6 +263,7 @@ __all__ = [
     "field_kind",
     "canonical_type",
     "canonical_empty",
+    "is_write_only",
     "normalize_field_value",
     "extract_raw",
     "normalize_from_datadict",

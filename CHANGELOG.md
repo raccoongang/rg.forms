@@ -9,7 +9,33 @@ Addresses the nine findings raised in the ksk-ki upstream brief; four had alread
 been fixed by the ADR-0001 rendering work and the Wave 0 correctness pass, five
 are fixed here.
 
+### Added
+
+- **`ReactiveForm.get_client_signals()`** — the flat, logical-keyed signals the
+  *client* may receive. It is `get_signals()` with write-only widget values
+  (`PasswordInput` with the default `render_value=False`) replaced by the
+  field's canonical empty value. `get_seed_signals()` and
+  `{% reactive_formset_signals %}` now build on it, so `data-signals` never
+  carries such a value. `get_signals()` and `_get_form_data()` keep the real
+  value on purpose — see below.
+
 ### Security
+
+- **A `PasswordInput` value is no longer seeded into `data-signals`.**
+  `get_signals()` reads the submitted value for a bound form, `get_signals_json()`
+  serialised it into the `data-signals` attribute, and `data-bind` wrote each
+  signal back onto its input — so the ordinary validation-error re-render put the
+  secret the user had just typed into an HTML attribute and restored it into the
+  field. The client-facing seed now goes through `get_client_signals()`, on the
+  single-form, scoped and formset paths alike.
+
+  The suppression stops at the client boundary: `get_signals()` and
+  `_get_form_data()`, which feed **server-side** `visible_when` / `required_when`
+  evaluation, still see the real value. Gating a dependent field on whether a
+  secret was supplied (`required_when="$password"`) is a legitimate pattern, and
+  blanking the server's copy would disable such a rule while leaving it looking
+  present in the code. The two dicts diverge deliberately, and only for
+  write-only widgets.
 
 - **A `PasswordInput` value is no longer echoed into the rendered field.**
   `render_reactive_field` built `formatted_value` from `widget.format_value()`,
@@ -18,7 +44,10 @@ are fixed here.
   reactive login or registration form therefore put the submitted password in
   cleartext in the page source. `widget.render_value` is now honored in the render
   context, so consumer template overrides inherit the fix.
-  `PasswordInput(render_value=True)` keeps Django's documented opt-in.
+  `PasswordInput(render_value=True)` keeps Django's documented opt-in on both the
+  rendered value and the seed. The "is this widget write-only" test is now a
+  single shared predicate (`normalization.is_write_only`) rather than one copy
+  per layer, so the rendered value and the seeded signal cannot drift apart.
 
 ### Fixed
 

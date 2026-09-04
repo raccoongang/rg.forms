@@ -10,7 +10,7 @@ from django.forms import BoundField
 from django.http import QueryDict
 
 from .expressions import ExpressionError, evaluate_expression, is_truthy
-from .normalization import normalize_field_value, normalize_from_datadict
+from .normalization import canonical_empty, is_write_only, normalize_field_value, normalize_from_datadict
 from .scoping import RESERVED_NAMESPACE, encode_scope
 
 logger = logging.getLogger("rg.forms")
@@ -326,14 +326,20 @@ class ReactiveForm(forms.Form):
         return is_truthy(result)
 
     def get_signals(self) -> dict[str, Any]:
-        """Generate the initial canonical signals dict for Datastar.
+        """The canonical signals dict, keyed by logical field name.
+
+        This is the **server-side** source of truth: it always holds the real
+        submitted value, and it is what ``visible_when`` / ``required_when`` are
+        evaluated against (via :meth:`_get_form_data`). It is **not** the browser
+        boundary — :meth:`get_client_signals` is, and it may deliberately differ
+        (a write-only widget's value is suppressed there). Anything the client
+        will see must go through that method or :meth:`get_seed_signals`.
 
         Every field is run through reactive normalization (ADR-0002 §1/§2), so
-        the seed the client receives is, by definition, what the server
-        normalizes to. Bound forms read the submitted value via the widget
+        what the client is eventually seeded with is, by definition, what the
+        server normalizes to. Bound forms read the submitted value via the widget
         (``getlist``/checkbox semantics); unbound forms read ``initial``. The
-        result holds only canonical types (string, number, boolean, null, array)
-        keyed by the logical field name.
+        result holds only canonical types (string, number, boolean, null, array).
         """
         signals: dict[str, Any] = {}
         files = getattr(self, "files", None) or {}
@@ -346,6 +352,37 @@ class ReactiveForm(forms.Form):
                 signals[name] = normalize_field_value(field, raw)
         return signals
 
+    def get_client_signals(self) -> dict[str, Any]:
+        """The flat, logical-keyed signals the **client** is allowed to receive.
+
+        Identical to :meth:`get_signals` except that a field whose widget opts
+        out of round-tripping its value — ``PasswordInput`` with Django's
+        default ``render_value=False`` — is seeded with its canonical empty
+        value instead of the submitted one. Django enforces that suppression in
+        ``Widget.get_context``, which the reactive path never calls: without
+        this, a bound form (the ordinary validation-error re-render) serializes
+        the secret the user just typed into the ``data-signals`` attribute, and
+        ``data-bind`` restores it into the input.
+
+        The suppression deliberately stops here and is **not** applied to
+        :meth:`get_signals` / :meth:`_get_form_data`, which feed *server-side*
+        expression evaluation. A form may legitimately gate on whether a secret
+        was supplied (``required_when="$secret"`` on a dependent field is a real
+        pattern); blanking the server's copy would silently disable such a rule
+        while leaving it looking present in the code. The two dicts diverge on
+        purpose, and only for write-only widgets.
+
+        The client-side consequence is intended: after a bound re-render the
+        password signal reads empty until the user retypes, exactly as on a
+        fresh page load. An expression that gates on it therefore evaluates
+        client-side against the empty value while the server used the real one.
+        """
+        signals = self.get_signals()
+        for name, field in self.fields.items():
+            if is_write_only(field.widget):
+                signals[name] = canonical_empty(field)
+        return signals
+
     def get_seed_signals(self) -> dict[str, Any]:
         """The client-facing seed structure for ``data-signals``.
 
@@ -354,8 +391,11 @@ class ReactiveForm(forms.Form):
         the scoped ``data-bind`` paths and compiled ``$rgForms.<scope>.<field>``
         expression references (ADR-0003). Server-side expression evaluation keeps
         using the flat, logical-keyed :meth:`get_signals`.
+
+        Built from :meth:`get_client_signals`, so write-only widget values never
+        reach the attribute.
         """
-        signals = self.get_signals()
+        signals = self.get_client_signals()
         scope = self.reactive_scope
         if scope:
             return {RESERVED_NAMESPACE: {scope: signals}}

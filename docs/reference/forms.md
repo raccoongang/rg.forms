@@ -55,9 +55,40 @@ form.get_signals()
 # {'order_type': '', 'quantity': 5, 'unit_price': ''}
 ```
 
+`get_signals()` is the **server-side** canonical dict: it is what `visible_when` / `required_when` are evaluated
+against, and it always holds the real submitted value. Use `get_client_signals()` for anything the browser will see.
+
+### `get_client_signals() -> dict`
+
+The same dict, minus values a widget refuses to round-trip. A field whose widget sets `render_value = False` — Django's
+default for `PasswordInput` — is seeded with its canonical empty value instead of the submitted secret:
+
+```python
+form = LoginForm(data={'username': 'bob', 'password': 's3cret'})
+form.get_client_signals()
+# {'username': 'bob', 'password': ''}
+form.get_signals()
+# {'username': 'bob', 'password': 's3cret'}
+```
+
+The divergence is deliberate. Django enforces the password suppression in `Widget.get_context()`, which the reactive
+render path never calls, so without it a bound form would serialise the secret into the `data-signals` attribute and
+`data-bind` would restore it into the input. Server-side rule evaluation keeps the real value, because gating on
+whether a secret was supplied (`required_when="$password"` on a dependent field) is a legitimate pattern that blanking
+would silently disable.
+
+The consequence on the client is intended: after a validation-error re-render the password signal reads empty until the
+user retypes, exactly as on a fresh page load. `PasswordInput(render_value=True)` is Django's explicit opt-in and keeps
+round-tripping.
+
+### `get_seed_signals() -> dict`
+
+`get_client_signals()` in the shape the client binds to — flat for an unprefixed form, nested under
+`rgForms.<scope>` for a prefixed one (see [ADR-0003](../adr/0003-scoped-signals-and-reactive-formsets.md)).
+
 ### `get_signals_json() -> str`
 
-Returns `get_signals()` as a JSON string, ready for `data-signals`:
+Returns `get_seed_signals()` as a JSON string, ready for `data-signals`:
 
 ```html
 <form data-signals='{% reactive_signals form %}'>

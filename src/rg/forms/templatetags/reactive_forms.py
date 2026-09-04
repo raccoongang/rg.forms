@@ -23,6 +23,7 @@ from django.template.context import Context
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
+from ..normalization import is_write_only
 from ..scoping import RESERVED_NAMESPACE, compile_expression, encode_scope, signal_path
 
 # Sentinel distinguishing "validate_action omitted" (inherit action) from an
@@ -343,7 +344,15 @@ def reactive_formset_signals(formset: Any) -> str:
     combined: dict[str, Any] = {}
     flat: dict[str, Any] = {}
     for form in formset:
-        signals = form.get_signals() if hasattr(form, "get_signals") else {}
+        # get_client_signals, not get_signals: the seed is client-facing, so a
+        # write-only widget's value (a PasswordInput) must be suppressed here
+        # exactly as ReactiveForm.get_seed_signals does it for a single form.
+        if hasattr(form, "get_client_signals"):
+            signals = form.get_client_signals()
+        elif hasattr(form, "get_signals"):
+            signals = form.get_signals()
+        else:
+            signals = {}
         scope = getattr(form, "reactive_scope", None)
         if scope is None and getattr(form, "prefix", None):
             scope = encode_scope(form.prefix)
@@ -396,8 +405,10 @@ def render_reactive_field(bound_field: BoundField, **kwargs: Any) -> dict[str, A
     # ``render_value`` defaults to False — must not have it echoed back into the
     # markup. Django enforces this in ``Widget.get_context``, which the shipped
     # templates bypass by rendering the value themselves, so the flag is honored
-    # here: every override that reads ``formatted_value`` inherits the fix.
-    if getattr(widget, "render_value", True) is False:
+    # here: every override that reads ``formatted_value`` inherits the fix. The
+    # predicate is shared with the signal seed (``get_client_signals``) so the
+    # rendered value and the seeded signal can never disagree about it.
+    if is_write_only(widget):
         raw_value = None
     formatted_value = widget.format_value(raw_value)
 
