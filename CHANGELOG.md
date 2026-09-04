@@ -78,6 +78,17 @@ are fixed here.
 
 ### Internal
 
+- **`ruff check .` and `ruff format .` are clean repo-wide.** Every violation was
+  in `docs/comparisons/fixtures/`, the competitor-stack slices that
+  `tools/measure_comparisons.py` counts SLOC from. They are illustrative, written
+  in each ecosystem's own idiom, and their line counts are published numbers —
+  so a formatter re-wrapping an expression there would silently move a
+  comparison result. The directory is now in `[tool.ruff] exclude`, alongside
+  `examples/`, which holds the rg.forms side of the same measurement; neither
+  side of a comparison can now drift because of a lint run. Running bare `ruff`
+  previously reported 14 errors and one would-be reformat that no one could act
+  on.
+
 - **`mypy --strict` passes and is now enforceable.** `mypy src/` previously aborted
   on module resolution ("Source file found twice under different module names")
   because a src layout plus a PEP 420 namespace package (`src/rg` has no

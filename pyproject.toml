@@ -52,7 +52,15 @@ all = [
 [tool.ruff]
 target-version = "py312"
 line-length = 120
-exclude = ["examples/"]
+# docs/comparisons/fixtures/ holds the competitor-stack slices that
+# tools/measure_comparisons.py counts SLOC from. They are illustrative, not
+# runnable, and deliberately written in each ecosystem's own idiom rather than
+# this package's house style — so they are not held to its lint rules, and a
+# formatter must not rewrite them: re-wrapping an expression silently moves a
+# published comparison number. The rg.forms side of the same measurement lives
+# in examples/, which is excluded for the runnable-app reason above it; keeping
+# both out means neither side of a comparison drifts because of a lint run.
+exclude = ["examples/", "docs/comparisons/fixtures/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "DJ"]
