@@ -3,7 +3,7 @@
 All notable changes to rg.forms are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.2] - 2026-09-04
 
 Addresses the nine findings raised in the ksk-ki upstream brief; four had already
 been fixed by the ADR-0001 rendering work and the Wave 0 correctness pass, five

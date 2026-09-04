@@ -1,6 +1,6 @@
 """rg.forms - Reactive Django Forms with Datastar integration."""
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 # Reactive fields
 from rg.forms.fields import (
