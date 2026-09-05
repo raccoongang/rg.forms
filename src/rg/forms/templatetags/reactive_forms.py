@@ -413,6 +413,7 @@ def render_reactive_field(bound_field: BoundField, **kwargs: Any) -> dict[str, A
     formatted_value = widget.format_value(raw_value)
 
     widget_type = widget.__class__.__name__.lower()
+    field_name = bound_field.name
 
     widget_attrs = {key: value for key, value in widget.attrs.items() if key not in _WIDGET_ATTRS_EXCLUDE}
 
@@ -429,6 +430,16 @@ def render_reactive_field(bound_field: BoundField, **kwargs: Any) -> dict[str, A
     help_text_when_compiled = (
         {compile_expr(cond): text for cond, text in help_text_when.items()} if help_text_when else None
     )
+
+    # Server-rendered initial visibility. ``data-show`` only takes effect once
+    # Datastar has booted, so a field whose rule is *already* false paints
+    # visible for a frame and then vanishes — a visible flash on every load of a
+    # page whose collapsed section holds a dozen inputs. The form can answer the
+    # question server-side; this key hands the answer to the template so the
+    # first paint is already correct. Only asked when a rule exists, so a field
+    # without ``visible_when`` costs nothing and is never reported hidden.
+    is_field_visible = getattr(getattr(bound_field, "form", None), "is_field_visible", None)
+    initially_hidden = bool(visible_when) and callable(is_field_visible) and not is_field_visible(field_name)
 
     # Deterministic ids (ADR-0004 §6) and the minimal a11y contract.
     ids = control_ids(bound_field)
@@ -462,6 +473,7 @@ def render_reactive_field(bound_field: BoundField, **kwargs: Any) -> dict[str, A
         "help_text": kwargs.get("help_text", bound_field.help_text),
         # Compiled + scoped expressions used directly by the template.
         "visible_when": maybe(visible_when),
+        "initially_hidden": initially_hidden,
         "required_when": maybe(required_when),
         "computed": maybe(getattr(field, "computed", None)),
         "disabled_when": maybe(getattr(field, "disabled_when", None)),
@@ -471,7 +483,7 @@ def render_reactive_field(bound_field: BoundField, **kwargs: Any) -> dict[str, A
         "min_when": min_when,
         "max_when": max_when,
         "is_required": field.required,
-        "field_name": bound_field.name,
+        "field_name": field_name,
         "widget_type": widget_type,
         "input_type": _INPUT_TYPE_MAP.get(widget_type, "text"),
         "is_simple_input": widget_type in _SIMPLE_INPUT_WIDGETS,
@@ -559,17 +571,24 @@ def render_field_group(
     # Compile + scope the group's visible_when using the form's scope. A group
     # inside a prefixed form must scope exactly like its fields (ADR-0003 §2).
     group_visible_when = None
+    group_initially_hidden = False
     if group.visible_when:
         prefix = getattr(form, "prefix", "") or ""
         scope = encode_scope(prefix) if prefix else None
         field_names = set(getattr(form, "fields", {}) or {})
         group_visible_when = compile_expression(group.visible_when, scope=scope, field_names=field_names)
+        # The group-level half of the flash-of-visible fix — see the note on
+        # ``initially_hidden`` in render_reactive_field. Each field inside the
+        # group still answers for itself: a group and its fields can carry
+        # different rules, and only the field knows its own.
+        group_initially_hidden = not form.is_group_visible(group_name)
 
     return {
         "form": form,
         "group": group,
         "group_name": group_name,
         "group_visible_when": group_visible_when,
+        "group_initially_hidden": group_initially_hidden,
         "fields": fields,
         "validate_action": validate_action,
         "csrf_token": context.get("csrf_token"),

@@ -14,6 +14,14 @@
    patch just this field (ADR-0004 §6); control_attrs carries the validate
    handler / pending indicator / aria-* contract.
 
+   `initially_hidden` is the server's answer to the same question data-show
+   answers in the browser, and it is emitted as an inline `display: none` so the
+   first paint is already correct — data-show only runs once Datastar has
+   booted, so without it a field whose rule is already false flashes into view
+   and then vanishes. Datastar clears the inline display when the rule turns
+   true, so the two do not fight. An override that drops the attribute loses
+   only the flash fix, not the behaviour.
+
    Branch ORDER is load-bearing: `computed` is tested before any widget type,
    because a computed field keeps whatever widget it was declared with. If you
    reorder the chain in an override, keep the computed arm first.
@@ -26,7 +34,7 @@
 {% if field.is_hidden %}
 {{ field }}
 {% else %}
-<div class="field"{% if wrapper_id %} id="{{ wrapper_id }}"{% endif %}{% if visible_when %} data-show="{{ visible_when }}"{% endif %}>
+<div class="field"{% if wrapper_id %} id="{{ wrapper_id }}"{% endif %}{% if visible_when %} data-show="{{ visible_when }}"{% endif %}{% if initially_hidden %} style="display: none"{% endif %}>
     {% if widget_type != 'checkboxinput' %}
     {% comment %}
        The checkbox branch wraps the control in its own <label>; emitting this

@@ -517,6 +517,35 @@ class ReactiveForm(forms.Form):
             return True  # fail-open only on error
         return is_truthy(result)
 
+    def get_hidden_field_names(self) -> set[str]:
+        """Names of the fields whose ``visible_when`` currently evaluates false.
+
+        The same predicate :meth:`_clean_fields` uses to decide which fields to
+        skip, exposed so callers do not have to re-derive it (and cannot derive
+        it differently). Stateless: it evaluates against the data the form holds
+        right now, so it answers before validation as well as after.
+
+        A field with no ``visible_when`` is never hidden, and a rule that fails
+        to evaluate fails open to visible — see :meth:`is_field_visible`.
+        """
+        return {name for name in self.fields if not self.is_field_visible(name)}
+
+    @property
+    def visible_changed_data(self) -> list[str]:
+        """:attr:`~django.forms.Form.changed_data`, minus what the form is hiding.
+
+        A hidden field's control is still in the DOM and still submits, so
+        Django's ``changed_data`` reports edits the user made *before* a section
+        collapsed — edits :meth:`_clean_fields` then discards. That makes plain
+        ``changed_data`` the wrong input to "did this submission actually change
+        anything?", which is the question a settings page usually wants to ask.
+
+        Note the deliberately narrow meaning of "visible" here: it is the
+        ``visible_when`` rule, not Django's :meth:`~django.forms.Form.hidden_fields`
+        (widgets rendered as ``<input type="hidden">``), which are unaffected.
+        """
+        return [name for name in self.changed_data if self.is_field_visible(name)]
+
     def is_field_required(self, field_name: str) -> bool:
         """Evaluate if a field is required based on required_when.
 
@@ -567,7 +596,16 @@ class ReactiveForm(forms.Form):
 
             # Skip hidden fields (visible_when=false)
             if not self.is_field_visible(name):
-                # Set to None/empty in cleaned_data
+                # None, not the submitted value: a hidden control still posts,
+                # and honoring what it posted would let a rule the user cannot
+                # see decide the outcome. For a plain Form that is the whole
+                # story. Under a ModelForm it is not — ``_post_clean`` would
+                # write these Nones onto the instance and ``save()`` would
+                # persist them, erasing stored configuration a collapsed
+                # section only meant to hide. ``ReactiveModelForm._post_clean``
+                # withholds these names from ``construct_instance`` for exactly
+                # that reason; the key stays here so ``clean()`` and
+                # ``cleaned_data[name]`` read the same on both form kinds.
                 self.cleaned_data[name] = None
                 continue
 
@@ -666,3 +704,73 @@ class ReactiveForm(forms.Form):
             choices.append((str(value), label))
 
         _set_choices(field, choices)
+
+
+# ``forms.ModelForm`` is generic in django-stubs but not subscriptable at
+# runtime, so the model parameter cannot be spelled here. ``instance`` is
+# therefore typed as ``Any``, which is what a consumer's own subclass narrows
+# by declaring ``Meta.model``.
+class ReactiveModelForm(ReactiveForm, forms.ModelForm):  # type: ignore[type-arg]
+    """A :class:`ReactiveForm` bound to a model instance.
+
+    Everything reactive comes from :class:`ReactiveForm` — signal generation,
+    ``visible_when`` / ``required_when``, computed fields, cascading choices,
+    field groups — and everything model-shaped comes from
+    :class:`~django.forms.ModelForm`: ``instance``, generated fields from
+    ``Meta.model``/``Meta.fields``, ``_post_clean`` and ``save()``. The MRO does
+    the composing (``ReactiveForm`` first, so its ``_clean_fields`` wins);
+    shipping it as a class means no consumer has to re-derive that ordering or
+    discover the hidden-field hazard below on their own.
+
+    ``Meta`` carries both vocabularies at once — Django reads ``model``,
+    ``fields``, ``widgets`` and friends, rg.forms reads ``field_groups`` and
+    ``external_signals``, and each ignores the other's keys::
+
+        class ProviderForm(ReactiveModelForm):
+            enabled = ReactiveBooleanField(required=False)
+            client_id = ReactiveCharField(visible_when="$enabled")
+
+            class Meta:
+                model = Provider
+                fields = ["enabled", "client_id"]
+
+    **Hidden fields are not written to the instance.** ``_clean_fields`` sets a
+    hidden field's ``cleaned_data`` to ``None`` (see the comment there), which
+    for a ModelForm would mean ``save()`` nulling the very columns a collapsed
+    section was meant to leave alone — untick "enabled" and the stored client
+    id, endpoints and secret are gone. :meth:`_post_clean` prevents that.
+    """
+
+    def _post_clean(self) -> None:
+        """Run Django's model-side cleaning, minus the fields the form hides.
+
+        ``construct_instance`` skips any field absent from ``cleaned_data``, so
+        withholding the hidden names for the duration of the call leaves those
+        model attributes at their stored values instead of overwriting them with
+        the ``None`` :meth:`_clean_fields` recorded. The keys go back afterwards,
+        so ``cleaned_data`` still reads ``None`` for a hidden field exactly as it
+        does on a plain :class:`ReactiveForm`.
+
+        Withholding rather than restoring each field's ``initial`` is the safer
+        of the two: it writes nothing at all, so a form whose ``initial`` differs
+        from what is stored (an override in ``__init__``, a value computed for
+        display) cannot quietly push that difference into the database. It also
+        keeps a write-only secret's "leave blank to keep the stored value" path
+        working, since nothing is written either way.
+
+        Model-level validation still runs on the resulting instance, and a
+        hidden field is never validated against a ``None`` the form did not ask
+        for. Whether it is validated *at all* is Django's own call and unchanged
+        here: ``_get_validation_exclusions`` drops a field whose model column is
+        ``blank=False`` and whose form field is optional when its cleaned value
+        reads empty — which withholding it makes it. When the field is not
+        excluded, it is the stored value that gets checked.
+        """
+        hidden = self.get_hidden_field_names()
+        withheld = {name: self.cleaned_data.pop(name) for name in hidden if name in self.cleaned_data}
+        try:
+            # ``_post_clean`` is Django-internal (BaseModelForm) and absent from
+            # django-stubs, like ``_bound_items`` above.
+            super()._post_clean()  # type: ignore[misc]
+        finally:
+            self.cleaned_data.update(withheld)

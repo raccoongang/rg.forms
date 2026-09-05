@@ -108,6 +108,7 @@ removed, or change meaning/type without a major version.
 | `label` | `str` | Field label (overridable via the `label=` tag kwarg). |
 | `help_text` | `str` | Static help text. |
 | `visible_when` | `str \| None` | Datastar expression for `data-show`. |
+| `initially_hidden` | `bool` | The server's answer to the same question `data-show` answers in the browser: `True` when the field has a `visible_when` and it is **already false** for the data the form holds. `data-show` only takes effect once Datastar has booted, so without acting on this a field whose rule is already false paints visible for a frame and then vanishes. Render it as an inline `display: none` **in addition to** `data-show`, not instead of it — Datastar clears the inline value when the rule turns true. Always `False` for a field with no rule, and for a bound field of a non-`ReactiveForm`. |
 | `required_when` | `str \| None` | Datastar expression for the dynamic required indicator. |
 | `computed` | `str \| None` | Datastar expression for a read-only computed value. |
 | `disabled_when` | `str \| None` | Datastar expression for `data-attr:disabled`. |
@@ -139,6 +140,19 @@ kwargs (normally threaded automatically by `render_reactive_form`) used to build
 the incremental-validation request — see
 [Incremental validation](../guide/incremental-validation.md).
 
+!!! note "`widget_attrs` and `control_attrs` can both carry `aria-*`"
+    `control_attrs` emits `aria-invalid` when the field has errors and
+    `aria-describedby` when there is an error or help text to point at.
+    `aria-invalid` / `aria-describedby` are deliberately **not** in the
+    `widget_attrs` exclude list, because a form that sets them in
+    `widget.attrs` (a common way to associate errors for a template that
+    renders bare `{{ field }}`) would otherwise lose them entirely on a
+    template that does not spread `control_attrs`. The cost is that a template
+    spreading **both** emits them twice. Pick one source per attribute: keep
+    the ARIA in `widget.attrs` and drop `control_attrs`, or leave `widget.attrs`
+    free of ARIA and let `control_attrs` own it. HTML resolves a duplicate
+    attribute first-wins, silently.
+
 !!! warning "Use `field.html_name` / `field.id_for_label`, never `field_name` for `name`/`id`"
     Inside a Django formset the submitted name is prefixed (`form-0-role`).
     Rendering `name="{{ field_name }}"` produces colliding, unsubmittable
@@ -160,6 +174,18 @@ Uses the `rg_forms/field_group.html` template. Generates:
 - Group label as heading
 - Group description
 - All fields in the group via `{% render_reactive_field %}`
+
+Group context keys:
+
+| Key | Type | Meaning |
+|---|---|---|
+| `form` | `ReactiveForm` | The form the group belongs to. |
+| `group` | `FieldGroup` | The group definition (`label`, `description`, `css_class`, `fields`). |
+| `group_name` | `str` | The group's key in `Meta.field_groups`. |
+| `group_visible_when` | `str \| None` | Compiled + scoped expression for `data-show` on the group container. |
+| `group_initially_hidden` | `bool` | The group-level counterpart of `initially_hidden` — `True` when the group's rule is already false. Render as an inline `display: none` on the container. |
+| `fields` | `list[tuple[str, BoundField]]` | The group's fields, in declaration order. |
+| `validate_action` / `csrf_token` | | Threaded through to each field for incremental validation. |
 
 ## `{% reactive_wrapper_attrs bound_field %}`
 

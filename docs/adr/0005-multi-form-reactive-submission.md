@@ -7,8 +7,8 @@
   (`src/rg/forms/views.py`); composes with
   [ADR-0003](0003-scoped-signals-and-reactive-formsets.md) (scoped signals so a formset renders inside the shared
   fragment) and [ADR-0004](0004-declarative-incremental-server-validation.md) (per-field validation, orthogonal).
-- Motivating consumer: KSK-KI staff user create/edit (`StaffUserForm` + `UserProfileForm` + `WorkExperienceFormSet`
-  submitted together).
+- Motivating consumer: a downstream Django project's staff user create/edit page (a user form + a profile form +
+  a work-experience formset submitted together).
 
 ## Revision 2 — decisions resolved after review
 
@@ -260,9 +260,9 @@ This helper makes multi-form *submission plumbing* reusable. It explicitly does 
 - **Perform cross-form validation.** D5 — the caller attaches aggregate errors before the call.
 - **Make every multi-form page convertible.** A page may still be correctly left bespoke for reasons this helper does
   not touch — e.g. a *deliberately consolidated single audit event* per aggregate write, or an *inherently atomic
-  creation* with no valid partial state. (The KSK-KI user form is exactly this: the helper removes the library-level
-  objection, but the form stays combined for audit-atomicity reasons — the ADR removes a perceived blocker, not that
-  team's design judgment.)
+  creation* with no valid partial state. (The motivating user form is exactly this: the helper removes the
+  library-level objection, but the form stays combined for audit-atomicity reasons — the ADR removes a perceived
+  blocker, not that team's design judgment.)
 - **Solve error-path widget re-initialization.** Keeping JS-enhanced widgets (rich selects, date pickers, dynamic
   formsets) working across the error morph is the consumer's frontend concern — best solved by self-managing web
   components, not this helper.
@@ -277,7 +277,7 @@ D6 extraction of `_sse_patch` and D8 delegation are internal refactors with no o
 ## Validation plan (acceptance)
 
 Not a compatibility claim, but the intended sign-off: after implementation, run the library's own suite plus at least
-one downstream consumer's full suite (e.g. KSK-KI) with **zero consumer edits required** for the additive change, then
+one downstream consumer's full suite with **zero consumer edits required** for the additive change, then
 convert one real multi-form page (a non-outlier one) as an end-to-end check.
 
 ## Testing

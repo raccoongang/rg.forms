@@ -97,6 +97,32 @@ All expressions are evaluated on the backend during form validation. This means:
 2. **Required rules are enforced** — client-side required indicators are cosmetic, the backend is the authority
 3. **No client-side bypassing** — JavaScript disabled? The backend still validates correctly
 
+On a `ModelForm`, "set to `None`" stops at `cleaned_data`: a hidden field is not
+written to the model instance, so collapsing a section does not erase the stored
+values it was hiding. See [ModelForms](modelforms.md#hidden-fields-are-not-written-to-the-instance).
+
+## Initial visibility
+
+`data-show` only takes effect once Datastar has booted, so a field whose rule is
+*already* false would paint visible for a frame and then vanish — a flash on
+every load of a page whose collapsed section holds a dozen inputs.
+
+The shipped templates avoid it by asking the form the same question server-side
+and rendering the already-false case with an inline `display: none` alongside
+`data-show`. Datastar clears the inline value when the rule turns true, so the
+two do not fight, and nothing about the reactive behavior changes.
+
+If you override `rg_forms/field.html` or `rg_forms/field_group.html`, the answer
+is in the context as `initially_hidden` / `group_initially_hidden`:
+
+```html
+<div class="field"{% if visible_when %} data-show="{{ visible_when }}"{% endif %}{% if initially_hidden %} style="display: none"{% endif %}>
+```
+
+Emit it **in addition to** `data-show`, never instead of it — the inline style
+is the first paint, the expression is the behavior. `initially_hidden` is always
+`False` for a field with no `visible_when`.
+
 ## Compare: conditional JSX vs a compiled expression
 
 In a React form you gate a field with `{watch('type') === 'urgent' && <Field…/>}`

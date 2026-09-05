@@ -10,6 +10,18 @@ from rg.forms import ReactiveForm
 
 Inherits all standard Django form behavior — `is_valid()`, `cleaned_data`, `errors`, custom `clean()` methods, widgets, etc.
 
+### `ReactiveModelForm`
+
+```python
+from rg.forms import ReactiveModelForm
+```
+
+The same reactive behavior on top of `django.forms.ModelForm` — `instance`,
+fields generated from `Meta.model`/`Meta.fields`, `_post_clean()` and `save()`.
+Every method below applies to it too. See the
+[ModelForms guide](../guide/modelforms.md) for the one behavior that differs:
+a hidden field is **not** written onto the model instance.
+
 ## View Utilities
 
 ### `reactive_form_response(request, form, fragment_template, *, success_url=None, on_success=None, context=None)`
@@ -119,6 +131,41 @@ Server-side evaluation of requirement. Returns `True` if:
 - `field.required` is `True`, or
 - `required_when` evaluates to `True`
 
+### `get_hidden_field_names() -> set[str]`
+
+Names of the fields whose `visible_when` currently evaluates false — the same
+predicate `_clean_fields()` uses to decide what to skip, exposed so callers do
+not re-derive it. Stateless: it answers before validation as well as after, and
+for unbound forms as well as bound ones.
+
+Unrelated to Django's `hidden_fields()`, which means widgets rendered as
+`<input type="hidden">`.
+
+```python
+form = ProviderForm(data={"name": "id.gov.ua"})     # "enabled" unticked
+form.get_hidden_field_names()
+# {'client_id', 'token_url', 'secret'}
+```
+
+### `visible_changed_data -> list[str]`
+
+Django's `changed_data`, minus what the form is hiding.
+
+A hidden field's control is still in the DOM and still submits, so
+`changed_data` reports edits the user made *before* a section collapsed — edits
+`_clean_fields()` then discards. That makes plain `changed_data` the wrong input
+to "did this submission actually change anything?".
+
+```python
+form.changed_data
+# ['enabled', 'client_id', 'token_url', 'secret']
+form.visible_changed_data
+# ['enabled']
+```
+
+A write-only field (`PasswordInput`) submits blank on every render, so it always
+reads as changed; ask about it separately if that matters.
+
 ### `get_computed_value(field_name: str)`
 
 Evaluates a computed field's expression and returns the result.
@@ -157,7 +204,11 @@ Server-side evaluation of group's `visible_when`.
 
 `ReactiveForm` overrides `_clean_fields()`:
 
-1. Hidden fields (`visible_when` is `False`) are set to `None` — no validation
+1. Hidden fields (`visible_when` is `False`) are set to `None` — no validation.
+   A hidden control still posts, and honoring what it posted would let a rule
+   the user cannot see decide the outcome. Under
+   [`ReactiveModelForm`](../guide/modelforms.md) that `None` is *not* written to
+   the model instance.
 2. Computed fields are recalculated from their expression
 3. `required_when` is evaluated and enforced
 4. Standard Django `clean_<fieldname>()` runs for visible fields

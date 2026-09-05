@@ -58,17 +58,18 @@
 
     <article class="message is-warning">
         <div class="message-header">
-            <p>Missing Django Integrations</p>
+            <p>Missing Django Integrations (largely addressed)</p>
         </div>
         <div class="message-body">
-            <p><strong>Risk:</strong> Some common Django patterns are not yet supported:</p>
+            <p><strong>Was:</strong> some common Django patterns were not supported — <code>ReactiveModelForm</code> chief among them.</p>
+            <p class="mt-3"><strong>Now:</strong> <code>ReactiveModelForm</code> ships, with the hidden-field/model-instance hazard handled: a field hidden by <code>visible_when</code> is not written to the instance, so collapsing a section no longer erases the stored configuration it was hiding.</p>
+            <p class="mt-3"><strong>Residual:</strong></p>
             <ul>
-                <li><code>ReactiveModelForm</code> - most common use case</li>
                 <li><strong>Dynamic</strong> formset mutation (add/remove/reorder rows) — <em>static</em> formsets are supported and fully reactive per row (ADR-0003)</li>
                 <li>FileField with upload progress</li>
                 <li>crispy-forms integration</li>
             </ul>
-            <p class="mt-3"><strong>Mitigation:</strong> Prioritize <code>ReactiveModelForm</code> next; dynamic-formset mutation is server-driven (a small Datastar handler) until a declarative helper lands. Document workarounds.</p>
+            <p class="mt-3"><strong>Mitigation:</strong> dynamic-formset mutation is server-driven (a small Datastar handler) until a declarative helper lands. Document workarounds.</p>
         </div>
     </article>
 

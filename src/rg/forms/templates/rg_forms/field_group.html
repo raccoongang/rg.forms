@@ -1,7 +1,12 @@
-{# Field group template - Bulma CSS #}
+{% comment %}
+   Field group template — REFERENCE EXAMPLE (Bulma CSS).
+   `group_initially_hidden` renders the already-false case hidden on the
+   server so the fieldset does not flash into view before Datastar boots;
+   see the note in rg_forms/field.html.
+{% endcomment %}
 {% load reactive_forms %}
 {% if group %}
-<fieldset class="box{% if group.css_class %} {{ group.css_class }}{% endif %}"{% if group_visible_when %} data-show="{{ group_visible_when }}"{% endif %}>
+<fieldset class="box{% if group.css_class %} {{ group.css_class }}{% endif %}"{% if group_visible_when %} data-show="{{ group_visible_when }}"{% endif %}{% if group_initially_hidden %} style="display: none"{% endif %}>
     {% if group.label %}
     <legend class="label is-medium">{{ group.label }}</legend>
     {% endif %}

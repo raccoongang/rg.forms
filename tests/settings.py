@@ -12,6 +12,9 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
     "rg.forms",
+    # The test package itself, so tests/models.py gets a table. It has no
+    # migrations, so the test database creates it via migrate --run-syncdb.
+    "tests",
 ]
 
 MIDDLEWARE = [

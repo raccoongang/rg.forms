@@ -10,6 +10,7 @@ from django.template import Context, Template
 from django.test import override_settings
 
 from rg.forms import (
+    FieldGroup,
     ReactiveBooleanField,
     ReactiveCharField,
     ReactiveChoiceField,
@@ -615,3 +616,88 @@ class TestRequiredIndicatorIsOverridable:
         source = inspect.getsource(reactive_forms)
 
         assert "has-text-danger" not in source
+
+
+class InitialVisibilityForm(ReactiveForm):
+    """Server-rendered initial visibility (the flash-of-visible fix)."""
+
+    enabled = ReactiveBooleanField(required=False)
+    client_id = ReactiveCharField(required=False, visible_when="$enabled")
+    always = ReactiveCharField(required=False)
+
+    class Meta:
+        field_groups = {
+            "config": FieldGroup(fields=["client_id"], label="Config", visible_when="$enabled"),
+            "plain": FieldGroup(fields=["always"], label="Always"),
+        }
+
+
+class TestInitiallyHidden:
+    """`initially_hidden` — the server's answer to what data-show does later."""
+
+    def test_true_when_the_rule_is_already_false(self):
+        form = InitialVisibilityForm(data={})
+        assert render_reactive_field(form["client_id"])["initially_hidden"] is True
+
+    def test_false_when_the_rule_is_already_true(self):
+        form = InitialVisibilityForm(data={"enabled": "on"})
+        assert render_reactive_field(form["client_id"])["initially_hidden"] is False
+
+    def test_false_for_a_field_with_no_rule(self):
+        form = InitialVisibilityForm(data={})
+        assert render_reactive_field(form["always"])["initially_hidden"] is False
+
+    def test_unbound_form_uses_initial(self):
+        assert render_reactive_field(InitialVisibilityForm()["client_id"])["initially_hidden"] is True
+        assert (
+            render_reactive_field(InitialVisibilityForm(initial={"enabled": True})["client_id"])["initially_hidden"]
+            is False
+        )
+
+    def test_a_non_reactive_form_is_never_reported_hidden(self):
+        """The tag must stay usable on a plain Django form."""
+
+        class Plain(forms.Form):
+            name = forms.CharField()
+
+        assert render_reactive_field(Plain()["name"])["initially_hidden"] is False
+
+    def test_visible_when_is_still_emitted_alongside(self):
+        """The client rule must survive: the server state is only the first paint."""
+        context = render_reactive_field(InitialVisibilityForm(data={})["client_id"])
+        assert context["visible_when"] == "$enabled"
+        assert context["initially_hidden"] is True
+
+    def test_shipped_template_hides_the_wrapper(self):
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.client_id %}")
+        hidden = template.render(Context({"form": InitialVisibilityForm(data={})}))
+        shown = template.render(Context({"form": InitialVisibilityForm(data={"enabled": "on"})}))
+
+        assert 'style="display: none"' in hidden
+        assert 'data-show="$enabled"' in hidden
+        assert 'style="display: none"' not in shown
+
+    def test_shipped_template_leaves_an_unruled_field_alone(self):
+        template = Template("{% load reactive_forms %}{% render_reactive_field form.always %}")
+        assert 'style="display: none"' not in template.render(Context({"form": InitialVisibilityForm(data={})}))
+
+
+class TestGroupInitiallyHidden:
+    def test_group_with_a_false_rule_renders_hidden(self):
+        template = Template('{% load reactive_forms %}{% render_field_group form "config" %}')
+        hidden = template.render(Context({"form": InitialVisibilityForm(data={})}))
+        shown = template.render(Context({"form": InitialVisibilityForm(data={"enabled": "on"})}))
+
+        assert 'style="display: none"' in hidden
+        assert 'data-show="$enabled"' in hidden
+        assert 'style="display: none"' not in shown
+
+    def test_group_without_a_rule_is_never_hidden(self):
+        template = Template('{% load reactive_forms %}{% render_field_group form "plain" %}')
+        assert 'style="display: none"' not in template.render(Context({"form": InitialVisibilityForm(data={})}))
+
+    def test_fields_inside_a_hidden_group_carry_their_own_state(self):
+        """The group hides the fieldset; each field still answers for itself."""
+        template = Template('{% load reactive_forms %}{% render_field_group form "config" %}')
+        html = template.render(Context({"form": InitialVisibilityForm(data={})}))
+        assert html.count('style="display: none"') == 2

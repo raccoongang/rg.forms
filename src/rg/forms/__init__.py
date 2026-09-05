@@ -19,7 +19,7 @@ from rg.forms.fields import (
 )
 
 # Core form class and utilities
-from rg.forms.forms import FieldGroup, ReactiveForm
+from rg.forms.forms import FieldGroup, ReactiveForm, ReactiveModelForm
 
 # View utilities
 from rg.forms.views import (
@@ -36,6 +36,7 @@ __all__ = [
     "__version__",
     # Form
     "ReactiveForm",
+    "ReactiveModelForm",
     "FieldGroup",
     # View utilities
     "is_datastar_request",

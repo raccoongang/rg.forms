@@ -62,6 +62,7 @@ nav:
       - Conditional Attributes: guide/conditional-attrs.md
       - Cascading Dropdowns: guide/cascading.md
       - Field Groups: guide/field-groups.md
+      - ModelForms: guide/modelforms.md
       - Formsets & Scoped Signals: guide/formsets.md
       - Validation: guide/validation.md
       - SSE Validation: guide/sse-validation.md

@@ -3,11 +3,89 @@
 All notable changes to rg.forms are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Addresses the three asks in a downstream consumer's second upstream brief:
+first-class ModelForm support, the data loss it would otherwise expose, and
+server-rendered initial visibility.
+
+### Added
+
+- **`ReactiveModelForm`** — `ReactiveForm` bound to a model instance. Reactive
+  behavior (signals, `visible_when` / `required_when`, computed fields,
+  cascading choices, field groups) comes from `ReactiveForm`; `instance`,
+  model-generated fields, `_post_clean()` and `save()` come from Django's
+  `ModelForm`. One `Meta` carries both vocabularies. Shipping it as a class
+  means no consumer has to re-derive the base-class ordering — or discover the
+  hidden-field hazard below on their own. See
+  [the guide](https://raccoongang.github.io/rg.forms/guide/modelforms/).
+
+- **`ReactiveForm.get_hidden_field_names()`** — the names whose `visible_when`
+  currently evaluates false, the same predicate `_clean_fields()` uses. Stateless,
+  so it answers before validation as well as after. Unrelated to Django's
+  `hidden_fields()` (widgets rendered as `<input type="hidden">`).
+
+- **`ReactiveForm.visible_changed_data`** — Django's `changed_data` minus what
+  the form is hiding. A hidden control still submits, so `changed_data` reports
+  edits the user made before a section collapsed — edits `_clean_fields()` then
+  discards — which makes it the wrong input to "did this submission actually
+  change anything?".
+
+- **`initially_hidden` / `group_initially_hidden` render-context keys** — the
+  server's answer to the question `data-show` answers in the browser. Additive
+  per ADR-0001; existing template overrides are unaffected.
+
+### Fixed
+
+- **A hidden field is no longer written onto a model instance.**
+  `_clean_fields()` sets a hidden field's `cleaned_data` to `None`, which is
+  correct for a plain `Form` — a hidden control still posts, and honoring what
+  it posted would let a rule the user cannot see decide the outcome. Under a
+  `ModelForm`, `_post_clean()` would then write those `None`s onto the instance
+  and `save()` would persist them, so collapsing a section erased the stored
+  configuration it was only meant to hide: untick "enabled" on a provider form
+  and the stored client id, endpoints and secret were gone.
+
+  `ReactiveModelForm._post_clean()` withholds the hidden names from
+  `construct_instance()` for the duration of the call, leaving those model
+  attributes at their stored values. `cleaned_data` still reads `None` for a
+  hidden field, exactly as on a plain `ReactiveForm`. Withholding rather than
+  restoring each field's `initial` is deliberate: it writes nothing at all, so a
+  form whose `initial` differs from what is stored cannot quietly push that
+  difference into the database, and a write-only secret's "leave blank to keep
+  the stored value" path keeps working.
+
+  This affects `ReactiveModelForm` only. Plain `ReactiveForm` behavior is
+  unchanged.
+
+- **No flash of visible.** `data-show` only takes effect once Datastar has
+  booted, so a field or group whose rule was *already* false painted visible for
+  a frame and then vanished — a visible flash on every load of a page whose
+  collapsed section holds a dozen inputs. `ReactiveForm.is_field_visible()` and
+  `is_group_visible()` could already answer server-side; they were simply not
+  wired to rendering. The shipped `field.html` and `field_group.html` now emit an
+  inline `display: none` for the already-false case alongside `data-show`
+  (Datastar clears the inline value when the rule turns true, so the two do not
+  fight). An override that ignores the new context keys loses only the flash fix,
+  not the behavior.
+
+### Documentation
+
+- New [ModelForms guide](https://raccoongang.github.io/rg.forms/guide/modelforms/);
+  an "Initial visibility" section in the visibility guide; the new methods and
+  context keys in the reference pages, including the previously undocumented
+  `render_field_group` context.
+- Documented that `aria-invalid` / `aria-describedby` are deliberately **not** in
+  the `widget_attrs` exclude set, so a template spreading both `widget_attrs` and
+  `control_attrs` emits them twice. Excluding them would silently drop the ARIA
+  for a template that spreads only `widget_attrs`, which is the more common
+  arrangement; the overlap is documented instead.
+
 ## [0.2.2] - 2026-09-04
 
-Addresses the nine findings raised in the ksk-ki upstream brief; four had already
-been fixed by the ADR-0001 rendering work and the Wave 0 correctness pass, five
-are fixed here.
+Addresses the nine findings raised in a downstream consumer's upstream brief;
+four had already been fixed by the ADR-0001 rendering work and the Wave 0
+correctness pass, five are fixed here.
 
 ### Added
 
